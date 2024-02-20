@@ -1,0 +1,48 @@
+---
+title: "Dev_Stress_Task"
+output: html_document
+date: "2024-02-05"
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+```
+
+```{r}
+data <- read.csv("../data/pilot data/Dev Stress Task Norming_February 12, 2024_13.43 - Dev Stress Task Norming_February 5, 2024_13.43.csv") # %>%
+  # select("Q2","X54_anger_1":"self.reportattention")
+
+granularity_data <- data %>%
+  select("X54_anger_1":"pos3_satisfied_1")
+
+granularity_pic <- granularity_data %>%
+  select("X54_anger_1":"X1710_satisfied_1")
+
+granularity_music <- granularity_data %>%
+  select("pos2_anger_1":"pos3_satisfied_1")
+
+granularity_pic_negative <- granularity_pic %>%
+  select(ends_with("anger_1") | ends_with("disgust_1") | ends_with("sadness_1") | ends_with("scared_1") | ends_with("upset_1"))
+
+granularity_pic_positive <- granularity_pic %>%
+  select(ends_with("happiness_1") | ends_with("pride_1") | ends_with("excitement_1") | ends_with("joy_1") | ends_with("satisfied_1"))
+
+granularity_music_negative <- granularity_music %>%
+  select(ends_with("anger_1") | ends_with("disgust_1") | ends_with("sadness_1") | ends_with("scared_1") | ends_with("upset_1"))
+
+granularity_music_positive <- granularity_music %>%
+  select(ends_with("happiness_1") | ends_with("pride_1") | ends_with("excitement_1") | ends_with("joy_1") | ends_with("satisfied_1"))
+```
+
+
+```{r}
+# install.packages("irr")
+library(irr)
+# calculate ICC for each positive or negative term
+# i <- 1:length(granularity_music_negative)
+# granularity_music_negative <- granularity_music_negative[-1, ]
+
+
+# ICC(granularity_music_negative)
+
+```
