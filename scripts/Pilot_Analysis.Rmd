@@ -39,10 +39,51 @@ granularity_music_positive <- granularity_music %>%
 # install.packages("irr")
 library(irr)
 # calculate ICC for each positive or negative term
-# i <- 1:length(granularity_music_negative)
+
 # granularity_music_negative <- granularity_music_negative[-1, ]
 
+calculate_icc_and_add <- function(row_data, df) {
+  # Check if the row contains at least 2 values
+  if(length(row_data) < 2) {
+    stop("At least 2 values are required to calculate ICC.")
+  }
+  
+  # Create a dummy dataframe with two columns: Subject and Measurement
+  dummy_df <- data.frame(Subject = 1:length(row_data), Measurement = row_data)
+  
+  # Calculate ICC using irr package
+  icc_result <- icc(dummy_df, model = "oneway", type = "agreement", unit = "single")
+  
+  # Extract ICC value
+  icc_value <- icc_result$value
+  
+  # Add ICC value to dataframe
+  df$ICC <- icc_value
+  
+  return(dummy_df)
+}
+
+i <- 1:length(granularity_music_negative)
+for (i in nrow(granularity_music_negative)) {
+  df_with_icc <- calculate_icc_and_add(granularity_music_negative[i,], granularity_music_negative)
+}
+df_with_icc <- calculate_icc_and_add(granularity_music_negative[4,], granularity_music_negative)
+
+granularity_music_negative$ICC <- NA
+i = 2
+# in nrow(granularity_music_negative)) {
+# for (i  {
+dummy_df <- data.frame(Subject = i, Measurement = granularity_music_negative[i,])
+icc(dummy_df, model = "oneway", type = "agreement", unit = "single")
+icc_value <- 
+granularity_music_negative$ICC[i] <- icc_value 
+# }
+dummy_df$ICC <- icc(dummy_df)
+granularity_music_negative %>%
+  drop_na() %>%
+    icc()
 
 # ICC(granularity_music_negative)
+# library(psych)
 
 ```
