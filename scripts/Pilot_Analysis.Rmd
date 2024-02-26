@@ -28,10 +28,49 @@ granularity_pic_positive <- granularity_pic %>%
   select(ends_with("happiness_1") | ends_with("pride_1") | ends_with("excitement_1") | ends_with("joy_1") | ends_with("satisfied_1"))
 
 granularity_music_negative <- granularity_music %>%
-  select(ends_with("anger_1") | ends_with("disgust_1") | ends_with("sadness_1") | ends_with("scared_1") | ends_with("upset_1"))
+  select(ends_with("anger_1") | ends_with("disgust_1") | ends_with("sadness_1") | ends_with("scared_1") | ends_with("upset_1") )
 
 granularity_music_positive <- granularity_music %>%
   select(ends_with("happiness_1") | ends_with("pride_1") | ends_with("excitement_1") | ends_with("joy_1") | ends_with("satisfied_1"))
+
+##NICK 2/20 edits. this will be code to use for negative emotions in response to both music + pics
+  anger <-
+    data %>%
+    select(ends_with("anger_1") | Q2) %>% 
+    pivot_longer(!Q2, values_to="anger") %>%
+    select(-c( "name"))
+  
+  disgust <-
+    data %>%
+    select(ends_with("disgust_1") | Q2) %>% 
+    pivot_longer(!Q2,values_to="disgust") %>%
+    select(-c("Q2","name"))
+  
+  sadness <-
+    data %>%
+    select(ends_with("sadness_1") | Q2) %>% 
+    pivot_longer(!Q2,values_to = "sadness") %>%
+    select(-c("Q2","name"))
+
+  scared <-
+    data %>%
+    select(ends_with("scared_1") | Q2) %>% 
+    pivot_longer(!Q2, values_to="scared") %>%
+    select(-c("Q2","name"))
+
+  upset <-
+    data %>%
+    select(ends_with("upset_1") | Q2) %>% 
+    pivot_longer(!Q2, values_to="upset") %>%
+    select(-c("Q2","name"))
+
+master_negative <- cbind(anger, disgust, sadness,scared,upset)
+
+#to get a single score:
+master_negative %>%
+  subset(Q2=="62fc6762d2d8e46c4e75b469") %>% 
+  select(-c("Q2")) %>%
+  icc(type = "agreement", unit = "single")
 ```
 
 
@@ -73,17 +112,16 @@ granularity_music_negative$ICC <- NA
 i = 2
 # in nrow(granularity_music_negative)) {
 # for (i  {
-dummy_df <- data.frame(Subject = i, Measurement = granularity_music_negative[i,])
-icc(dummy_df, model = "oneway", type = "agreement", unit = "single")
+dummy_df <- data.frame(Measurement = granularity_music_negative[i,])
+dummy_DF <- as.data.frame(t(dummy_df))
+icc(dummy_df)
 icc_value <- 
 granularity_music_negative$ICC[i] <- icc_value 
 # }
+
+
 dummy_df$ICC <- icc(dummy_df)
 granularity_music_negative %>%
   drop_na() %>%
     icc()
-
-# ICC(granularity_music_negative)
-# library(psych)
-
 ```
