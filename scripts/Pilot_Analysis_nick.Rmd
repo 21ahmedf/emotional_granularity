@@ -1,0 +1,258 @@
+---
+title: "Dev_Stress_Task"
+output: html_document
+date: "2024-02-05"
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(irr)
+source("reverseCode.R")
+```
+
+#read in data
+```{r}
+data <- read.csv("../data/Dev Stress Task Norming_February 5, 2024_13.43.csv") # %>%
+  # #select("Q2","X54_anger_1":"self.reportattention")
+
+granularity_data <- data %>%
+  select("Q2","X54_anger_1":"pos3_satisfied_1")
+
+granularity_pic <- granularity_data %>%
+  select("Q2","X54_anger_1":"X1710_satisfied_1")
+
+granularity_music <- granularity_data %>%
+  select("Q2","pos2_anger_1":"pos3_satisfied_1")
+```
+
+#subsetting music neg
+```{r}
+  anger_music <-
+    granularity_music %>%
+    select(ends_with("anger_1") | Q2) %>% 
+    pivot_longer(!Q2, values_to="anger") %>%
+    select(-c( "name"))
+  
+  disgust_music <-
+    granularity_music %>%
+    select(ends_with("disgust_1") | Q2) %>% 
+    pivot_longer(!Q2,values_to="disgust") %>%
+    select(-c("Q2","name"))
+  
+  sadness_music <-
+    granularity_music %>%
+    select(ends_with("sadness_1") | Q2) %>% 
+    pivot_longer(!Q2,values_to = "sadness") %>%
+    select(-c("Q2","name"))
+
+  scared_music <-
+    granularity_music %>%
+    select(ends_with("scared_1") | Q2) %>% 
+    pivot_longer(!Q2, values_to="scared") %>%
+    select(-c("Q2","name"))
+
+  upset_music <-
+    granularity_music %>%
+    select(ends_with("upset_1") | Q2) %>% 
+    pivot_longer(!Q2, values_to="upset") %>%
+    select(-c("Q2","name"))
+
+music_negative <- cbind(anger_music, disgust_music, sadness_music,scared_music,upset_music)%>%
+  na.omit()
+```
+
+#subsetting positive music
+```{r}
+ happiness_music <-
+    granularity_music %>%
+    select(ends_with("happiness_1") | Q2) %>% 
+    pivot_longer(!Q2, values_to="happiness") %>%
+    select(-c( "name"))
+  
+  pride_music <-
+    granularity_music %>%
+    select(ends_with("pride_1") | Q2) %>% 
+    pivot_longer(!Q2,values_to="pride") %>%
+    select(-c("Q2","name"))
+  
+  excitement_music <-
+    granularity_music %>%
+    select(ends_with("excitement_1") | Q2) %>% 
+    pivot_longer(!Q2,values_to = "excitement") %>%
+    select(-c("Q2","name"))
+
+  joy_music <-
+    granularity_music %>%
+    select(ends_with("joy_1") | Q2) %>% 
+    pivot_longer(!Q2, values_to="joy") %>%
+    select(-c("Q2","name"))
+
+  satisfied_music <-
+    granularity_music %>%
+    select(ends_with("satisfied_1") | Q2) %>% 
+    pivot_longer(!Q2, values_to="satisfied") %>%
+    select(-c("Q2","name"))
+
+music_positive <- cbind(happiness_music, pride_music, excitement_music,joy_music,satisfied_music) %>%
+  na.omit()
+```
+
+#subsetting neg images
+```{r}
+#pics negative
+  anger_pic <-
+    granularity_pic %>%
+    select(ends_with("anger_1") | Q2) %>% 
+    pivot_longer(!Q2, values_to="anger") %>%
+    select(-c( "name"))
+  
+  disgust_pic <-
+    granularity_pic %>%
+    select(ends_with("disgust_1") | Q2) %>% 
+    pivot_longer(!Q2,values_to="disgust") %>%
+    select(-c("Q2","name"))
+  
+  sadness_pic <-
+    granularity_pic %>%
+    select(ends_with("sadness_1") | Q2) %>% 
+    pivot_longer(!Q2,values_to = "sadness") %>%
+    select(-c("Q2","name"))
+
+  scared_pic <-
+    granularity_pic %>%
+    select(ends_with("scared_1") | Q2) %>% 
+    pivot_longer(!Q2, values_to="scared") %>%
+    select(-c("Q2","name"))
+
+  upset_pic <-
+    granularity_pic %>%
+    select(ends_with("upset_1") | Q2) %>% 
+    pivot_longer(!Q2, values_to="upset") %>%
+    select(-c("Q2","name"))
+
+pic_negative <- cbind(anger_pic, disgust_pic, sadness_pic,scared_pic,upset_pic) %>%
+  na.omit()
+```
+
+#subsetting pic positive
+```{r}
+#pic positive
+happiness_pic <-
+    granularity_pic %>%
+    select(ends_with("happiness_1") | Q2) %>% 
+    pivot_longer(!Q2, values_to="happiness") %>%
+    select(-c( "name"))
+  
+  pride_pic <-
+    granularity_pic %>%
+    select(ends_with("pride_1") | Q2) %>% 
+    pivot_longer(!Q2,values_to="pride") %>%
+    select(-c("Q2","name"))
+  
+  excitement_pic <-
+    granularity_pic %>%
+    select(ends_with("excitement_1") | Q2) %>% 
+    pivot_longer(!Q2,values_to = "excitement") %>%
+    select(-c("Q2","name"))
+
+  joy_pic <-
+    granularity_pic %>%
+    select(ends_with("joy_1") | Q2) %>% 
+    pivot_longer(!Q2, values_to="joy") %>%
+    select(-c("Q2","name"))
+
+  satisfied_pic <-
+    granularity_pic %>%
+    select(ends_with("satisfied_1") | Q2) %>% 
+    pivot_longer(!Q2, values_to="satisfied") %>%
+    select(-c("Q2","name"))
+
+pic_positive <- cbind(happiness_pic, pride_pic, excitement_pic,joy_pic,satisfied_pic) %>%
+  na.omit()
+```
+
+#scoring granularity responses
+```{r}
+#music neg
+music_negative_list <- split(music_negative, music_negative$Q2) 
+
+results <- 
+  expand.grid(
+    ID = names(music_negative_list)
+  )
+
+i = seq(seq_along(music_negative_list))
+
+for(i in seq_along(music_negative_list)) {
+  icc_result <-  (music_negative_list[[i]]) %>%
+    select(-c("Q2")) %>%
+ icc(type = "agreement", unit = "single")
+   results$negmusicICC[i] = 1 - icc_result$value
+}
+
+#pos music
+music_positive_list <- split(music_positive, music_positive$Q2) 
+
+i = seq(seq_along(music_positive_list))
+for(i in seq_along(music_positive_list)) {
+  icc_result <-  (music_positive_list[[i]]) %>%
+    select(-c("Q2")) %>%
+ icc(type = "agreement", unit = "single")
+   results$posmusicICC[i] = 1 - icc_result$value
+} 
+
+#neg pic
+pic_negative_list <- split(pic_negative, pic_negative$Q2) 
+
+i = seq(seq_along(pic_negative_list))
+for(i in seq_along(pic_negative_list)) {
+  icc_result <-  (pic_negative_list[[i]]) %>%
+    select(-c("Q2")) %>%
+ icc(type = "agreement", unit = "single")
+   results$negpicICC[i] = 1 - icc_result$value
+} 
+
+#pos pic
+pic_positive_list <- split(pic_positive, pic_positive$Q2) 
+
+i = seq(seq_along(pic_positive_list))
+for(i in seq_along(pic_positive_list)) {
+  icc_result <-  (pic_positive_list[[i]]) %>%
+    select(-c("Q2")) %>%
+ icc(type = "agreement", unit = "single")
+   results$pospicICC[i] = 1 - icc_result$value
+} 
+```
+
+
+#scoring M@HR
+```{r}
+MH_all <- data %>%
+  dplyr::select("M.H_child1_1":"M.H_child20_1") %>%
+  na.omit()
+
+cols_reverse <- c("M.H_child6_1","M.H_child7_1","M.H_child11_1","M.H_child12_1","M.H_child18_1","M.H_child19_1","M.H_child20_1")
+MH_all[cols_reverse] <- lapply(MH_all[cols_reverse], reverseCode, min=1, max=7)
+
+cols_caregiverbeliefs <- c("M.H_child1_1","M.H_child2_1","M.H_child3_1","M.H_child4_1")
+cols_caregiversinging <- c("M.H_child9_1","M.H_child10_1","M.H_child11_1","M.H_child13_1")
+cols_childhoodattitude <- c("M.H_child18_1","M.H_child19_1","M.H_child20_1")
+cols_socialcontexts <- c("M.H_child14_1","M.H_child15_1","M.H_child16_1","M.H_child17_1")
+cols_musicmaking <- c("M.H_child5_1","M.H_child6_1","M.H_child7_1","M.H_child8_1", "M.H_child12_1")
+
+#scoring
+results$MH_total <- apply(MH_all,1, sum) # total BMRQ scores
+results$MH_caregiverbeliefs <- apply(MH_all[cols_caregiverbeliefs], 1,sum)
+results$MH_caregiversinging <- apply(MH_all[cols_caregiversinging],1, sum)
+results$MH_childhoodattitude <-apply(MH_all[cols_childhoodattitude],1, sum)
+results$MH_socialcontexts <- apply(MH_all[cols_socialcontexts],1, sum)
+results$MH_musicmaking <- apply(MH_all[cols_musicmaking],1, sum)
+```
+
+#goldMSI
+```{r}
+gold <- data %>%
+  dplyr::select("Gold1_1":"Gold7")
+```
+
+#rdees
