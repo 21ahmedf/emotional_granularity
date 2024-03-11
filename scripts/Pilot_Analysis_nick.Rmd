@@ -241,7 +241,7 @@ cols_socialcontexts <- c("M.H_child14_1","M.H_child15_1","M.H_child16_1","M.H_ch
 cols_musicmaking <- c("M.H_child5_1","M.H_child6_1","M.H_child7_1","M.H_child8_1", "M.H_child12_1")
 
 #scoring
-results$MH_total <- apply(MH_all,1, sum) # total BMRQ scores
+results$MH_total <- apply(MH_all,1, sum) # total scores
 results$MH_caregiverbeliefs <- apply(MH_all[cols_caregiverbeliefs], 1,sum)
 results$MH_caregiversinging <- apply(MH_all[cols_caregiversinging],1, sum)
 results$MH_childhoodattitude <-apply(MH_all[cols_childhoodattitude],1, sum)
