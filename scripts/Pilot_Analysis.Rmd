@@ -6,6 +6,7 @@ date: "2024-02-05"
 
 ```{r setup, include=FALSE}
 library(tidyverse)
+library(irr)
 ```
 
 ```{r}
@@ -71,6 +72,58 @@ master_negative %>%
   subset(Q2=="62fc6762d2d8e46c4e75b469") %>% 
   select(-c("Q2")) %>%
   icc(type = "agreement", unit = "single")
+
+i = 1
+master_negative$ICC <- NA
+while (i <= nrow(master_negative)) {
+  subset_data <- master_negative[i:min(i + 11, nrow(master_negative)), ]
+  subset_data <- subset_data[, !names(subset_data) %in% c("Q2", "ICC")]
+  result <- icc(subset_data, type = "agreement", unit = "single")
+  print(result$value)
+  i <- i + 12
+}
+
+  happiness <-
+    data %>%
+    select(ends_with("happiness_1") | Q2) %>% 
+    pivot_longer(!Q2, values_to="happiness") %>%
+    select(-c( "name"))
+  
+  pride <-
+    data %>%
+    select(ends_with("pride_1") | Q2) %>% 
+    pivot_longer(!Q2,values_to="pride") %>%
+    select(-c("Q2","name"))
+  
+  excitement <-
+    data %>%
+    select(ends_with("excitement_1") | Q2) %>% 
+    pivot_longer(!Q2,values_to = "excitement") %>%
+    select(-c("Q2","name"))
+
+  joy <-
+    data %>%
+    select(ends_with("joy_1") | Q2) %>% 
+    pivot_longer(!Q2, values_to="joy") %>%
+    select(-c("Q2","name"))
+
+  satisfied <-
+    data %>%
+    select(ends_with("satisfied_1") | Q2) %>% 
+    pivot_longer(!Q2, values_to="satisfied") %>%
+    select(-c("Q2","name"))
+
+master_positive <- cbind(happiness, pride, excitement, joy, satisfied)
+
+i = 1
+master_positive$ICC <- NA
+while (i <= nrow(master_positive)) {
+  subset_data <- master_positive[i:min(i + 11, nrow(master_positive)), ]
+  subset_data <- subset_data[, !names(subset_data) %in% c("Q2", "ICC")]
+  result <- icc(subset_data, type = "agreement", unit = "single")
+  print(result$value)
+  i <- i + 12
+}
 ```
 
 
@@ -114,8 +167,8 @@ i = 2
 # for (i  {
 dummy_df <- data.frame(Measurement = granularity_music_negative[i,])
 dummy_DF <- as.data.frame(t(dummy_df))
-icc(dummy_df)
-icc_value <- 
+icc(dummy_DF)
+icc_value <- icc(dummy_df)
 granularity_music_negative$ICC[i] <- icc_value 
 # }
 

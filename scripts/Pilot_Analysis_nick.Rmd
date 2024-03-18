@@ -12,7 +12,7 @@ source("reverseCode.R")
 
 #read in data
 ```{r}
-data <- read.csv("../data/Dev Stress Task Norming_February 5, 2024_13.43.csv") # %>%
+data <- read.csv("../data/pilot data/Dev Stress Task Norming_February 12, 2024_13.43 - Dev Stress Task Norming_February 5, 2024_13.43.csv") # %>%
   # #select("Q2","X54_anger_1":"self.reportattention")
 
 granularity_data <- data %>%
@@ -224,7 +224,47 @@ for(i in seq_along(pic_positive_list)) {
 } 
 ```
 
+```{r}
+cor.test(results$posmusicICC, results$pospicICC)
+cor.test(results$negmusicICC, results$negpicICC)
+t.test(results$posmusicICC, results$pospicICC, paired = TRUE)
+  # greater granularity for music
 
+pos_graph <- ggplot(data = results, aes(x = pospicICC, y = posmusicICC)) +
+  geom_point() +
+  stat_smooth(method = 'lm') +
+  xlab('Positive Picture Emotion Granularity') +
+  ylab('Positive Music Emotion Granularity') +
+  theme_classic() +
+  theme(axis.title.x = element_text(size=14, face='bold'), axis.title.y = element_text(size=14, face='bold'), axis.text.x = element_text(size=12), axis.text.y = element_text(size=12))
+
+ggsave('../results/pilot/Pos_Graph.png', pos_graph, width = 9)
+
+neg_graph <- ggplot(data = results, aes(x = negpicICC, y = negmusicICC)) +
+  geom_point() +
+  stat_smooth(method = 'lm') +
+  xlab('Negative Picture Emotion Granularity') +
+  ylab('Negative Music Emotion Granularity') +
+  theme_classic() +
+  theme(axis.title.x = element_text(size=14, face='bold'), axis.title.y = element_text(size=14, face='bold'), axis.text.x = element_text(size=12), axis.text.y = element_text(size=12))
+
+ggsave('../results/pilot/Neg_Graph.png', neg_graph, width = 9)
+
+mean_comparison <- results %>%
+  pivot_longer(negmusicICC:pospicICC) %>%
+  ggplot(aes(x=name, y=value)) +
+  stat_summary(fun.data='mean_cl_normal', geom = 'errorbar', width = 0.2) +
+  stat_summary(fun.data='mean_cl_normal', geom = 'pointrange', width = 0.2) +
+  theme_bw() +
+  xlab('Stimulus and Valence') +
+  ylab('Emotion Granularity') +
+  theme(axis.title.x = element_text(size=14, face='bold'), axis.title.y = element_text(size=14, face='bold'), axis.text.x = element_text(size=12), axis.text.y = element_text(size=12)) +
+  scale_x_discrete(labels = c('Negative Music', 'Negative Picture', 'Positive Music', 'Positive Picture'))
+
+ggsave('../results/pilot/Mean_Comparisons.png', mean_comparison, width = 9)
+
+
+```
 #scoring M@HR
 ```{r}
 MH_all <- data %>%
