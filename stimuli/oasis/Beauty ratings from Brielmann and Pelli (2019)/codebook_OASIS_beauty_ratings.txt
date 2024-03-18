@@ -1,0 +1,20 @@
+Codebook for OASIS_beauty_ratings.csv
+
+If you wish to use the ratings, please cite:
+Brielmann, A. A., & Pelli, D. (2019). Intense beauty requires intense pleasure. Frontiers in psychology, 10, 2420.
+
+First row:          column names
+All following rows: data for the given image
+
+Column name         explanation
+-----------         -----------
+item:               identifying number for the image
+Theme:              image name
+Category:           image categorization as introduced by Kurdi, Lozano, & Banaji (2017)
+                      4 levels: Animal, Object, Person, Scene
+beauty_mean:        average beauty rating across all raters
+beauty_SD:          standard deviation of the beauty rating across all raters
+N:                  number of raters who rated the image
+subset:             subset of 225 images shown to the same rater the image belongs to
+women_beauty_mean:  average beauty ratings across raters identifying as female
+men_beauty_mean:    average beauty ratings across raters identifying as male
