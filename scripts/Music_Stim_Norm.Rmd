@@ -1,0 +1,64 @@
+---
+title: "Music_Stim_Norm"
+output: html_document
+date: "2024-03-18"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+data <- read.csv("../stimuli/sachs/SourceData_1.csv")
+
+negative_potential_stims <- data %>%
+  subset(song == 'stimuli/3_pieceB_joyous_anxious_sad' | song == 'stimuli/5_pieceB_calm_sad_anxious' | song == 'stimuli/6_pieceB_anxious_calm_joyous' | song == 'stimuli/7_pieceB_joyous_anxious_sad' | song == 'stimuli/11_pieceA_calm_anxious_sad' | song == 'stimuli/12_pieceA_joyous_sad_anxious') %>%
+ggplot(
+       aes(x = second, y = valence_filt)) +
+  geom_line(aes(color = song)) +
+theme_classic() +
+  geom_hline(yintercept = 0, color = 'red', linetype = 'dashed')
+
+negative_potential_stims$valid = NA
+
+music_negative_list <- split(negative_potential_stims, negative_potential_stims$song)
+i = seq(seq_along(music_negative_list))
+i = 2
+j = 2
+j = 1:240
+for(i in seq_along(music_negative_list)) {
+  for (j in seq_along(music_negative_list)[[i]][[6]]) {
+    music_negative_list[[i]][[9]][j] = 
+    ifelse(music_negative_list[[i]][[6]][j+1] > 0 & music_negative_list[[i]][[6]][j+2] > 0 & music_negative_list[[i]][[6]][j+3] > 0 & music_negative_list[[i]][[6]][j+4] > 0 & music_negative_list[[i]][[6]][j+5] > 0 & music_negative_list[[i]][[6]][j+6] > 0 & music_negative_list[[i]][[6]][j+7] > 0, 'no', 'yes')
+}}
+
+music_negative_list[[1]][[9]][1]
+music_negative_list[[i]][[6]][1]$valid
+$valence_filt
+
+#3,5,6,7,11,12
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
