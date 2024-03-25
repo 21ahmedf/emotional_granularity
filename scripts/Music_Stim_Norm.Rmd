@@ -16,31 +16,50 @@ library(tidyverse)
 data <- read.csv("../stimuli/sachs/SourceData_1.csv")
 
 negative_potential_stims <- data %>%
-  subset(song == 'stimuli/3_pieceB_joyous_anxious_sad' | song == 'stimuli/5_pieceB_calm_sad_anxious' | song == 'stimuli/6_pieceB_anxious_calm_joyous' | song == 'stimuli/7_pieceB_joyous_anxious_sad' | song == 'stimuli/11_pieceA_calm_anxious_sad' | song == 'stimuli/12_pieceA_joyous_sad_anxious') %>%
-ggplot(
+  subset(song == 'stimuli/3_pieceB_joyous_anxious_sad' | song == 'stimuli/5_pieceB_calm_sad_anxious' | song == 'stimuli/6_pieceB_anxious_calm_joyous' | song == 'stimuli/7_pieceB_joyous_anxious_sad' | song == 'stimuli/11_pieceA_calm_anxious_sad' | song == 'stimuli/12_pieceA_joyous_sad_anxious')
+
+neg_neg_portions <- negative_potential_stims %>%
+  subset(valence_filt < 0) %>%
+  subset(arousal_filt < 0)
+
+ggplot(data=neg_neg_portions,
        aes(x = second, y = valence_filt)) +
-  geom_line(aes(color = song)) +
 theme_classic() +
-  geom_hline(yintercept = 0, color = 'red', linetype = 'dashed')
+  geom_point(aes(color = song))
+  #theme(legend.position = "none") #uncomment this for a clearer timing est
 
-negative_potential_stims$valid = NA
+neg_pos_portions <- negative_potential_stims %>%
+  subset(valence_filt < 0) %>%
+  subset(arousal_filt > 0)
 
-music_negative_list <- split(negative_potential_stims, negative_potential_stims$song)
-i = seq(seq_along(music_negative_list))
-i = 2
-j = 2
-j = 1:240
-for(i in seq_along(music_negative_list)) {
-  for (j in seq_along(music_negative_list)[[i]][[6]]) {
-    music_negative_list[[i]][[9]][j] = 
-    ifelse(music_negative_list[[i]][[6]][j+1] > 0 & music_negative_list[[i]][[6]][j+2] > 0 & music_negative_list[[i]][[6]][j+3] > 0 & music_negative_list[[i]][[6]][j+4] > 0 & music_negative_list[[i]][[6]][j+5] > 0 & music_negative_list[[i]][[6]][j+6] > 0 & music_negative_list[[i]][[6]][j+7] > 0, 'no', 'yes')
-}}
+ggplot(data=neg_pos_portions,
+       aes(x = second, y = valence_filt)) +
+theme_classic() +
+  geom_point(aes(color = song)) +
+  theme(legend.position = "none") #uncomment this  for a clearer timing est
 
-music_negative_list[[1]][[9]][1]
-music_negative_list[[i]][[6]][1]$valid
-$valence_filt
+pos_pos_portions <- negative_potential_stims %>%
+  subset(valence_filt > 0) %>%
+  subset(arousal_filt > 0)
 
-#3,5,6,7,11,12
+ggplot(data=pos_pos_portions,
+       aes(x = second, y = valence_filt)) +
+theme_classic() +
+  geom_point(aes(color = song))
+
+pos_neg_portions <- negative_potential_stims %>%
+  subset(valence_filt > 0) %>%
+  subset(arousal_filt < 0)
+
+ggplot(data=pos_neg_portions,
+       aes(x = second, y = valence_filt)) +
+theme_classic() +
+  geom_point(aes(color = song)) +
+  theme(legend.position = "none") #uncomment this for a clearer timing est
+
+
+#next steps: double check no transitional periods (maybe after cropping), figure out length to crop at (maybe start w/ 10 or 8 s?)
+#in the Nook psych science paper, visual stims were presented for 6s (we'd prob want more but maybe not too much more)
 ```
 
 ## R Markdown
