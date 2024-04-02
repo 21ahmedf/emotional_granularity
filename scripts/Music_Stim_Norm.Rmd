@@ -59,6 +59,15 @@ theme_classic() +
 
 
 #next steps: double check no transitional periods (maybe after cropping), figure out length to crop at (maybe start w/ 10 or 8 s?)
+  # 8 s sections from negative-negative stimuli
+  # try 8 stimuli from each quadrant
+  # try to avoid steep slope moments
+  # if there's 10 seconds, can crop differentially so that they are around 8 listen to what's good
+  # if its 16, can make two stimuli
+  # normalize to -20 dB (RMS)
+  # do a deeper dive across authors and find what emotion words that are good
+  # 5 positive and 5 negative
+  # can look at music papers not related to granularity
 #in the Nook psych science paper, visual stims were presented for 6s (we'd prob want more but maybe not too much more)
 ```
 
@@ -71,13 +80,6 @@ When you click the **Knit** button a document will be generated that includes bo
 ```{r cars}
 summary(cars)
 ```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
