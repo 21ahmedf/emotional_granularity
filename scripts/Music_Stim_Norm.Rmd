@@ -142,6 +142,80 @@ process_data(neg_pos_portions, 17:30, "Negative Valence Positive Arousal")
 process_data(pos_neg_portions, 54:69, "Positive Valence Negative Arousal")
 process_data(pos_pos_portions, 34:50, "Positive Valence Positive Arousal")
 ```
+```{r}
+# Read stimulus tracking data
+stimulus_tracking <- read.csv("../stimuli/sachs/stims/cropped_stims/Stimulus Tracking.csv")
+
+# Function to process data, generate plots, and save to PDF
+process_data <- function(portions, tracking_indices, title) {
+  stimulus_tracking_sub <- stimulus_tracking[tracking_indices, ]
+  
+  # Ensure the time columns are in the correct format
+  portions$Time <- as.POSIXct(portions$second, format = "%Y-%m-%d %H:%M:%OS")
+  stimulus_tracking_sub$start.time <- as.POSIXct(stimulus_tracking_sub$start.time, format = "%Y-%m-%d %H:%M:%OS")
+  stimulus_tracking_sub$end.time <- as.POSIXct(stimulus_tracking_sub$end.time, format = "%Y-%m-%d %H:%M:%OS")
+
+  # Filter for start and end points, and extract the required values
+  extracted_sections <- lapply(1:nrow(stimulus_tracking_sub), function(i) {
+    start_data <- portions %>%
+      filter(second == stimulus_tracking_sub$start.time[i] & song == stimulus_tracking_sub$original.song[i])
+    end_data <- portions %>%
+      filter(second == stimulus_tracking_sub$end.time[i] & song == stimulus_tracking_sub$original.song[i])
+    
+    rbind(
+      data.frame(
+        Valence = start_data$valence_filt,
+        Arousal = start_data$arousal_filt,
+        Type = "Start",
+        SectionID = paste("Section", i)
+      ),
+      data.frame(
+        Valence = end_data$valence_filt,
+        Arousal = end_data$arousal_filt,
+        Type = "End",
+        SectionID = paste("Section", i)
+      )
+    )
+  }) %>% bind_rows() %>% mutate(SectionID = factor(SectionID, levels = paste("Section", 1:nrow(stimulus_tracking_sub))))
+
+  # File name setup
+  file_name <- paste0(gsub(" ", "_", title), ".pdf")
+
+  # Open PDF file
+  pdf(file_name, width = 9, height = 9)
+
+  # Create plot for Valence vs. Arousal
+  combined_plot <- ggplot(extracted_sections, aes(x = Valence, y = Arousal, group = SectionID, color = SectionID)) +
+    geom_point(aes(shape = Type)) +  # Distinguish start and end points with shapes
+    geom_line() +  # Connect start and end points
+    labs(title = paste("Valence vs. Arousal -", title),
+         x = "Valence",
+         y = "Arousal") +
+    theme_classic() +
+    scale_shape_manual(values = c("Start" = 16, "End" = 15)) + # Using different shapes for start and end
+    theme(plot.title = element_text(size = 14, hjust = 0.5),
+          axis.title = element_text(size = 12),
+          legend.position = "top",
+          legend.title = element_text(size = 10),
+          legend.text = element_text(size = 8))
+
+  # Print plots to PDF
+  print(combined_plot)
+
+  # Close the PDF device
+  dev.off()
+}
+
+# Apply function to different data subsets
+process_data(neg_neg_portions, 1:13, "Negative Valence Negative Arousal")
+process_data(neg_pos_portions, 17:30, "Negative Valence Positive Arousal")
+process_data(pos_neg_portions, 54:69, "Positive Valence Negative Arousal")
+process_data(pos_pos_portions, 34:50, "Positive Valence Positive Arousal")
+```
+```{r}
+
+
+```
 
 
 This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
