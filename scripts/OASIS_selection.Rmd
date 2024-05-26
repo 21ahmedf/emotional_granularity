@@ -119,13 +119,13 @@ selected <- read.csv(file='../stimuli/oasis/selected_stims/selected_stims.csv')
 # 14 high A low V
 # 8 low A low V
 
-selected_1 <- merge(selected, OASIS, by = 'Theme')
-selected_1$upper_arousal <- selected_1$Arousal_mean + selected_1$Arousal_SD
-selected_1$lower_arousal <- selected_1$Arousal_mean - selected_1$Arousal_SD
-selected_1$upper_valence <- selected_1$Valence_mean + selected_1$Valence_SD
-selected_1$lower_valence <- selected_1$Valence_mean - selected_1$Valence_SD
+selected_OASIS <- merge(selected, OASIS, by = 'Theme')
+selected_OASIS$upper_arousal <- selected_1$Arousal_mean + selected_1$Arousal_SD
+selected_OASIS$lower_arousal <- selected_1$Arousal_mean - selected_1$Arousal_SD
+selected_OASIS$upper_valence <- selected_1$Valence_mean + selected_1$Valence_SD
+selected_OASIS$lower_valence <- selected_1$Valence_mean - selected_1$Valence_SD
 
-ggplot(data=selected_1, aes(x=Arousal_mean, y=Valence_mean, label=Theme))+
+ggplot(data=selected_OASIS, aes(x=Arousal_mean, y=Valence_mean, label=Theme))+
   geom_point() +
   geom_vline(xintercept = 3.5, linetype="dashed", color="red") +
   geom_hline(yintercept = 3.5, linetype="dashed", color="red") +
@@ -133,8 +133,12 @@ ggplot(data=selected_1, aes(x=Arousal_mean, y=Valence_mean, label=Theme))+
   geom_errorbarh(alpha=0.5, aes(xmin = lower_arousal, xmax = upper_arousal)) +
   geom_text()
 
-selected_1_negative_valence <- selected_1 %>%
-  subset(quad == 'Low Arousal, Low Valence' || quad == 'High Arousal, Low Valence')
+selected_OASIS_pos <- subset(selected_OASIS, !(lower_valence <= 3.5))
+
+selected_OASIS_neg <- subset(selected_OASIS, !(upper_valence >= 4.0))
+
+# selected_1_negative_valence <- selected_1 %>%
+  # subset(quad == 'Low Arousal, Low Valence' || quad == 'High Arousal, Low Valence')
 
 # low V make sure upper limit is below 3.5
 # high V make sure lower limit is above 3.5
