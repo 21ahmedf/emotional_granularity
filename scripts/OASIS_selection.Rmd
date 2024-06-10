@@ -33,7 +33,7 @@ OASIS_cleanpospos <-
   dplyr::filter(Arousal_mean - Arousal_SE > 3.5) %>%
   dplyr::filter(Valence_mean - Valence_SE > 3.5)
 
-OASIS_cleanpospos$quad <-"High Arousal, High Valence"
+OASIS_cleanpospos$quad <-"Positive Valence, High Arousal"
 
 ggplot(data=OASIS_cleanpospos, aes(x=Arousal_mean, y=Valence_mean))+
   geom_point() +
@@ -45,7 +45,7 @@ OASIS_cleannegpos <-
   dplyr::filter(Arousal_mean + Arousal_SE < 3.5) %>%
   dplyr::filter(Valence_mean - Valence_SE > 3.5)
 
-OASIS_cleannegpos$quad <-"Low Arousal, High Valence"
+OASIS_cleannegpos$quad <-"Positive Valence, Low Arousal"
 
 ggplot(data=OASIS_cleannegpos, aes(x=Arousal_mean, y=Valence_mean))+
   geom_point() +
@@ -57,7 +57,7 @@ OASIS_cleannegneg <-
   dplyr::filter(Arousal_mean + Arousal_SE < 3.5) %>%
   dplyr::filter(Valence_mean + Valence_SE < 3.5)
 
-OASIS_cleannegneg$quad <-"Low Arousal, Low Valence"
+OASIS_cleannegneg$quad <-"Negative Valence, Low Arousal"
 
 
 ggplot(data=OASIS_cleannegneg, aes(x=Arousal_mean, y=Valence_mean))+
@@ -70,7 +70,7 @@ OASIS_cleanposneg <-
   dplyr::filter(Arousal_mean - Arousal_SE > 3.5) %>%
   dplyr::filter(Valence_mean + Valence_SE < 3.5)
 
-OASIS_cleanposneg$quad <-"High Arousal, Low Valence"
+OASIS_cleanposneg$quad <-"Negative Valence, High Arousal"
 
 ggplot(data=OASIS_cleanposneg, aes(x=Arousal_mean, y=Valence_mean))+
   geom_point() +
@@ -96,14 +96,14 @@ updated_cleanpospos <-
   dplyr::filter(Arousal_mean - Arousal_SE > 4.5) %>%
   dplyr::filter(Valence_mean - Valence_SE > 4.5)
 
-updated_cleanpospos$quad <-"High Arousal, High Valence"
+updated_cleanpospos$quad <-"Positive Valence, High Arousal"
 
 updated_cleannegpos <- 
   updated %>%
   dplyr::filter(Arousal_mean + Arousal_SE < 3) %>%
   dplyr::filter(Valence_mean - Valence_SE > 4.5)
 
-updated_cleannegpos$quad <-"Low Arousal, High Valence"
+updated_cleannegpos$quad <-"Positive Valence, Low Arousal"
 
 pos_stim_selection1 <- 
   rbind(updated_cleanpospos, updated_cleannegpos) %>%
@@ -135,14 +135,55 @@ ggplot(data=selected_OASIS, aes(x=Arousal_mean, y=Valence_mean, label=Theme))+
 
 selected_OASIS_pos <- subset(selected_OASIS, !(lower_valence <= 3.5))
 
-selected_OASIS_neg <- subset(selected_OASIS, !(upper_valence >= 4.0))
-
-# selected_1_negative_valence <- selected_1 %>%
-  # subset(quad == 'Low Arousal, Low Valence' || quad == 'High Arousal, Low Valence')
+selected_OASIS_neg <- subset(selected_OASIS, !(upper_valence >= 4.7))
 
 # low V make sure upper limit is below 3.5
 # high V make sure lower limit is above 3.5
 # if not 10 stimuli left, rank order the means and take the top 10 of each valence
 # OR top 5 of each quadrant
   
+```
+
+```{r}
+final_OASIS <- read.csv(file='../stimuli/oasis/selected_stims/oasis_stims_tracking.csv')
+selected_OASIS_final <- merge(final_OASIS, selected_OASIS, by = 'Theme')
+
+ggplot(data=selected_OASIS_final, aes(x=Arousal_mean, y=Valence_mean, label=Theme))+
+  geom_point(aes(color=quad)) +
+  geom_vline(xintercept = 3.5, linetype="dashed", color="red") +
+  geom_hline(yintercept = 3.5, linetype="dashed", color="red") +
+  geom_errorbar(alpha=0.5, aes(ymin = lower_valence, ymax = upper_valence, color=quad)) +
+  geom_errorbarh(alpha=0.5, aes(xmin = lower_arousal, xmax = upper_arousal, color=quad)) +
+  geom_text() +
+  xlab('Arousal') + ylab('Valence')
+
+ggplot(data=selected_OASIS_final, aes(x=Arousal_mean, y=Valence_mean, label=Theme))+
+  geom_point(aes(color=quad)) +
+  geom_vline(xintercept = 3.5, linetype="dashed", color="red") +
+  geom_hline(yintercept = 3.5, linetype="dashed", color="red") +
+  geom_errorbar(alpha=0.5, aes(ymin = lower_valence, ymax = upper_valence, color=quad)) +
+  geom_errorbarh(alpha=0.5, aes(xmin = lower_arousal, xmax = upper_arousal, color=quad)) +
+  geom_text() +
+  xlab('Arousal') + ylab('Valence')
+
+# Loop through each unique value in the "quad" column
+for (quad_value in unique(selected_OASIS_final$quad)) {
+  # Filter the data for the current quadrant
+  quad_data <- subset(selected_OASIS_final, quad == quad_value)
+  
+  # Create the plot
+  p <- ggplot(data=quad_data, aes(x=Arousal_mean, y=Valence_mean, label=Theme)) +
+    geom_point() +
+    geom_vline(xintercept = 3.5, linetype="dashed", color="red") +
+    geom_hline(yintercept = 3.5, linetype="dashed", color="red") +
+    geom_errorbar(alpha=0.5, aes(ymin = lower_valence, ymax = upper_valence, color=quad)) +
+    geom_errorbarh(alpha=0.5, aes(xmin = lower_arousal, xmax = upper_arousal, color=quad)) +
+    geom_text() +
+    xlab('Arousal') + ylab('Valence') +
+    ggtitle(paste("Quad:", quad_value))
+  
+  # Print the plot to display it in the console
+  print(p)
+}
+
 ```

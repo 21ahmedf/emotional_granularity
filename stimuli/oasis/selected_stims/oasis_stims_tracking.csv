@@ -1,0 +1,21 @@
+Theme,Valence selection criteria
+Clean 1,lower_valence > 3.5
+Cups 3,lower_valence > 3.5
+Heart 3,lower_valence > 3.5
+Rocks 1,lower_valence > 3.5
+Snow 1,lower_valence > 3.5
+Beach 1,lower_valence > 3.5
+Cat 5,lower_valence > 3.5
+Fireworks 6,lower_valence > 3.5
+Lake 12,lower_valence > 3.5
+Rainbow 2,lower_valence > 3.5
+Destruction 2,upper_valence < 3.5
+Garbage dump 1,upper_valence < 3.5
+Toilet 4,upper_valence < 3.75
+Prison 2,upper_valence < 3.85
+Ferret 1,upper_valence < 4.0
+Dirt 1,upper_valence < 3.5
+Flood 1,upper_valence < 3.5
+Garbage dump 2,upper_valence < 3.5
+Fire 10,upper_valence < 3.75
+Cockroach 3,upper_valence < 3.8
