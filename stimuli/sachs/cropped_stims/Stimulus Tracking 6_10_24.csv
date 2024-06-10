@@ -1,0 +1,28 @@
+,SectionID,original song,file name,start time,end time,,"(V, A) initial to (V, A) final",Thoughts based on graph,
+"Negative Valence, Negative Arousal",Section 1,stimuli/11_pieceA_calm_anxious_sad,11_pieceA_calm_anxious_sad_2,75.0,83.0,,"(–0.047, –0.013) to (–0.051, –0.007)","Arousal is also really close to 0, but very little change",More negative arousal than above
+,Section 2,stimuli/5_pieceB_calm_sad_anxious,5_pieceB_calm_sad_anxious_1,3.0,11.0,,"(–0.003, –0.098) to (–0.004, –0.116)",Valence is really close to 0,
+,Section 3,stimuli/5_pieceB_calm_sad_anxious,5_pieceB_calm_sad_anxious_2,28.0,36.0,Bit of dead time,"(–0.002, –0.124) to (–0.010, –0.127)",Valence close to 0,
+,Section 4,stimuli/5_pieceB_calm_sad_anxious,5_pieceB_calm_sad_anxious_3,38.0,46.0,Same melody as above,"(–0.010, –0.127) to (–0.017, –0.105)",Decent,"More negative valence than above, but less negative arousal"
+,Section 5,stimuli/5_pieceB_calm_sad_anxious,5_pieceB_calm_sad_anxious_9,85.0,93.0,,"(–0.012, –0.048) to (–0.026, –0.045)",Very good,
+,,,,,,,,,
+,,,,,,,,,
+,,,,,,,,,
+"Negative Valence, Positive Arousal",Section 1,stimuli/11_pieceA_calm_anxious_sad,11_pieceA_calm_anxious_sad_4,32.0,40.0,,"(–0.034, 0.042) to (–0.041, 0.014)",,Good
+,Section 2,stimuli/11_pieceA_calm_anxious_sad,11_pieceA_calm_anxious_sad_5,104.0,112.0,#changed by 1 sec,"(–0.083, 0.050) to (–0.091, 0.040)",,Feels calm
+,Section 3,stimuli/3_pieceB_joyous_anxious_sad,3_pieceB_joyous_anxious_sad_1,110.0,118.0,,"(–0.014, 0.057) to (–0.031, 0.091)",,
+,Section 4,stimuli/11_pieceA_calm_anxious_sad,11_pieceA_calm_anxious_sad_6,19.0,27.0,,"(–0.046, 0.043) to (–0.044, 0.047)",,
+,Section 5,stimuli/11_pieceA_calm_anxious_sad,11_pieceA_calm_anxious_sad_8,95.0,103.0,,"(–0.069, 0.029) to (–0.082, 0.051)",,
+,,,,,,,,,
+,,,,,,,,,
+,,,,,,,,,
+"Positive Valence, Positive Arousal",Section 1,stimuli/3_pieceB_joyous_anxious_sad,3_pieceB_joyous_anxious_sad_5,19.0,27.0,"Similar to above, my preferred one","(0.016, 0.165) to (0.020, 0.150)",,
+,Section 2,stimuli/6_pieceB_anxious_calm_joyous,6_pieceB_anxious_calm_joyous_8,32.5,40.5,,"(0.0006, 0.015) to (0.006, 0.024)",Valence and arousal both close to 0,Feels nostalgic
+,Section 3,stimuli/7_pieceB_joyous_anxious_sad,7_pieceB_joyous_anxious_sad_5,22.0,30.0,,"(0.018, 0.070) to (0.022, 0.029)",,Sounds like above but cooler I love the run
+,Section 4,stimuli/7_pieceB_joyous_anxious_sad,7_pieceB_joyous_anxious_sad_6,31.0,39.0,,"(0.024, 0.028) to (0.024, 0.041)",,Sounds like above
+,,,,,,,,,
+"Positive Valence, Negative Arousal",Section 1,stimuli/12_pieceA_joyous_sad_anxious,12_pieceA_joyous_sad_anxious_2,10.0,18.0,Sounds like above,"(0.062, –0.076) to (0.059, –0.083)",,
+,Section 2,stimuli/12_pieceA_joyous_sad_anxious,12_pieceA_joyous_sad_anxious_3,19.0,27.0,,"(0.060, –0.084) to (0.058, –0.077)",,
+,Section 3,stimuli/12_pieceA_joyous_sad_anxious,12_pieceA_joyous_sad_anxious_9,73.0,81.0,,"(0.023, –0.049) to (0.023, –0.036)",,
+,Section 4,stimuli/5_pieceB_calm_sad_anxious,5_pieceB_calm_sad_anxious_7,15.5,23.5,,"(0.014, –0.114) to (0.015, –0.124)",,
+,Section 5,stimuli/6_pieceB_anxious_calm_joyous,6_pieceB_anxious_calm_joyous_5,95.0,103.0,,"(0.020, –0.001) to (0.028, –0.032)",Arousal starts close to 0,
+,Section 6,stimuli/6_pieceB_anxious_calm_joyous,6_pieceB_anxious_calm_joyous_7,111.5,119.5,Will probably use this and 5 but not use 6 since 6 overlaps with both 5 and 7,"(0.029, –0.048) to (0.003, –0.095)","Steep slope, goes close to 0 valence",

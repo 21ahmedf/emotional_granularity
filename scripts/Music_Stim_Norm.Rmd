@@ -144,7 +144,7 @@ process_data(pos_pos_portions, 34:50, "Positive Valence Positive Arousal")
 ```
 ```{r}
 # Read stimulus tracking data
-stimulus_tracking <- read.csv("../stimuli/sachs/stims/cropped_stims/Stimulus Tracking.csv")
+stimulus_tracking <- read.csv("../stimuli/sachs/cropped_stims/Stimulus Tracking.csv")
 
 # Function to process data, generate plots, and save to PDF
 process_data <- function(portions, tracking_indices, title) {
@@ -214,7 +214,7 @@ process_data(pos_pos_portions, 34:50, "Positive Valence Positive Arousal")
 ```
 ```{r}
 # Read stimulus tracking data
-stimulus_tracking <- read.csv("../stimuli/sachs/stims/cropped_stims/Stimulus Tracking 5_16_24.csv")
+stimulus_tracking <- read.csv("../stimuli/sachs/cropped_stims/Stimulus Tracking 5_16_24.csv")
 
 # Function to process data, generate plots, and save to PDF
 process_data <- function(portions, tracking_indices, title) {
@@ -282,6 +282,15 @@ process_data(neg_pos_portions, 17:30, "Negative Valence Positive Arousal 5_16_24
 process_data(pos_neg_portions, 54:69, "Positive Valence Negative Arousal 5_16_24")
 process_data(pos_pos_portions, 34:50, "Positive Valence Positive Arousal 5_16_24")
 
+```
+
+```{r}
+stimulus_tracking <- read.csv("../stimuli/sachs/cropped_stims/Stimulus Tracking 6_10_24.csv")
+
+process_data(neg_neg_portions, 1:5, "Negative Valence Negative Arousal 6_10_24")
+process_data(neg_pos_portions, 9:13, "Negative Valence Positive Arousal 6_10_24")
+process_data(pos_neg_portions, 22:27, "Positive Valence Negative Arousal 6_10_24")
+process_data(pos_pos_portions, 17:20, "Positive Valence Positive Arousal 6_10_24")
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
