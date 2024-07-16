@@ -11,7 +11,7 @@ library(tidyverse)
 #STAI
 ```{r}
 STAI <- df %>%
-  dplyr::select("STAI1_1":"STAI20_1")
+  dplyr::select("STAI1_1":"STAI20_1") #will just need to update to reflect first and last titles of columns (likely the text of the question themselves)
 
 
 cols_reverse <- c("STAI1_1","STAI3_1","STAI6_1","STAI7_1","STAI10_1","STAI13_1","STAI14_1","STAI16_1","STAI19_1")
@@ -198,7 +198,7 @@ df$Gold_musicalsophistication <- apply(Gold[cols_musicalsophistication],1, sum)/
 
 #eBMRQ
 ```{r}
-bmrq <- data %>%
+bmrq <- df %>%
   dplyr::select("X1..When.I.share.music.with.someone.I.feel.a.special.connection.with.that.person....Completely.Disagree.Completely.Agree":"X20..When.I.hear.a.tune.I.like.a.lot.I.can.t.help.tapping.or.moving.to.its.beat....Completely.Disagree.Completely.Agree", "I.sometimes.feel.like.I.am..one..with.the.music....Completely.disagree.Completely.agree", "While.listening.to.music..I.may.become.so.involved.that.I.may.forget.about.myself.and.my..surroundings....Completely.disagree.Completely.agree", "It.is.sometimes.possible.for.me.to.be.completely.immersed.in.music.and.to.feel.as.if.my..whole.state.of.consciousness.has.been.temporarily.altered....Completely.disagree.Completely.agree", "When.I.am.listening.to.music..I.can.tune.out.everything.else....Completely.disagree.Completely.agree")
 
 # BMRQ columns to reverse code and sub-score
@@ -238,20 +238,38 @@ bmrq[cols_reverse] <- lapply(bmrq[cols_reverse], reverseCode)
 
 
 # Add sub-scores and total to main df
-ratings$eBMRQ_total <- apply(bmrq,1, sum) 
-ratings$BMRQ_emotion <- apply(bmrq[cols_emotion], 1,sum)
-ratings$BMRQ_sensorimotor <- apply(bmrq[cols_sensorimotor],1, sum)
-ratings$BMRQ_moodreg <-apply(bmrq[cols_moodreg],1, sum)
-ratings$BMRQ_musicseek <- apply(bmrq[cols_musicseek],1, sum)
-ratings$BMRQ_socialreward <- apply(bmrq[cols_socialreward],1, sum)
-ratings$BMRQ_absorption<- apply(bmrq[cols_absorption],1, sum)
+df$eBMRQ_total <- apply(bmrq,1, sum) 
+df$BMRQ_emotion <- apply(bmrq[cols_emotion], 1,sum)
+df$BMRQ_sensorimotor <- apply(bmrq[cols_sensorimotor],1, sum)
+df$BMRQ_moodreg <-apply(bmrq[cols_moodreg],1, sum)
+df$BMRQ_musicseek <- apply(bmrq[cols_musicseek],1, sum)
+df$BMRQ_socialreward <- apply(bmrq[cols_socialreward],1, sum)
+df$BMRQ_absorption<- apply(bmrq[cols_absorption],1, sum)
 ```
 
 #BDI --> this scoring is *incomplete* items asking about changes in appetite (BDI_17) and sleep (BDI_15) need to be scored differently (see Attachment_AU in named attachments folder - there are two answers for both 1, 2, and 3 scores; also the responses should range from 0 to 3 )
 ```{r}
 BDI <- survey %>%
-  dplyr::select("BDI_1":"BDI_19")
+  dplyr::select("BDI_1":"BDI_19") #will need to update to reflect column titles of first + last questions
 
 survey$BDI_total <- apply(BDI,1,sum)
 hist(survey$BDI_total)
+```
+
+#M@H
+```{r}
+MH <- df %>%
+  dplyr::select("M.H_child1_1":"M.H_child20_1")
+
+MH <- MH[complete.cases(MH),]
+
+cols_reverse <- c("M.H_child6_1","M.H_child7_1","M.H_child11_1","M.H_child12_1","M.H_child18_1","M.H_child19_1","M.H_child20_1")
+MH[cols_reverse] <- lapply(MH[cols_reverse], reverseCode, min=1, max=7)
+
+df$MH_total <- apply(MH_second,1, sum) # total BMRQ scores
+df$MH_caregiverbeliefs <- apply(MH_second[cols_caregiverbeliefs], 1,sum)
+df$MH_caregiversinging <- apply(MH_second[cols_caregiversinging],1, sum)
+df$MH_childhoodattitude <-apply(MH_second[cols_childhoodattitude],1, sum)
+df$MH_socialcontexts <- apply(MH_second[cols_socialcontexts],1, sum)
+df$MH_musicmaking <- apply(MH_second[cols_musicmaking],1, sum)
 ```
