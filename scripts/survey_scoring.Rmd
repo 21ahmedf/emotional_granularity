@@ -246,3 +246,12 @@ ratings$BMRQ_musicseek <- apply(bmrq[cols_musicseek],1, sum)
 ratings$BMRQ_socialreward <- apply(bmrq[cols_socialreward],1, sum)
 ratings$BMRQ_absorption<- apply(bmrq[cols_absorption],1, sum)
 ```
+
+#BDI --> this scoring is *incomplete* items asking about changes in appetite (BDI_17) and sleep (BDI_15) need to be scored differently (see Attachment_AU in named attachments folder - there are two answers for both 1, 2, and 3 scores; also the responses should range from 0 to 3 )
+```{r}
+BDI <- survey %>%
+  dplyr::select("BDI_1":"BDI_19")
+
+survey$BDI_total <- apply(BDI,1,sum)
+hist(survey$BDI_total)
+```
