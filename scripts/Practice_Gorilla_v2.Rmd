@@ -1,0 +1,374 @@
+---
+title: "Practice_Gorilla_v2"
+output: html_document
+date: "2024-07-17"
+---
+
+##--------Load packages---------
+```{r setup, include=FALSE}
+if (!(require("tidyverse"))) install.packages("tidyverse"); require("tidyverse")
+if (!(require("psych"))) install.packages("psych"); require("psych")
+if (!require("irr")) {install.packages("irr"); require("irr")} 
+if (!require("reshape2")) {install.packages("reshape2"); require("reshape2")} 
+```
+
+#---------Load in data--------
+```{r}
+practice_data_1 <- read.csv("../data/rating-task/data_exp_169297-v8/data_exp_169297-v8_task-6dig.csv")
+practice_data_2 <- read.csv("../data/rating-task/data_exp_169297-v9/data_exp_169297-v9_task-6dig.csv")
+practice_data <- rbind(practice_data_1, practice_data_2)
+
+granularity_practice_data <- practice_data %>%
+  filter(Response.Type == "response") %>% 
+  select("Participant.Public.ID","Response","Object.Name", "Spreadsheet..Image", "Spreadsheet..Audio") %>%
+  mutate(Response = as.numeric(Response))
+
+granularity_pic_practice <- granularity_practice_data %>%
+  filter(Spreadsheet..Image != "") %>%
+  filter(Spreadsheet..Image != "Coffee 1.jpg") %>%
+  select(-c("Spreadsheet..Audio"))
+
+granularity_music_practice <- granularity_practice_data %>%
+  filter(Spreadsheet..Audio != "") %>%
+  filter(Spreadsheet..Audio != "8_pieceA_dreamy_calm_joyous_1.mp3") %>%
+  select(-c("Spreadsheet..Image"))
+```
+
+# subsetting music neg
+```{r}
+anger_music_practice <-
+  granularity_music_practice %>%
+  filter(Object.Name == "Angry Slider") %>%
+  select(-c("Spreadsheet..Audio", "Object.Name")) %>%
+  rename("anger" = "Response")
+
+disgusted_music_practice <-
+  granularity_music_practice %>%
+  filter(Object.Name == "Disgusted Slider") %>%
+  select(-c("Participant.Public.ID", "Spreadsheet..Audio", "Object.Name")) %>%
+  rename("disgusted" = "Response")
+  
+sad_music_practice <-
+  granularity_music_practice %>%
+  filter(Object.Name == "Sad Slider") %>%
+  select(-c("Participant.Public.ID", "Spreadsheet..Audio", "Object.Name")) %>%
+  rename("sad" = "Response")
+
+scared_music_practice <-
+  granularity_music_practice %>%
+  filter(Object.Name == "Scared Slider") %>%
+  select(-c("Participant.Public.ID", "Spreadsheet..Audio", "Object.Name")) %>%
+  rename("scared" = "Response")
+
+anxious_music_practice <-
+  granularity_music_practice %>%
+  filter(Object.Name == "Anxious Slider") %>%
+  select(-c("Participant.Public.ID", "Spreadsheet..Audio", "Object.Name")) %>%
+  rename("anxious" = "Response")
+
+music_negative_practice <- cbind(anger_music_practice, disgusted_music_practice, sad_music_practice, scared_music_practice, anxious_music_practice) %>%
+  na.omit()
+```
+
+# subsetting music pos
+```{r}
+happy_music_practice <-
+  granularity_music_practice %>%
+  filter(Object.Name == "Happy Slider") %>%
+  select(-c("Spreadsheet..Audio", "Object.Name")) %>%
+  rename("happy" = "Response")
+
+satisfied_music_practice <-
+  granularity_music_practice %>%
+  filter(Object.Name == "Satisfied Slider") %>%
+  select(-c("Participant.Public.ID", "Spreadsheet..Audio", "Object.Name")) %>%
+  rename("satisfied" = "Response")
+
+excited_music_practice <-
+  granularity_music_practice %>%
+  filter(Object.Name == "Excited Slider") %>%
+  select(-c("Participant.Public.ID", "Spreadsheet..Audio", "Object.Name")) %>%
+  rename("excited" = "Response")
+
+joyful_music_practice <-
+  granularity_music_practice %>%
+  filter(Object.Name == "Joyful Slider") %>%
+  select(-c("Participant.Public.ID", "Spreadsheet..Audio", "Object.Name")) %>%
+  rename("joyful" = "Response")
+
+proud_music_practice <-
+  granularity_music_practice %>%
+  filter(Object.Name == "Proud Slider") %>%
+  select(-c("Participant.Public.ID", "Spreadsheet..Audio", "Object.Name")) %>%
+  rename("proud" = "Response")
+
+music_positive_practice <- cbind(happy_music_practice, satisfied_music_practice, excited_music_practice, joyful_music_practice, proud_music_practice)
+```
+
+#subsetting neg images
+```{r}
+anger_pic_practice <-
+  granularity_pic_practice %>%
+  filter(Object.Name == "Angry Slider") %>%
+  select(-c("Spreadsheet..Image", "Object.Name")) %>%
+  rename("anger" = "Response")
+
+disgusted_pic_practice <-
+  granularity_pic_practice %>%
+  filter(Object.Name == "Disgusted Slider") %>%
+  select(-c("Participant.Public.ID", "Spreadsheet..Image", "Object.Name")) %>%
+  rename("disgusted" = "Response")
+  
+sad_pic_practice <-
+  granularity_pic_practice %>%
+  filter(Object.Name == "Sad Slider") %>%
+  select(-c("Participant.Public.ID", "Spreadsheet..Image", "Object.Name")) %>%
+  rename("sad" = "Response")
+
+scared_pic_practice <-
+  granularity_pic_practice %>%
+  filter(Object.Name == "Scared Slider") %>%
+  select(-c("Participant.Public.ID", "Spreadsheet..Image", "Object.Name")) %>%
+  rename("scared" = "Response")
+
+anxious_pic_practice <-
+  granularity_pic_practice %>%
+  filter(Object.Name == "Anxious Slider") %>%
+  select(-c("Participant.Public.ID", "Spreadsheet..Image", "Object.Name")) %>%
+  rename("anxious" = "Response")
+
+pic_negative_practice <- cbind(anger_pic_practice, disgusted_pic_practice, sad_pic_practice, scared_pic_practice, anxious_pic_practice)
+```
+
+#subsetting pic positive
+```{r}
+happy_pic_practice <-
+  granularity_pic_practice %>%
+  filter(Object.Name == "Happy Slider") %>%
+  select(-c("Spreadsheet..Image", "Object.Name")) %>%
+  rename("happy" = "Response")
+
+satisfied_pic_practice <-
+  granularity_pic_practice %>%
+  filter(Object.Name == "Satisfied Slider") %>%
+  select(-c("Participant.Public.ID", "Spreadsheet..Image", "Object.Name")) %>%
+  rename("satisfied" = "Response")
+
+excited_pic_practice <-
+  granularity_pic_practice %>%
+  filter(Object.Name == "Excited Slider") %>%
+  select(-c("Participant.Public.ID", "Spreadsheet..Image", "Object.Name")) %>%
+  rename("excited" = "Response")
+
+joyful_pic_practice <-
+  granularity_pic_practice %>%
+  filter(Object.Name == "Joyful Slider") %>%
+  select(-c("Participant.Public.ID", "Spreadsheet..Image", "Object.Name")) %>%
+  rename("joyful" = "Response")
+
+proud_pic_practice <-
+  granularity_pic_practice %>%
+  filter(Object.Name == "Proud Slider") %>%
+  select(-c("Participant.Public.ID", "Spreadsheet..Image", "Object.Name")) %>%
+  rename("proud" = "Response")
+
+pic_positive_practice <- cbind(happy_pic_practice, satisfied_pic_practice, excited_pic_practice, joyful_pic_practice, proud_pic_practice)
+```
+
+##-----Condensed version of above--------
+```{r}
+# List of emotions
+neg_emotions <- c("Angry", "Disgusted", "Sad", "Scared", "Anxious")
+pos_emotions <- c("Happy", "Satisfied", "Excited", "Joyful", "Proud")
+
+# Function to filter and rename
+filter_and_rename <- function(data, emotion, media_type, keep_id = FALSE) {
+  columns_to_select <- if (keep_id) {
+    c("Participant.Public.ID", "Response")
+  } else {
+    c("Response")
+  }
+  
+  data %>%
+    filter(Object.Name == paste(emotion, "Slider")) %>%
+    select(-c(paste0("Spreadsheet..", media_type), "Object.Name")) %>%
+    select(all_of(columns_to_select)) %>%
+    rename(!!tolower(emotion) := "Response")
+}
+
+# Apply function to each emotion for music and images
+filtered_music_neg <- lapply(seq_along(neg_emotions), function(i) {
+  filter_and_rename(granularity_music_practice, neg_emotions[i], "Audio", keep_id = (i == 1))
+})
+
+filtered_music_pos <- lapply(seq_along(pos_emotions), function(i) {
+  filter_and_rename(granularity_music_practice, pos_emotions[i], "Audio", keep_id = (i == 1))
+})
+
+filtered_pic_neg <- lapply(seq_along(neg_emotions), function(i) {
+  filter_and_rename(granularity_pic_practice, neg_emotions[i], "Image", keep_id = (i == 1))
+})
+
+filtered_pic_pos <- lapply(seq_along(pos_emotions), function(i) {
+  filter_and_rename(granularity_pic_practice, pos_emotions[i], "Image", keep_id = (i == 1))
+})
+
+# Combine the results
+music_negative_practice <- bind_cols(filtered_music_neg) %>%
+  na.omit()
+
+music_positive_practice <- bind_cols(filtered_music_pos)
+
+pic_negative_practice <- bind_cols(filtered_pic_neg)
+
+pic_positive_practice <- bind_cols(filtered_pic_pos)
+
+# Display the result
+music_negative_practice
+music_positive_practice
+pic_negative_practice
+pic_positive_practice
+```
+
+#scoring granularity responses
+```{r}
+#music neg
+music_negative_list_practice <- split(music_negative_practice, music_negative_practice$Participant.Public.ID)
+
+results_practice <- 
+  expand.grid(
+    ID = names(music_negative_list_practice)
+  )
+
+i = seq(seq_along(music_negative_list_practice))
+
+# with irr
+for(i in seq_along(music_negative_list_practice)) {
+  icc_result_practice <-  (music_negative_list_practice[[i]]) %>%
+    select(-c("Participant.Public.ID")) %>%
+ icc("twoway", type = "consistency", unit = "average")
+   results_practice$negmusicICC[i] = 1 - icc_result_practice$value
+}
+
+#pos music
+music_positive_list_practice <- split(music_positive_practice, music_positive_practice$Participant.Public.ID)
+
+i = seq(seq_along(music_positive_list_practice))
+
+for(i in seq_along(music_positive_list_practice)) {
+  icc_result_practice <-  (music_positive_list_practice[[i]]) %>%
+    select(-c("Participant.Public.ID")) %>%
+ icc("twoway", type = "consistency", unit = "average")
+   results_practice$posmusicICC[i] = 1 - icc_result_practice$value
+}
+
+#neg pic
+pic_negative_list_practice <- split(pic_negative_practice, pic_negative_practice$Participant.Public.ID)
+
+i = seq(seq_along(pic_negative_list_practice))
+
+for(i in seq_along(pic_negative_list_practice)) {
+  icc_result_practice <-  (pic_negative_list_practice[[i]]) %>%
+    select(-c("Participant.Public.ID")) %>%
+ icc("twoway", type = "consistency", unit = "average")
+   results_practice$negpicICC[i] = 1 - icc_result_practice$value
+}
+
+#pos pic
+pic_positive_list_practice <- split(pic_positive_practice, pic_positive_practice$Participant.Public.ID)
+
+i = seq(seq_along(pic_positive_list_practice))
+
+for(i in seq_along(pic_positive_list_practice)) {
+  icc_result_practice <-  (pic_positive_list_practice[[i]]) %>%
+    select(-c("Participant.Public.ID")) %>%
+ icc("twoway", type = "consistency", unit = "average")
+   results_practice$pospicICC[i] = 1 - icc_result_practice$value
+}
+
+```
+
+
+##----Condensed version of above------
+```{r}
+# Function to compute ICC and store results
+compute_icc <- function(data_list, result_column) {
+  sapply(seq_along(data_list), function(i) {
+    icc_result <- data_list[[i]] %>%
+      select(-Participant.Public.ID) %>%
+      icc(model = "twoway", type = "consistency", unit = "average")
+    1 - icc_result$value
+  })
+}
+
+# Create a list of data frames split by Participant.Public.ID
+music_negative_list_practice <- split(music_negative_practice, music_negative_practice$Participant.Public.ID)
+music_positive_list_practice <- split(music_positive_practice, music_positive_practice$Participant.Public.ID)
+pic_negative_list_practice <- split(pic_negative_practice, pic_negative_practice$Participant.Public.ID)
+pic_positive_list_practice <- split(pic_positive_practice, pic_positive_practice$Participant.Public.ID)
+
+# Initialize results_practice DataFrame
+results_practice <- expand.grid(ID = names(music_negative_list_practice))
+
+# Compute ICC values for each subset and add to results_practice
+results_practice$negmusicICC <- compute_icc(music_negative_list_practice, "negmusicICC")
+results_practice$posmusicICC <- compute_icc(music_positive_list_practice, "posmusicICC")
+results_practice$negpicICC <- compute_icc(pic_negative_list_practice, "negpicICC")
+results_practice$pospicICC <- compute_icc(pic_positive_list_practice, "pospicICC")
+
+# Display the result
+results_practice
+```
+
+
+```{r}
+# with psych
+for(i in seq_along(music_negative_list_practice)) {
+  icc_result_practice <-  (music_negative_list_practice[[i]]) %>%
+    select(-c("Participant.Public.ID")) %>%
+ ICC()
+  icc_value <- icc_result_practice$results %>%
+    filter(type == "ICC3k") %>%
+    pull(ICC)
+  results_practice$negmusicICC[i] = 1 - icc_value
+}
+```
+
+```{r}
+cor.test(results_practice$posmusicICC, results_practice$pospicICC)
+cor.test(results_practice$negmusicICC, results_practice$negpicICC)
+t.test(results_practice$posmusicICC, results_practice$pospicICC, paired = TRUE)
+
+pos_graph <- ggplot(data = results_practice, aes(x = pospicICC, y = posmusicICC)) +
+  geom_point() +
+  stat_smooth(method = 'lm') +
+  xlab('Positive Picture Emotion Granularity') +
+  ylab('Positive Music Emotion Granularity') +
+  theme_classic() +
+  theme(axis.title.x = element_text(size=14, face='bold'), axis.title.y = element_text(size=14, face='bold'), axis.text.x = element_text(size=12), axis.text.y = element_text(size=12))
+
+ggsave('../results/rating-task/Pos_Graph.png', pos_graph, width = 9)
+
+neg_graph <- ggplot(data = results_practice, aes(x = negpicICC, y = negmusicICC)) +
+  geom_point() +
+  stat_smooth(method = 'lm') +
+  xlab('Negative Picture Emotion Granularity') +
+  ylab('Negative Music Emotion Granularity') +
+  theme_classic() +
+  theme(axis.title.x = element_text(size=14, face='bold'), axis.title.y = element_text(size=14, face='bold'), axis.text.x = element_text(size=12), axis.text.y = element_text(size=12))
+
+ggsave('../results/rating-task/Neg_Graph.png', neg_graph, width = 9)
+
+mean_comparison <- results_practice %>%
+  pivot_longer(negmusicICC:pospicICC) %>%
+  ggplot(aes(x=name, y=value)) +
+  stat_summary(fun.data='mean_cl_normal', geom = 'errorbar', width = 0.2) +
+  stat_summary(fun.data='mean_cl_normal', geom = 'pointrange', width = 0.2) +
+  theme_bw() +
+  xlab('Stimulus and Valence') +
+  ylab('Emotion Granularity') +
+  theme(axis.title.x = element_text(size=14, face='bold'), axis.title.y = element_text(size=14, face='bold'), axis.text.x = element_text(size=12), axis.text.y = element_text(size=12)) +
+  scale_x_discrete(labels = c('Negative Music', 'Negative Picture', 'Positive Music', 'Positive Picture'))
+
+ggsave('../results/rating-task/Mean_Comparisons.png', mean_comparison, width = 9)
+```
