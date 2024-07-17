@@ -1,0 +1,272 @@
+---
+title: "Pilot_Analysis_v2"
+output: html_document
+date: "2024-07-17"
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(irr)
+source("reverseCode.R")
+
+if (!(require("psych"))) install.packages("psych"); require("psych")
+if (!require("irr")) {install.packages("irr"); require("irr")} 
+if (!require("reshape2")) {install.packages("reshape2"); require("reshape2")} 
+```
+
+#read in data
+```{r}
+data <- read.csv("../data/pilot data/Dev Stress Task Norming_February 12, 2024_13.43 - Dev Stress Task Norming_February 5, 2024_13.43.csv") # %>%
+  # #select("Q2","X54_anger_1":"self.reportattention")
+
+granularity_data <- data %>%
+  select("Q2","X54_anger_1":"pos3_satisfied_1")
+
+granularity_pic <- granularity_data %>%
+  select("Q2","X54_anger_1":"X1710_satisfied_1")
+
+granularity_music <- granularity_data %>%
+  select("Q2","pos2_anger_1":"pos3_satisfied_1")
+```
+
+#subsetting music neg
+```{r}
+  anger_music <-
+    granularity_music %>%
+    select(ends_with("anger_1") | Q2) %>% 
+    pivot_longer(!Q2, values_to="anger") %>%
+    select(-c( "name"))
+  
+  disgust_music <-
+    granularity_music %>%
+    select(ends_with("disgust_1") | Q2) %>% 
+    pivot_longer(!Q2,values_to="disgust") %>%
+    select(-c("Q2","name"))
+  
+  sadness_music <-
+    granularity_music %>%
+    select(ends_with("sadness_1") | Q2) %>% 
+    pivot_longer(!Q2,values_to = "sadness") %>%
+    select(-c("Q2","name"))
+
+  scared_music <-
+    granularity_music %>%
+    select(ends_with("scared_1") | Q2) %>% 
+    pivot_longer(!Q2, values_to="scared") %>%
+    select(-c("Q2","name"))
+
+  upset_music <-
+    granularity_music %>%
+    select(ends_with("upset_1") | Q2) %>% 
+    pivot_longer(!Q2, values_to="upset") %>%
+    select(-c("Q2","name"))
+
+music_negative <- cbind(anger_music, disgust_music, sadness_music,scared_music,upset_music)%>%
+  na.omit()
+```
+
+#subsetting positive music
+```{r}
+ happiness_music <-
+    granularity_music %>%
+    select(ends_with("happiness_1") | Q2) %>% 
+    pivot_longer(!Q2, values_to="happiness") %>%
+    select(-c( "name"))
+  
+  pride_music <-
+    granularity_music %>%
+    select(ends_with("pride_1") | Q2) %>% 
+    pivot_longer(!Q2,values_to="pride") %>%
+    select(-c("Q2","name"))
+  
+  excitement_music <-
+    granularity_music %>%
+    select(ends_with("excitement_1") | Q2) %>% 
+    pivot_longer(!Q2,values_to = "excitement") %>%
+    select(-c("Q2","name"))
+
+  joy_music <-
+    granularity_music %>%
+    select(ends_with("joy_1") | Q2) %>% 
+    pivot_longer(!Q2, values_to="joy") %>%
+    select(-c("Q2","name"))
+
+  satisfied_music <-
+    granularity_music %>%
+    select(ends_with("satisfied_1") | Q2) %>% 
+    pivot_longer(!Q2, values_to="satisfied") %>%
+    select(-c("Q2","name"))
+
+music_positive <- cbind(happiness_music, pride_music, excitement_music,joy_music,satisfied_music) %>%
+  na.omit()
+```
+
+#subsetting neg images
+```{r}
+#pics negative
+  anger_pic <-
+    granularity_pic %>%
+    select(ends_with("anger_1") | Q2) %>% 
+    pivot_longer(!Q2, values_to="anger") %>%
+    select(-c( "name"))
+  
+  disgust_pic <-
+    granularity_pic %>%
+    select(ends_with("disgust_1") | Q2) %>% 
+    pivot_longer(!Q2,values_to="disgust") %>%
+    select(-c("Q2","name"))
+  
+  sadness_pic <-
+    granularity_pic %>%
+    select(ends_with("sadness_1") | Q2) %>% 
+    pivot_longer(!Q2,values_to = "sadness") %>%
+    select(-c("Q2","name"))
+
+  scared_pic <-
+    granularity_pic %>%
+    select(ends_with("scared_1") | Q2) %>% 
+    pivot_longer(!Q2, values_to="scared") %>%
+    select(-c("Q2","name"))
+
+  upset_pic <-
+    granularity_pic %>%
+    select(ends_with("upset_1") | Q2) %>% 
+    pivot_longer(!Q2, values_to="upset") %>%
+    select(-c("Q2","name"))
+
+pic_negative <- cbind(anger_pic, disgust_pic, sadness_pic,scared_pic,upset_pic) %>%
+  na.omit()
+```
+
+#subsetting pic positive
+```{r}
+#pic positive
+happiness_pic <-
+    granularity_pic %>%
+    select(ends_with("happiness_1") | Q2) %>% 
+    pivot_longer(!Q2, values_to="happiness") %>%
+    select(-c( "name"))
+  
+  pride_pic <-
+    granularity_pic %>%
+    select(ends_with("pride_1") | Q2) %>% 
+    pivot_longer(!Q2,values_to="pride") %>%
+    select(-c("Q2","name"))
+  
+  excitement_pic <-
+    granularity_pic %>%
+    select(ends_with("excitement_1") | Q2) %>% 
+    pivot_longer(!Q2,values_to = "excitement") %>%
+    select(-c("Q2","name"))
+
+  joy_pic <-
+    granularity_pic %>%
+    select(ends_with("joy_1") | Q2) %>% 
+    pivot_longer(!Q2, values_to="joy") %>%
+    select(-c("Q2","name"))
+
+  satisfied_pic <-
+    granularity_pic %>%
+    select(ends_with("satisfied_1") | Q2) %>% 
+    pivot_longer(!Q2, values_to="satisfied") %>%
+    select(-c("Q2","name"))
+
+pic_positive <- cbind(happiness_pic, pride_pic, excitement_pic,joy_pic,satisfied_pic) %>%
+  na.omit()
+```
+
+#scoring granularity responses # FISHER Z TRANSFORM VERSION
+```{r}
+#music neg
+music_negative_list <- split(music_negative, music_negative$Q2) 
+
+results <- 
+  expand.grid(
+    ID = names(music_negative_list)
+  )
+
+i = seq(seq_along(music_negative_list))
+
+for(i in seq_along(music_negative_list)) {
+  icc_result <-  (music_negative_list[[i]]) %>%
+    select(-c("Q2")) %>%
+ icc("twoway", type = "consistency", unit = "average")
+   results$negmusicICC[i] = 1 - fisherz(icc_result$value)
+}
+
+#pos music
+music_positive_list <- split(music_positive, music_positive$Q2) 
+
+i = seq(seq_along(music_positive_list))
+for(i in seq_along(music_positive_list)) {
+  icc_result <-  (music_positive_list[[i]]) %>%
+    select(-c("Q2")) %>%
+ icc("twoway", type = "consistency", unit = "average")
+   results$posmusicICC[i] = 1 - fisherz(icc_result$value)
+} 
+
+#neg pic
+pic_negative_list <- split(pic_negative, pic_negative$Q2) 
+
+i = seq(seq_along(pic_negative_list))
+for(i in seq_along(pic_negative_list)) {
+  icc_result <-  (pic_negative_list[[i]]) %>%
+    select(-c("Q2")) %>%
+ icc("twoway", type = "consistency", unit = "average")
+   results$negpicICC[i] = 1 - fisherz(icc_result$value)
+} 
+
+#pos pic
+pic_positive_list <- split(pic_positive, pic_positive$Q2) 
+
+i = seq(seq_along(pic_positive_list))
+for(i in seq_along(pic_positive_list)) {
+  icc_result <-  (pic_positive_list[[i]]) %>%
+    select(-c("Q2")) %>%
+ icc("twoway", type = "consistency", unit = "average")
+   results$pospicICC[i] = 1 - fisherz(icc_result$value)
+}
+
+
+```
+
+```{r}
+cor.test(results$posmusicICC, results$pospicICC)
+cor.test(results$negmusicICC, results$negpicICC)
+t.test(results$posmusicICC, results$pospicICC, paired = TRUE)
+  # greater granularity for music
+
+pos_graph <- ggplot(data = results, aes(x = pospicICC, y = posmusicICC)) +
+  geom_point() +
+  stat_smooth(method = 'lm') +
+  xlab('Positive Picture Emotion Granularity') +
+  ylab('Positive Music Emotion Granularity') +
+  theme_classic() +
+  theme(axis.title.x = element_text(size=14, face='bold'), axis.title.y = element_text(size=14, face='bold'), axis.text.x = element_text(size=12), axis.text.y = element_text(size=12))
+
+ggsave('../results/pilot/Pos_Graph2.png', pos_graph, width = 9)
+
+neg_graph <- ggplot(data = results, aes(x = negpicICC, y = negmusicICC)) +
+  geom_point() +
+  stat_smooth(method = 'lm') +
+  xlab('Negative Picture Emotion Granularity') +
+  ylab('Negative Music Emotion Granularity') +
+  theme_classic() +
+  theme(axis.title.x = element_text(size=14, face='bold'), axis.title.y = element_text(size=14, face='bold'), axis.text.x = element_text(size=12), axis.text.y = element_text(size=12)) +
+  xlim(c(0,1))
+
+ggsave('../results/pilot/Neg_Graph2.png', neg_graph, width = 9)
+
+mean_comparison <- results %>%
+  pivot_longer(negmusicICC:pospicICC) %>%
+  ggplot(aes(x=name, y=value)) +
+  stat_summary(fun.data='mean_cl_normal', geom = 'errorbar', width = 0.2) +
+  stat_summary(fun.data='mean_cl_normal', geom = 'pointrange', width = 0.2) +
+  theme_bw() +
+  xlab('Stimulus and Valence') +
+  ylab('Emotion Granularity') +
+  theme(axis.title.x = element_text(size=14, face='bold'), axis.title.y = element_text(size=14, face='bold'), axis.text.x = element_text(size=12), axis.text.y = element_text(size=12)) +
+  scale_x_discrete(labels = c('Negative Music', 'Negative Picture', 'Positive Music', 'Positive Picture'))
+
+ggsave('../results/pilot/Mean_Comparisons2.png', mean_comparison, width = 9)
+```
