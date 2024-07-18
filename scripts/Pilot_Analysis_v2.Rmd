@@ -270,3 +270,78 @@ mean_comparison <- results %>%
 
 ggsave('../results/pilot/Mean_Comparisons2.png', mean_comparison, width = 9)
 ```
+
+##----Mean + SE of each negative emotion word rating for pics and music
+```{r}
+# music neg
+music_negative_summary <- music_negative %>%
+  select(-Q2) %>%
+  pivot_longer(everything(), names_to = "variable", values_to = "value") %>%
+  group_by(variable) %>%
+  summarize(
+    mean_value = mean(value, na.rm = TRUE),
+    se_value = sd(value, na.rm = TRUE) / sqrt(n())
+  )
+
+music_negative_means <- ggplot(music_negative_summary, aes(x = variable, y = mean_value)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = mean_value - se_value, ymax = mean_value + se_value), width = 0.2) +
+  labs(title = "Pilot Music Negative Emotion Means", x = "Emotion", y = "Mean") +
+  theme_bw()
+
+ggsave('../results/pilot/Music_Negative_Means.png', music_negative_means, width = 9)
+
+# music pos
+music_positive_summary <- music_positive %>%
+  select(-Q2) %>%
+  pivot_longer(everything(), names_to = "variable", values_to = "value") %>%
+  group_by(variable) %>%
+  summarize(
+    mean_value = mean(value, na.rm = TRUE),
+    se_value = sd(value, na.rm = TRUE) / sqrt(n())
+  )
+
+music_positive_means <- ggplot(music_positive_summary, aes(x = variable, y = mean_value)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = mean_value - se_value, ymax = mean_value + se_value), width = 0.2) +
+  labs(title = "Pilot Music Positive Emotion Means", x = "Emotion", y = "Mean") +
+  theme_bw()
+
+ggsave('../results/pilot/Music_Positive_Means.png', music_positive_means, width = 9)
+
+# pic pos
+pic_positive_summary <- pic_positive %>%
+  select(-Q2) %>%
+  pivot_longer(everything(), names_to = "variable", values_to = "value") %>%
+  group_by(variable) %>%
+  summarize(
+    mean_value = mean(value, na.rm = TRUE),
+    se_value = sd(value, na.rm = TRUE) / sqrt(n())
+  )
+
+pic_positive_means <- ggplot(pic_positive_summary, aes(x = variable, y = mean_value)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = mean_value - se_value, ymax = mean_value + se_value), width = 0.2) +
+  labs(title = "Pilot Picture Positive Emotion Means", x = "Emotion", y = "Mean") +
+  theme_bw()
+
+ggsave('../results/pilot/Picture_Positive_Means.png', pic_positive_means, width = 9)
+
+# pic neg
+pic_negative_summary <- pic_negative %>%
+  select(-Q2) %>%
+  pivot_longer(everything(), names_to = "variable", values_to = "value") %>%
+  group_by(variable) %>%
+  summarize(
+    mean_value = mean(value, na.rm = TRUE),
+    se_value = sd(value, na.rm = TRUE) / sqrt(n())
+  )
+
+pic_negative_means <- ggplot(pic_negative_summary, aes(x = variable, y = mean_value)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = mean_value - se_value, ymax = mean_value + se_value), width = 0.2) +
+  labs(title = "Pilot Picture Negative Emotion Means", x = "Emotion", y = "Mean") +
+  theme_bw()
+
+ggsave('../results/pilot/Picture_Negative_Means.png', pic_negative_means, width = 9)
+```
