@@ -1,0 +1,21 @@
+---
+title: "EDT"
+output: html_document
+date: "2024-08-08"
+---
+```{r}
+install.packages('devtools')
+devtools::install_github('klausfrieler/EDT')
+
+```
+
+```{r}
+# Load the EDT package
+library(tidyverse)
+library(EDT)
+
+# Run the test as if for a participant, using default settings,
+# saving data, and with a custom admin password
+# set adaptive = FALSE for static version
+EDT_standalone(admin_password = "test", adaptive = TRUE) 
+```

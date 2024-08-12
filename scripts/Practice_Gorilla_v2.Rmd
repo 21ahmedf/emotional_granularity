@@ -15,18 +15,29 @@ if (!require("reshape2")) {install.packages("reshape2"); require("reshape2")}
 #---------Load in data--------
 ```{r}
 #v8 data
-v8 <- read.csv("../data/rating-task/data_exp_169297-v8/data_exp_169297-v8_task-6dig.csv")
-v8 <- v8 %>% mutate(Spreadsheet..relaxed_rating = NA)
+v8 <- read.csv("../data/rating-task/data_exp_169297-v8_task-6dig.csv")
+v8 <- v8 %>%
+  mutate(Spreadsheet..relaxed_rating = NA) %>%
+  mutate(Spreadsheet..upset_rating = NA)
 
 #v9 data
-v9 <- read.csv("../data/rating-task/data_exp_169297-v9/data_exp_169297-v9_task-6dig.csv")
-v9 <- v9 %>% mutate(Spreadsheet..relaxed_rating = NA)
+v9 <- read.csv("../data/rating-task/data_exp_169297-v9_task-6dig.csv")
+v9 <- v9 %>%
+  mutate(Spreadsheet..relaxed_rating = NA) %>%
+  mutate(Spreadsheet..upset_rating = NA)
 
 #v10 data
-v10 <- read.csv("../data/rating-task/data_exp_169297-v10/data_exp_169297-v10_task-6dig.csv")
+v10 <- read.csv("../data/rating-task/data_exp_169297-v10_task-6dig.csv")
+v10 <- v10 %>%
+  mutate(Spreadsheet..upset_rating = NA)
+
+v11 <- read.csv("../data/rating-task/data_exp_169297-v11_task-6dig.csv")
+v11 <- v11 %>%
+  mutate(Spreadsheet..disgusted_rating = NA) %>%
+  mutate(Spreadsheet..proud_rating = NA)
 
 #combined data
-combined_data <- rbind(v8, v9, v10)
+combined_data <- rbind(v8, v9, v10, v11)
 
 ```
 
@@ -39,6 +50,7 @@ granularity_data <- combined_data %>%
   select("Participant.Public.ID","Response","Object.Name", "Spreadsheet..Image", "Spreadsheet..Audio") %>%
   mutate(Response = as.numeric(Response))
 
+## Separating by picture vs music, removing practice stims
 granularity_pic <- granularity_data %>%
   filter(Spreadsheet..Image != "") %>%
   filter(Spreadsheet..Image != "Coffee 1.jpg") %>%
@@ -53,7 +65,7 @@ granularity_music <- granularity_data %>%
 ##-----Subsetting by valence and stimulus type--------
 ```{r}
 # List of emotions
-neg_emotions <- c("Angry", "Disgusted", "Sad", "Scared", "Anxious")
+neg_emotions <- c("Angry", "Disgusted", "Sad", "Scared", "Anxious", "Upset")
 pos_emotions <- c("Happy", "Satisfied", "Excited", "Joyful", "Proud", "Relaxed")
 
 # Function to filter and rename
@@ -96,21 +108,29 @@ extend_df <- function(df, num_rows) {
   return(extended_df)
 }
 
-# Need to prepend rows for missing "satisfied" ratings
-prepend_rows <- function(df, num_rows) {
-  additional_rows <- data.frame(matrix(NA, nrow = num_rows, ncol = ncol(df)))
-  colnames(additional_rows) <- colnames(df)
-  extended_df <- bind_rows(additional_rows, df)
-  return(extended_df)
-}
+# # Need to prepend rows for missing "satisfied" ratings
+# prepend_rows <- function(df, num_rows) {
+#   additional_rows <- data.frame(matrix(NA, nrow = num_rows, ncol = ncol(df)))
+#   colnames(additional_rows) <- colnames(df)
+#   extended_df <- bind_rows(additional_rows, df)
+#   return(extended_df)
+# }
 
-# Append 60 rows to the 2nd (satisfied) dataframe
-# Prepend 40 rows to the 6th (relaxed) dataframe
-filtered_music_pos[[2]] <- extend_df(filtered_music_pos[[2]], 40)
-filtered_music_pos[[6]] <- prepend_rows(filtered_music_pos[[6]], 60)
+# Append 60 rows to the 2nd (satisfied) dataframe, 60 rows to the 6th (relaxed), 140 rows to the 5th (proud) - positive
+filtered_music_pos[[2]] <- extend_df(filtered_music_pos[[2]], 60)
+filtered_music_pos[[6]] <- extend_df(filtered_music_pos[[6]], 60)
+filtered_music_pos[[5]] <- extend_df(filtered_music_pos[[5]], 140)
 
-filtered_pic_pos[[2]] <- extend_df(filtered_pic_pos[[2]], 40)
-filtered_pic_pos[[6]] <- prepend_rows(filtered_pic_pos[[6]], 60)
+filtered_pic_pos[[2]] <- extend_df(filtered_pic_pos[[2]], 60)
+filtered_pic_pos[[6]] <- extend_df(filtered_pic_pos[[6]], 60)
+filtered_pic_pos[[5]] <- extend_df(filtered_pic_pos[[5]], 140)
+
+# Append 140 rows to the 2nd (disgusted) dataframe, 120 to the 6th (upset) - negative
+filtered_music_neg[[2]] <- extend_df(filtered_music_neg[[2]], 140)
+filtered_music_neg[[6]] <- extend_df(filtered_music_neg[[6]], 120)
+
+filtered_pic_neg[[2]] <- extend_df(filtered_pic_neg[[2]], 140)
+filtered_pic_neg[[6]] <- extend_df(filtered_pic_neg[[6]], 120)
 
 
 # Combine the results
@@ -292,7 +312,7 @@ music_negative_means <- ggplot(music_negative_summary, aes(x = variable, y = mea
   labs(title = "Gorilla Music Negative Emotion Means", x = "Emotion", y = "Mean") +
   theme_bw()
 
-ggsave('../results/rating-task/Music_Negative_Means.png', music_negative_means, width = 9)
+ggsave('../results/rating-task/Music_Negative_Means_8_7_24.png', music_negative_means, width = 9)
 
 # music pos
 music_positive_summary <- music_positive %>%
@@ -310,7 +330,7 @@ music_positive_means <- ggplot(music_positive_summary, aes(x = variable, y = mea
   labs(title = "Gorilla Music Positive Emotion Means", x = "Emotion", y = "Mean") +
   theme_bw()
 
-ggsave('../results/rating-task/Music_Positive_Means.png', music_positive_means, width = 9)
+ggsave('../results/rating-task/Music_Positive_Means_8_7_24.png', music_positive_means, width = 9)
 
 # pic pos
 pic_positive_summary <- pic_positive %>%
@@ -328,7 +348,7 @@ pic_positive_means <- ggplot(pic_positive_summary, aes(x = variable, y = mean_va
   labs(title = "Gorilla Picture Positive Emotion Means", x = "Emotion", y = "Mean") +
   theme_bw()
 
-ggsave('../results/rating-task/Picture_Positive_Means.png', pic_positive_means, width = 9)
+ggsave('../results/rating-task/Picture_Positive_Means_8_7_24.png', pic_positive_means, width = 9)
 
 # pic neg
 pic_negative_summary <- pic_negative %>%
@@ -346,7 +366,7 @@ pic_negative_means <- ggplot(pic_negative_summary, aes(x = variable, y = mean_va
   labs(title = "Gorilla Picture Negative Emotion Means", x = "Emotion", y = "Mean") +
   theme_bw()
 
-ggsave('../results/rating-task/Picture_Negative_Means.png', pic_negative_means, width = 9)
+ggsave('../results/rating-task/Picture_Negative_Means_8_7_24.png', pic_negative_means, width = 9)
 ```
 
 ##--Graphs printed together to have scale reference--
@@ -375,8 +395,8 @@ pos_plot <- ggplot(pos_summary, aes(x = variable, y = mean_value, color = type, 
   theme_bw()
 
 # Save the plots
-ggsave('../results/rating-task/Negative_Emotion_Means.png', neg_plot, width = 9)
-ggsave('../results/rating-task/Positive_Emotion_Means.png', pos_plot, width = 9)
+ggsave('../results/rating-task/Negative_Emotion_Means_8_7_24.png', neg_plot, width = 9)
+ggsave('../results/rating-task/Positive_Emotion_Means_8_7_24.png', pos_plot, width = 9)
 
 
 ```
@@ -393,7 +413,7 @@ library(png)
 calculate_non_zero_percentage <- function(df) {
   df %>%
     select(-Participant.Public.ID) %>%
-    summarise(across(everything(), ~ sum(!is.na(.) & . != 0) / sum(!is.na(.)) * 100))
+    summarise(across(everything(), ~ round(sum(!is.na(.) & . != 0) / sum(!is.na(.)) * 100)))
 }
 
 # Calculate percentages and create tables
@@ -416,7 +436,7 @@ table_grobs <- lapply(tables, function(tbl) {
 arranged_tables <- do.call(arrangeGrob, c(table_grobs, ncol = 1))
 
 # Save the arranged tables as a PNG file
-png("../results/rating-task/emotion_response_percentages.png", width = 400, height = 400)
+png("../results/rating-task/emotion_response_percentages_8_7_24.png", width = 400, height = 400)
 grid.draw(arranged_tables)
 dev.off()
 ```
@@ -457,6 +477,106 @@ neg_low_music_data <- granularity_music %>%
   filter(Spreadsheet..Audio %in% neg_low_music)
 ```
 
+```{r}
+# write.csv(pos_low_music_data, "../data/rating-task/pos_low_music_data.csv")
+
+# 6 clips
+averages_pos_low_music <- pos_low_music_data %>%
+  group_by(Spreadsheet..Audio) %>%
+  summarise(Average.Response = mean(Response, na.rm = TRUE))
+# for pos low music, lowest is 12_pieceA_joyous_sad_anxious_9.mp3
+# second lowest is 12_pieceA_joyous_sad_anxious_3.mp3
+
+# 4 clips
+averages_pos_high_music <- pos_high_music_data %>%
+  group_by(Spreadsheet..Audio) %>%
+  summarise(Average.Response = mean(Response, na.rm = TRUE))
+# for pos high music, lowest is 6_pieceB_anxious_calm_joyous_8.mp3
+
+# 5 clips
+averages_neg_low_music <- neg_low_music_data %>%
+  group_by(Spreadsheet..Audio) %>%
+  summarise(Average.Response = mean(Response, na.rm = TRUE))
+# for neg low music, lowest is 5_pieceB_calm_sad_anxious_3.mp3
+
+# 5 clips
+averages_neg_high_music <- neg_high_music_data %>%
+  group_by(Spreadsheet..Audio) %>%
+  summarise(Average.Response = mean(Response, na.rm = TRUE))
+# for neg high music, lowest is 11_pieceA_calm_anxious_sad_5.mp3
+
+# 5 pics
+averages_pos_low_pic <- pos_low_pic_data %>%
+  group_by(Spreadsheet..Image) %>%
+  summarise(Average.Response = mean(Response, na.rm = TRUE))
+# for pos low pic, lowest is Hearts 3.jpg
+# second lowest is Cups 3.jpg
+
+# 5 pics
+averages_pos_high_pic <- pos_high_pic_data %>%
+  group_by(Spreadsheet..Image) %>%
+  summarise(Average.Response = mean(Response, na.rm = TRUE))
+# for pos high pic, lowest is Fireworks 6.jpg
+
+# 4 pics
+averages_neg_low_pic <- neg_low_pic_data %>%
+  group_by(Spreadsheet..Image) %>%
+  summarise(Average.Response = mean(Response, na.rm = TRUE))
+# for neg low pic, lowest is Prison 2.jpg
+
+# 6 pics
+averages_neg_high_pic <- neg_high_pic_data %>%
+  group_by(Spreadsheet..Image) %>%
+  summarise(Average.Response = mean(Response, na.rm = TRUE))
+# for neg high pic, lowest is Cockroach 3.jpg
+# second lowest is Ferret 1.jpg (but higher than Prison 2.jpg)
+
+all_averages <- bind_rows(
+  averages_pos_low_music %>% mutate(Type = "pos_low_music"),
+  averages_pos_high_music %>% mutate(Type = "pos_high_music"),
+  averages_neg_low_music %>% mutate(Type = "neg_low_music"),
+  averages_neg_high_music %>% mutate(Type = "neg_high_music"),
+  averages_pos_low_pic %>% mutate(Type = "pos_low_pic"),
+  averages_pos_high_pic %>% mutate(Type = "pos_high_pic"),
+  averages_neg_low_pic %>% mutate(Type = "neg_low_pic"),
+  averages_neg_high_pic %>% mutate(Type = "neg_high_pic")
+)
+
+neg_music_averages <- bind_rows(
+  averages_neg_low_music %>% mutate(Type = "neg_low_music"),
+  averages_neg_high_music %>% mutate(Type = "neg_high_music")
+)
+
+pos_music_averages <- bind_rows(
+  averages_pos_low_music %>% mutate(Type = "pos_low_music"),
+  averages_pos_high_music %>% mutate(Type = "pos_high_music")
+)
+
+neg_pic_averages <- bind_rows(
+  averages_neg_low_pic %>% mutate(Type = "neg_low_pic"),
+  averages_neg_high_pic %>% mutate(Type = "neg_high_pic")
+)
+
+pos_pic_averages <- bind_rows(
+  averages_pos_low_pic %>% mutate(Type = "pos_low_pic"),
+  averages_pos_high_pic %>% mutate(Type = "pos_high_pic")
+)
+
+min_values <- all_averages %>%
+  group_by(Type) %>%
+  filter(Average.Response == min(Average.Response)) %>%
+  ungroup()
+
+all_stims_plotted <- ggplot(all_averages, aes(x = Type, y = Average.Response)) +
+  geom_point() +
+  geom_text(data = min_values, aes(label = ifelse(is.na(Spreadsheet..Audio), Spreadsheet..Image, Spreadsheet..Audio)), vjust = -1, hjust = 0.5, size = 3, color = "red") +
+  labs(title = "All Stims Response Averages", x = "Quadrant", y = "Mean Response") +
+  theme_bw()
+
+ggsave('../results/rating-task/All_Stims_Means_8_7_24.png', all_stims_plotted, width = 14)
+```
+
+##-- NOTHING BELOW HERE HAS BEEN UPDATED FOR THE V11 DATA
 ##--Reformatting data by valence and arousal--
 ```{r}
 # Function to generate filtered data

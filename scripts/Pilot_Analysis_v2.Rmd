@@ -345,3 +345,44 @@ pic_negative_means <- ggplot(pic_negative_summary, aes(x = variable, y = mean_va
 
 ggsave('../results/pilot/Picture_Negative_Means.png', pic_negative_means, width = 9)
 ```
+
+
+##-Percent of nonzero responses--
+```{r}
+library(knitr)
+library(readr)
+library(gridExtra)
+library(grid)
+library(png)
+
+# Function to calculate the percentage of non-zero responses for each column
+calculate_non_zero_percentage <- function(df) {
+  df %>%
+    select(-Q2) %>%
+    summarise(across(everything(), ~ sum(!is.na(.) & . != 0) / sum(!is.na(.)) * 100))
+}
+
+# Calculate percentages and create tables
+tables <- list(
+  list(data = music_negative, caption = "% of Non-Zero Responses for Negative Emotion Words (Music)"),
+  list(data = pic_negative, caption = "% of Non-Zero Responses for Negative Emotion Words (Pictures)"),
+    list(data = music_positive, caption = "% of Non-Zero Responses for Positive Emotion Words (Music)"),
+  list(data = pic_positive, caption = "% of Non-Zero Responses for Positive Emotion Words (Pictures)")
+)
+
+# Create grobs for each table and caption
+table_grobs <- lapply(tables, function(tbl) {
+  percentages <- calculate_non_zero_percentage(tbl$data)
+  table_grob <- tableGrob(percentages, theme = ttheme_minimal())
+  caption_grob <- textGrob(tbl$caption, gp = gpar(fontsize = 10))
+  arrangeGrob(caption_grob, table_grob, ncol = 1)
+})
+
+# Arrange all tables vertically
+arranged_tables <- do.call(arrangeGrob, c(table_grobs, ncol = 1))
+
+# Save the arranged tables as a PNG file
+png("../results/pilot/pilot_emotion_response_percentages.png", width = 400, height = 400)
+grid.draw(arranged_tables)
+dev.off()
+```

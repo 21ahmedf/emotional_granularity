@@ -1,0 +1,310 @@
+---
+title: "survey_scoring"
+output: html_document
+date: "2024-08-11"
+---
+#replace "df" in script w/ dataframe name of survey.csv
+```{r}
+library(tidyverse)
+source("reverseCode.R")
+
+data <- read.csv("../data/qualtrics/emo-granularity_August 11, 2024_18.12.csv")
+df <- data %>%
+  filter(Finished == 1)
+```
+
+#STAI
+```{r}
+STAI <- df %>%
+  dplyr::select("STAI1_1":"STAI20_1")
+
+STAI <- as.data.frame(lapply(STAI[,], as.integer))
+
+cols_reverse <- c("STAI1_1","STAI3_1","STAI6_1","STAI7_1","STAI10_1","STAI13_1","STAI14_1","STAI16_1","STAI19_1")
+STAI[cols_reverse] <- lapply(STAI[cols_reverse], reverseCode, min=1, max=4)
+
+df$STAI_total <- apply(STAI,1,sum)
+hist(df$STAI_total)
+```
+
+#CD-RISC
+```{r}
+CD.RISC <- df %>%
+  dplyr::select("CD.RISC1_1":"CD.RISC10_1")
+
+CD.RISC <- as.data.frame(lapply(CD.RISC[,], as.integer))
+
+df$CD.RISC_total <- apply(CD.RISC,1,sum)
+hist(df$CD.RISC_total)
+```
+
+#GoldMSI Scoring
+```{r}
+Gold <- df %>%
+  dplyr::select("Q1.1_1":"Q1.38")
+  
+ # dplyr::select("X1..I.spend.a.lot.of.my.free.time.doing.music.related.activities....Completely.Disagree.Completely.Agree":"X38..I.listen.attentively.to.music.for.___.per.day.")
+
+#delete atttention checking question
+Gold$Qcheck <- NULL
+
+Gold <- as.data.frame(lapply(Gold[,], as.integer))
+
+# GoldMSI columns to reverse code and sub-score (for these questions, the correct answer (ie the more positive answer) is a higher number. Negative questions are reverse coded.) 
+
+cols_reverse <- c("Q1.21_1" ,
+"Q1.11_1" ,
+"Q1.13_1" ,
+"Q1.23_1" ,
+"Q1.14_1" ,
+"Q1.27_1" ,
+"Q1.17_1" ,
+"Q1.25_1" ,
+"Q1.9_1")
+
+cols_activeengagement <- c("Q1.1_1" ,
+"Q1.3_1" ,
+"Q1.8_1" ,
+"Q1.15_1" ,
+"Q1.21_1" ,
+"Q1.24_1" ,
+"Q1.28_1" ,
+"Q1.34" ,
+"Q1.38")
+
+cols_perceptualabilities <- c("Q1.5_1" ,
+"Q1.6_1" ,
+"Q1.11_1" ,
+"Q1.12_1" ,
+"Q1.13_1" ,
+"Q1.18_1" ,
+"Q1.22_1" ,
+"Q1.23_1" ,
+"Q1.26_1")
+
+cols_musicaltraining <- c("Q1.14_1" , "Q1.27_1",
+"Q1.32" ,
+"Q1.33" , ## think about how this is scored? doesn't seem like a lot of people answered
+"Q1.35" ,
+"Q1.36" ,
+"Q1.37")
+
+
+cols_singingabilities <- c("Q1.4_1" ,
+"Q1.7_1" ,
+"Q1.10_1" ,
+"Q1.17_1" ,
+"Q1.25_1" ,
+"Q1.29_1" ,
+"Q1.30_1")
+
+cols_emotion <- c("Q1.2_1" ,
+"Q1.9_1" ,
+"Q1.16_1" ,
+"Q1.19_1" ,
+"Q1.20_1" ,
+"Q1.31_1")
+
+cols_musicalsophistication <- c("Q1.1_1" ,
+           "Q1.3_1" ,
+"Q1.4_1" ,
+"Q1.7_1" ,
+"Q1.10_1" ,
+"Q1.12_1" ,
+"Q1.14_1" ,
+"Q1.15_1" ,
+"Q1.17_1" ,
+"Q1.19_1" ,
+"Q1.23_1" ,
+"Q1.24_1" ,
+"Q1.25_1" ,
+"Q1.27_1" ,
+"Q1.29_1" ,
+"Q1.32" ,
+"Q1.33")
+
+# Reverse code
+
+Gold[cols_reverse] <- lapply(Gold[cols_reverse], reverseCode, min=1, max=7)
+
+# Add sub-scores and total to main df
+
+df$Gold_total <- apply(Gold,1, sum)/38 # total GoldMSI score
+df$Gold_activeengagement <- apply(Gold[cols_activeengagement], 1,sum)/9
+df$Gold_perceptualabilities <- apply(Gold[cols_perceptualabilities],1, sum)/9
+df$Gold_musicaltraining <-apply(Gold[cols_musicaltraining],1, sum)/7
+df$Gold_singingabilities <- apply(Gold[cols_singingabilities],1, sum)/7
+df$Gold_emotion <- apply(Gold[cols_emotion],1, sum)/6
+df$Gold_musicalsophistication <- apply(Gold[cols_musicalsophistication],1, sum)/18
+
+hist(df$Gold_total)
+```
+
+#eBMRQ
+```{r}
+bmrq <- df %>%
+  dplyr::select("Q2_1":"Q21_1", "Q23_1":"Q26_1")
+
+bmrq <- as.data.frame(lapply(bmrq[,], as.integer))
+
+# BMRQ columns to reverse code and sub-score
+cols_reverse <- c("Q3_1",
+                  "Q6_1")
+
+cols_emotion <- c("Q4_1",
+  "Q9_1",
+  "Q13_1",
+  "Q19_1")
+
+cols_sensorimotor <-c("Q6_1",
+  "Q11_1",
+  "Q16_1",
+  "Q21_1")
+                      
+cols_moodreg <- c("Q5_1",
+  "Q10_1",
+  "Q15_1",
+  "Q20_1")
+
+cols_musicseek <- c("Q3_1",
+  "Q8_1",
+  "Q12_1",
+  "Q18_1")
+
+cols_socialreward <-c("Q2_1",
+  "Q7_1",
+  "Q14_1",
+  "Q17_1")
+
+cols_absorption <- c("Q23_1", "Q24_1", "Q25_1", "Q26_1")
+
+# Reverse code
+bmrq[cols_reverse] <- lapply(bmrq[cols_reverse], reverseCode)
+
+# Add sub-scores and total to main df
+df$eBMRQ_total <- apply(bmrq,1, sum) 
+df$BMRQ_emotion <- apply(bmrq[cols_emotion], 1,sum)
+df$BMRQ_sensorimotor <- apply(bmrq[cols_sensorimotor],1, sum)
+df$BMRQ_moodreg <-apply(bmrq[cols_moodreg],1, sum)
+df$BMRQ_musicseek <- apply(bmrq[cols_musicseek],1, sum)
+df$BMRQ_socialreward <- apply(bmrq[cols_socialreward],1, sum)
+df$BMRQ_absorption<- apply(bmrq[cols_absorption],1, sum)
+
+hist(df$eBMRQ_total)
+```
+
+#BDI --> items asking about changes in appetite (BDI_17) and sleep (BDI_15) need to be scored differently (see Attachment_AU in named attachments folder - there are two answers for both 1, 2, and 3 scores; also the responses should range from 0 to 3 )
+```{r}
+BDI <- df %>%
+  dplyr::select("BDI_1":"BDI_20")
+
+BDI$BDI_15[BDI$BDI_15 == 3] <- 2
+BDI$BDI_15[BDI$BDI_15 == 4 | BDI$BDI_15 == 5] <- 3
+BDI$BDI_15[BDI$BDI_15 == 6 | BDI$BDI_15 == 7] <- 4
+
+BDI$BDI_17[BDI$BDI_17 == 3] <- 2
+BDI$BDI_17[BDI$BDI_17 == 4 | BDI$BDI_17 == 5] <- 3
+BDI$BDI_17[BDI$BDI_17 == 6 | BDI$BDI_17 == 7] <- 4
+
+BDI[BDI == 1] <- 0
+BDI[BDI == 2] <- 1
+BDI[BDI == 3] <- 2
+BDI[BDI == 4] <- 3
+
+BDI <- as.data.frame(lapply(BDI[,], as.integer))
+
+df$BDI_total <- apply(BDI,1,sum)
+
+hist(df$BDI_total)
+```
+
+#M@H
+```{r}
+MH <- df %>%
+  dplyr::select("M.H_child1_1":"M.H_child20_1")
+
+MH <- MH[complete.cases(MH),]
+MH <- as.data.frame(lapply(MH[,], as.integer))
+
+cols_reverse <- c("M.H_child6_1","M.H_child7_1","M.H_child11_1","M.H_child12_1","M.H_child18_1","M.H_child19_1","M.H_child20_1")
+MH[cols_reverse] <- lapply(MH[cols_reverse], reverseCode, min=1, max=7)
+
+df$MH_total <- apply(MH,1, sum) # total M@H scores
+hist(df$MH_total)
+
+# # started putting these together but I'm not sure what goes where
+# cols_caregiverbeliefs <- c("M.H_child1_1", "M.H_child2_1", "M.H_child3_1", "M.H_child4_1")
+# 
+# cols_caregiversinging <- c("M.H_child9_1")
+# 
+# cols_childhoodattitude <- c("M.H_child8_1")
+# 
+# cols_socialcontexts <- c("")
+# 
+# cols_musicmaking <- c("M.H_child5_1", "M.H_child6_1", "M.H_child7_1")
+# 
+# df$MH_caregiverbeliefs <- apply(MH[cols_caregiverbeliefs], 1,sum)
+# df$MH_caregiversinging <- apply(MH[cols_caregiversinging],1, sum)
+# df$MH_childhoodattitude <-apply(MH[cols_childhoodattitude],1, sum)
+# df$MH_socialcontexts <- apply(MH[cols_socialcontexts],1, sum)
+# df$MH_musicmaking <- apply(MH[cols_musicmaking],1, sum)
+```
+
+#RDEES
+```{r}
+rdees <- df %>%
+  dplyr::select("RDEES_1_1":"RDEES_14_1")
+
+cols_reverse <- c("RDEES_1_1","RDEES_5_1","RDEES_9_1", "RDEES_11_1")
+
+rdees <- as.data.frame(lapply(rdees[,], as.integer))
+
+rdees[cols_reverse] <- lapply(rdees[cols_reverse], reverseCode, min=1, max=5)
+
+cols_range <- c("RDEES_1_1","RDEES_3_1","RDEES_5_1","RDEES_7_1", "RDEES_9_1", "RDEES_11_1", "RDEES_13_1")
+cols_differentation <- c("RDEES_2_1","RDEES_4_1","RDEES_6_1","RDEES_8_1", "RDEES_10_1", "RDEES_12_1", "RDEES_14_1")
+
+df$rdees_range <- apply(rdees[cols_range], 1,sum)
+df$rdees_differentiation <- apply(rdees[cols_differentation],1, sum)
+df$rdees_total <- df$rdees_differentiation + df$rdees_range
+
+hist(df$rdees_total)
+
+# merge <- na.omit(df)
+
+# test <- merge(results, merge,by.x="ID", by.y="Q2")
+# 
+# cor.test(test$rdees_total, test$pospicICC)
+# 
+# ggplot(data=test, aes(x=posmusicICC, y=rdees_differentiation)) +
+#   geom_point()
+```
+
+#sMEDT
+```{r}
+sMEDT <- df %>%
+  dplyr::select("I17_sMEDT_resposne":"I2_sMEDT_resposne")
+
+sMEDT$I1_sMEDT_resposne <- ifelse(sMEDT$I1_sMEDT_resposne == 2, 1, 0)
+sMEDT$I2_sMEDT_resposne <- ifelse(sMEDT$I2_sMEDT_resposne == 2, 1, 0)
+sMEDT$I3_sMEDT_resposne <- ifelse(sMEDT$I3_sMEDT_resposne == 2, 1, 0)
+sMEDT$I4_sMEDT_resposne <- ifelse(sMEDT$I4_sMEDT_resposne == 2, 1, 0)
+sMEDT$I5_sMEDT_resposne <- ifelse(sMEDT$I5_sMEDT_resposne == 1, 1, 0)
+sMEDT$I6_sMEDT_resposne <- ifelse(sMEDT$I6_sMEDT_resposne == 2, 1, 0)
+sMEDT$I7_sMEDT_resposne <- ifelse(sMEDT$I7_sMEDT_resposne == 2, 1, 0)
+sMEDT$I8_sMEDT_resposne <- ifelse(sMEDT$I8_sMEDT_resposne == 1, 1, 0)
+sMEDT$I9_sMEDT_resposne <- ifelse(sMEDT$I9_sMEDT_resposne == 2, 1, 0)
+sMEDT$I10_sMEDT_resposne <- ifelse(sMEDT$I10_sMEDT_resposne == 1, 1, 0)
+sMEDT$I11_sMEDT_resposne <- ifelse(sMEDT$I11_sMEDT_resposne == 1, 1, 0)
+sMEDT$I12_sMEDT_resposne <- ifelse(sMEDT$I12_sMEDT_resposne == 1, 1, 0)
+sMEDT$I13_sMEDT_resposne <- ifelse(sMEDT$I13_sMEDT_resposne == 1, 1, 0)
+sMEDT$I14_sMEDT_resposne <- ifelse(sMEDT$I14_sMEDT_resposne == 2, 1, 0)
+sMEDT$I15_sMEDT_resposne <- ifelse(sMEDT$I15_sMEDT_resposne == 1, 1, 0)
+sMEDT$I16_sMEDT_resposne <- ifelse(sMEDT$I16_sMEDT_resposne == 1, 1, 0)
+sMEDT$I17_sMEDT_resposne <- ifelse(sMEDT$I17_sMEDT_resposne == 2, 1, 0)
+sMEDT$I18_sMEDT_resposne <- ifelse(sMEDT$I18_sMEDT_resposne == 1, 1, 0)
+
+df$sMEDT <- apply(sMEDT,1, sum)/18
+
+hist(df$sMEDT)
+```
