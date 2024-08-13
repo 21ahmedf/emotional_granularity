@@ -15,7 +15,6 @@ if (!require("ggrepel")) {install.packages("ggrepel"); require("ggrepel")}
 
 #---------Load in data--------
 ```{r}
-
 v11 <- read.csv("../data/rating-task/data_exp_169297-v11_task-6dig.csv")
 
 ```
@@ -27,6 +26,21 @@ granularity_data <- v11 %>%
   select("Participant.Public.ID","Response","Object.Name", "Spreadsheet..Image", "Spreadsheet..Audio") %>%
   mutate(Response = as.numeric(Response))
 
+```
+
+```{r}
+granularity_data <- granularity_data %>%
+  filter(Spreadsheet..Image != "Garbage dump 2.jpg") %>%
+  filter(Spreadsheet..Image != "Cockroach 3.jpg") %>%
+  filter(Spreadsheet..Image != "Lake 12.jpg") %>%
+  filter(Spreadsheet..Image != "Cups 3.jpg") %>%
+  filter(Spreadsheet..Audio != "11_pieceA_calm_anxious_sad_6.mp3") %>%
+  filter(Spreadsheet..Audio != "5_pieceB_calm_sad_anxious_9.mp3") %>%
+  filter(Spreadsheet..Audio != "5_pieceB_calm_sad_anxious_7.mp3") %>%
+  filter(Spreadsheet..Audio != "12_pieceA_joyous_sad_anxious_3.mp3")
+```
+
+```{r}
 ## Separating by picture vs music, removing practice stims
 granularity_pic <- granularity_data %>%
   filter(Spreadsheet..Image != "") %>%
@@ -86,37 +100,6 @@ pic_negative <- bind_cols(filtered_pic_neg)
 
 pic_positive <- bind_cols(filtered_pic_pos)
 
-```
-
-##----Scoring ICC------
-```{r}
-# Function to compute ICC and store results
-compute_icc <- function(data_list, result_column) {
-  sapply(seq_along(data_list), function(i) {
-    icc_result <- data_list[[i]] %>%
-      select(-Participant.Public.ID) %>%
-      icc(model = "twoway", type = "consistency", unit = "average")
-    1 - icc_result$value
-  })
-}
-
-# Create a list of data frames split by Participant.Public.ID
-music_negative_list <- split(music_negative, music_negative$Participant.Public.ID)
-music_positive_list <- split(music_positive, music_positive$Participant.Public.ID)
-pic_negative_list <- split(pic_negative, pic_negative$Participant.Public.ID)
-pic_positive_list <- split(pic_positive, pic_positive$Participant.Public.ID)
-
-# Initialize results DataFrame
-results <- expand.grid(ID = names(music_negative_list))
-
-# Compute ICC values for each subset and add to results
-results$negmusicICC <- compute_icc(music_negative_list, "negmusicICC")
-results$posmusicICC <- compute_icc(music_positive_list, "posmusicICC")
-results$negpicICC <- compute_icc(pic_negative_list, "negpicICC")
-results$pospicICC <- compute_icc(pic_positive_list, "pospicICC")
-
-# Display the result
-results
 ```
 
 ##--Plotting means of emotion word ratings--
@@ -266,7 +249,6 @@ grid.draw(arranged_tables)
 dev.off()
 ```
 
-
 ##--Separating pics and music by valence (pos/neg)--
 ```{r}
 pos_pic <- c("Beach 1.jpg", "Cat 5.jpg", "Fireworks 6.jpg", "Lake 12.jpg", "Rainbow 2.jpg", "Clean 1.jpg", "Cups 3.jpg", "Heart 3.jpg", "Rocks 1.jpg", "Snow 1.jpg")
@@ -284,6 +266,68 @@ pos_music_data <- granularity_music %>%
 neg_music <- c("3_pieceB_joyous_anxious_sad_1.mp3", "11_pieceA_calm_anxious_sad_4.mp3", "11_pieceA_calm_anxious_sad_5.mp3", "11_pieceA_calm_anxious_sad_6.mp3", "11_pieceA_calm_anxious_sad_8.mp3", "5_pieceB_calm_sad_anxious_1.mp3", "5_pieceB_calm_sad_anxious_2.mp3", "5_pieceB_calm_sad_anxious_3.mp3", "5_pieceB_calm_sad_anxious_9.mp3", "11_pieceA_calm_anxious_sad_2.mp3")
 neg_music_data <- granularity_music %>%
   filter(Spreadsheet..Audio %in% neg_music)
+```
+
+##-All graphed together - 8/12/24
+```{r}
+# 10 clips
+averages_pos_music <- pos_music_data %>%
+  group_by(Object.Name) %>%
+  summarise(
+    Average.Response = mean(Response, na.rm = TRUE),
+    se_value = sd(Response, na.rm = TRUE) / sqrt(n())
+    )
+
+# 10 clips
+averages_neg_music <- neg_music_data %>%
+  group_by(Object.Name) %>%
+  summarise(
+    Average.Response = mean(Response, na.rm = TRUE),
+    se_value = sd(Response, na.rm = TRUE) / sqrt(n())
+    )
+
+# 10 pics
+averages_pos_pic <- pos_pic_data %>%
+  group_by(Object.Name) %>%
+  summarise(
+    Average.Response = mean(Response, na.rm = TRUE),
+    se_value = sd(Response, na.rm = TRUE) / sqrt(n())
+    )
+
+# 10 pics
+averages_neg_pic <- neg_pic_data %>%
+  group_by(Object.Name) %>%
+  summarise(
+    Average.Response = mean(Response, na.rm = TRUE),
+    se_value = sd(Response, na.rm = TRUE) / sqrt(n())
+    )
+
+all_averages <- bind_rows(
+  averages_pos_music %>% mutate(Type = "pos_music"),
+  averages_neg_music %>% mutate(Type = "neg_music"),
+  averages_pos_pic %>% mutate(Type = "pos_pic"),
+  averages_neg_pic %>% mutate(Type = "neg_pic"),
+)
+
+all_averages$Object.Name <- gsub("Slider", "", all_averages$Object.Name)
+
+# Trim any extra whitespace that might be left after removing "Slider"
+all_averages$Object.Name <- trimws(all_averages$Object.Name)
+
+emotion_order <- c("Angry", "Anxious", "Sad", "Scared", "Upset", "Excited", "Happy", "Joyful", "Relaxed", "Satisfied")
+all_averages$Object.Name <- factor(all_averages$Object.Name, levels = emotion_order)
+
+full_plot <- ggplot(all_averages, aes(x = Object.Name, y = Average.Response, color = Type, ymin = 0)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = Average.Response - se_value, ymax = Average.Response + se_value), 
+                width = 0.2) +
+  labs(title = "All Emotion Means w/ 1 Max/1 Min Pics and 2 Min Music Cut", x = "Emotion", y = "Mean") +
+  theme_bw() +
+  ylim(0, 51)
+
+# Save the plots
+ggsave('../results/rating-task/All_Emotion_Means_8_12_24_3.png', full_plot, width = 9)
+
 ```
 
 ```{r}
@@ -326,37 +370,131 @@ all_averages <- bind_rows(
   averages_neg_pic %>% mutate(Type = "neg_pic"),
 )
 
-min_values <- all_averages %>%
-  group_by(Type) %>%
-  slice_min(Average.Response, n = 2) %>%
-  ungroup()
+# min_values_pos_music <- all_averages %>%
+#   filter(Type == "pos_music") %>%
+#   slice_min(Average.Response, n = 2)
+# 
+# min_values_neg_music <- all_averages %>%
+#   filter(Type == "neg_music") %>%
+#   slice_min(Average.Response, n = 2)
+# 
+# min_values_neg_pic <- all_averages %>%
+#   filter(Type == "neg_pic") %>%
+#   slice_min(Average.Response, n = 1)
+# 
+# min_values_pos_pic <- all_averages %>%
+#   filter(Type == "pos_pic") %>%
+#   slice_min(Average.Response, n = 1)
+# 
+# max_values_pos_pic <- all_averages %>% 
+#   filter(Type == "pos_pic") %>%
+#   slice_max(Average.Response, n = 1)
+# 
+# max_values_neg_pic <- all_averages %>%
+#   filter(Type == "neg_pic") %>%
+#   slice_max(Average.Response, n = 1)
+# 
+# ## REMOVING SOME STIMULI
+# 
+# all_averages <- anti_join(all_averages, max_values_pos_pic, by = c("Spreadsheet..Audio", "Average.Response", "se_value", "Type", "Spreadsheet..Image"))
+# all_averages <- anti_join(all_averages, min_values_pos_pic, by = c("Spreadsheet..Audio", "Average.Response", "se_value", "Type", "Spreadsheet..Image"))
+# all_averages <- anti_join(all_averages, max_values_neg_pic, by = c("Spreadsheet..Audio", "Average.Response", "se_value", "Type", "Spreadsheet..Image"))
+# all_averages <- anti_join(all_averages, min_values_neg_pic, by = c("Spreadsheet..Audio", "Average.Response", "se_value", "Type", "Spreadsheet..Image"))
+# 
+# all_averages <- anti_join(all_averages, min_values_neg_music, by = c("Spreadsheet..Audio", "Average.Response", "se_value", "Type", "Spreadsheet..Image"))
+# all_averages <- anti_join(all_averages, min_values_pos_music, by = c("Spreadsheet..Audio", "Average.Response", "se_value", "Type", "Spreadsheet..Image"))
 
 library(ggrepel)
 
+all_averages$Type[all_averages$Type == "neg_music" | all_averages$Type == "pos_music"] = "music"
+all_averages$Type[all_averages$Type == "neg_pic" | all_averages$Type == "pos_pic"] = "pic"
+
 all_stims_plotted <- ggplot(all_averages, aes(x = Type, y = Average.Response)) +
   geom_point() +
-  geom_text_repel(
-    data = min_values, 
-    aes(label = ifelse(is.na(Spreadsheet..Audio), Spreadsheet..Image, Spreadsheet..Audio)), 
-    size = 3, 
-    color = "red"
-  ) +
-  labs(title = "All Stims Response Averages", x = "Valence/Stimulus Type", y = "Mean Response") +
+  geom_errorbar(aes(ymin = Average.Response - se_value, ymax = Average.Response + se_value), alpha = 0.4, width = 0.2) +
+  labs(title = "All Stims Response Averages w/ 1 Max and 1 Min Pic + 2 Min Music Removed", x = "Stimulus Type", y = "Mean Response") +
   theme_bw()
 
-ggsave('../results/rating-task/v11_All_Stims_Means_8_11_24.png', all_stims_plotted, width = 14)
+ggsave('../results/rating-task/v11_All_Stims_Means_8_12_24_4.png', all_stims_plotted, width = 14)
 
-library(RColorBrewer)
+collapsed_stims <- all_averages %>%
+  group_by(Type) %>%
+  summarise(
+    Mean_Value = mean(Average.Response),
+    Combined_SE = sqrt(sum(se_value^2) / n())  # Combining standard errors
+  )
 
-all_stims_plotted <- ggplot(all_averages, aes(x = Type, y = Average.Response, color = Average.Response)) +
+```
+
+##t-test for comparing differences of means with existing summmary stats
+## to compare removing cockroach vs destruction
+```{r}
+# Summary statistics
+mean1 <- collapsed_stims[1,2]  # Mean of group 1
+mean2 <- collapsed_stims[2,2]  # Mean of group 2
+se1 <- collapsed_stims[1,3]    # Standard error of group 1
+se2 <- collapsed_stims[2,3]   # Standard error of group 2
+n1 <- 16      # Sample size of group 1
+n2 <- 16      # Sample size of group 2
+
+# Calculate the t-statistic
+t_stat <- (mean1 - mean2) / sqrt(se1^2 + se2^2)
+
+# Calculate the degrees of freedom using Welch's approximation
+df <- ((se1^2 + se2^2)^2) / (((se1^2)^2 / (n1 - 1)) + ((se2^2)^2 / (n2 - 1)))
+
+# Calculate the p-value (two-tailed test)
+p_value <- 2 * pt(-abs(t_stat[1,1]), df[1,1])
+
+# Output the t-statistic, degrees of freedom, and p-value
+cat("t-statistic:", t_stat[1,1], "\n")
+cat("Degrees of freedom:", df[1,1], "\n")
+cat("p-value:", p_value, "\n")
+
+```
+
+```{r}
+
+collapsed_plot <- ggplot(collapsed_stims, aes(x = Type, y = Mean_Value, color = Mean_Value, label = Mean_Value)) +
   geom_point() +
-  geom_errorbar(aes(ymin = Average.Response - se_value, ymax = Average.Response + se_value, color = Average.Response), alpha = 0.4, width = 0.2) +
-  scale_color_viridis_c()
-  labs(title = "All Stims Response Averages", x = "Valence/Stimulus Type", y = "Mean Response") +
+  geom_text(hjust=0, vjust=0) +
+  geom_errorbar(aes(ymin = Mean_Value - Combined_SE, ymax = Mean_Value + Combined_SE, color = Mean_Value), alpha = 0.4, width = 0.2) +
+  labs(title = "Stimulus Response Averages w/ Max Pics and Min Music Removed", x = "Stimulus Type", y = "Mean Response") +
   theme_bw()
 
-ggsave('../results/rating-task/v11_All_Stims_Means_8_11_24_Error_Bars.png', all_stims_plotted, width = 10)
+ggsave('../results/rating-task/v11_Average_Stims_Means_8_12_24_Error_Bars_3.png', collapsed_plot, width = 10)
 
+```
+
+##----Scoring ICC------
+```{r}
+# Function to compute ICC and store results
+compute_icc <- function(data_list, result_column) {
+  sapply(seq_along(data_list), function(i) {
+    icc_result <- data_list[[i]] %>%
+      select(-Participant.Public.ID) %>%
+      icc(model = "twoway", type = "consistency", unit = "average")
+    1 - icc_result$value
+  })
+}
+
+# Create a list of data frames split by Participant.Public.ID
+music_negative_list <- split(music_negative, music_negative$Participant.Public.ID)
+music_positive_list <- split(music_positive, music_positive$Participant.Public.ID)
+pic_negative_list <- split(pic_negative, pic_negative$Participant.Public.ID)
+pic_positive_list <- split(pic_positive, pic_positive$Participant.Public.ID)
+
+# Initialize results DataFrame
+results <- expand.grid(ID = names(music_negative_list))
+
+# Compute ICC values for each subset and add to results
+results$negmusicICC <- compute_icc(music_negative_list, "negmusicICC")
+results$posmusicICC <- compute_icc(music_positive_list, "posmusicICC")
+results$negpicICC <- compute_icc(pic_negative_list, "negpicICC")
+results$pospicICC <- compute_icc(pic_positive_list, "pospicICC")
+
+# Display the result
+results
 ```
 
 ##Recoding scores above 1 as 1
@@ -364,10 +502,14 @@ ggsave('../results/rating-task/v11_All_Stims_Means_8_11_24_Error_Bars.png', all_
 results[, 2:5] <- lapply(df[, 2:5], function(x) ifelse(x > 1, 1, x))
 
 ```
-# if i hypothetically got rid of that one major outlier
-```{r}
-# results <- results[-4, ]
 
+# after removing outliers
+```{r}
+results <- results %>%
+  filter(negpicICC < 1) %>%
+  filter(negmusicICC < 1) %>%
+  filter(pospicICC < 1) %>%
+  filter(posmusicICC < 1)
 ```
 
 ##Plotting some things
@@ -379,13 +521,13 @@ df_long2 <- results %>% gather(key = "Variable", value = "Value", posmusicICC, p
 # Create and print histograms
 negICChist <- ggplot(df_long1, aes(x = Value, fill = Variable)) +
   geom_histogram(position = "identity", alpha = 0.5) +
-  labs(title = "Overlay of Negative Granularity Scores (1 - ICC)", x = "Granularity Score", y = "Count")
-ggsave('../results/rating-task/Negative ICCs 8_11_24.png', negICChist, width = 14)
+  labs(title = "Overlay of Negative Granularity Scores with Max/Min Pics Removed", x = "Granularity Score", y = "Count")
+ggsave('../results/rating-task/Negative ICCs 8_12_24_3.png', negICChist, width = 14)
 
 posICChist <- ggplot(df_long2, aes(x = Value, fill = Variable)) +
   geom_histogram(position = "identity", alpha = 0.5) +
-  labs(title = "Overlay of Positive Granularity Scores (1 - ICC", x = "Granularity Score", y = "Count")
-ggsave('../results/rating-task/Positive ICCs 8_11_24.png', posICChist, width = 14)
+  labs(title = "Overlay of Positive Granularity Scores with Max/Min Removed", x = "Granularity Score", y = "Count")
+ggsave('../results/rating-task/Positive ICCs 8_12_24_3.png', posICChist, width = 14)
 
 pos_graph <- ggplot(data = results, aes(x = pospicICC, y = posmusicICC)) +
   geom_point() +
@@ -395,7 +537,7 @@ pos_graph <- ggplot(data = results, aes(x = pospicICC, y = posmusicICC)) +
   theme_classic() +
   theme(axis.title.x = element_text(size=14, face='bold'), axis.title.y = element_text(size=14, face='bold'), axis.text.x = element_text(size=12), axis.text.y = element_text(size=12))
 
-ggsave('../results/rating-task/Pos_Graph 8_11_24.png', pos_graph, width = 9)
+ggsave('../results/rating-task/Pos_Graph 8_12_24.png', pos_graph, width = 9)
 
 neg_graph <- ggplot(data = results, aes(x = negpicICC, y = negmusicICC)) +
   geom_point() +
@@ -405,6 +547,6 @@ neg_graph <- ggplot(data = results, aes(x = negpicICC, y = negmusicICC)) +
   theme_classic() +
   theme(axis.title.x = element_text(size=14, face='bold'), axis.title.y = element_text(size=14, face='bold'), axis.text.x = element_text(size=12), axis.text.y = element_text(size=12))
 
-ggsave('../results/rating-task/Neg_Graph 8_11_24.png', neg_graph, width = 9)
+ggsave('../results/rating-task/Neg_Graph 8_12_24.png', neg_graph, width = 9)
 
 ```
