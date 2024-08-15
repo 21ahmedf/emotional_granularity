@@ -1,0 +1,308 @@
+---
+title: "stimulus_heatmap"
+output: html_document
+date: "2024-08-15"
+---
+
+##--------Load packages---------
+```{r setup, include=FALSE}
+if (!(require("tidyverse"))) install.packages("tidyverse"); require("tidyverse")
+if (!(require("psych"))) install.packages("psych"); require("psych")
+if (!require("irr")) {install.packages("irr"); require("irr")} 
+if (!require("reshape2")) {install.packages("reshape2"); require("reshape2")} 
+if (!require("ggrepel")) {install.packages("ggrepel"); require("ggrepel")} 
+```
+
+#---------Load in data--------
+```{r}
+v11 <- read.csv("../data/rating-task/data_exp_169297-v11_task-6dig.csv")
+
+```
+
+```{r}
+
+granularity_data <- v11 %>%
+  filter(Response.Type == "response") %>% 
+  select("Participant.Public.ID","Response","Object.Name", "Spreadsheet..Image", "Spreadsheet..Audio") %>%
+  mutate(Response = as.numeric(Response))
+
+```
+
+```{r}
+granularity_data <- granularity_data %>%
+  # MAX NEG PIC
+  filter(Spreadsheet..Image != "Garbage dump 2.jpg") %>%
+  
+  # MIN NEG PIC
+  filter(Spreadsheet..Image != "Cockroach 3.jpg") %>%
+  
+  # MAX POS PIC
+  filter(Spreadsheet..Image != "Cat 5.jpg") %>%
+  
+  # MIN POS PIC
+  filter(Spreadsheet..Image != "Cups 3.jpg") %>%
+  
+  # MIN NEG MUSIC
+  filter(Spreadsheet..Audio != "11_pieceA_calm_anxious_sad_6.mp3") %>%
+  
+  # SECOND MIN NEG MUSIC
+  filter(Spreadsheet..Audio != "5_pieceB_calm_sad_anxious_9.mp3") %>%
+  
+  # MIN POS MUSIC
+  filter(Spreadsheet..Audio != "12_pieceA_joyous_sad_anxious_3.mp3") %>%
+  
+  # SECOND MIN POS MUSIC
+  filter(Spreadsheet..Audio != "5_pieceB_calm_sad_anxious_7.mp3")
+  
+```
+
+```{r}
+## Separating by picture vs music, removing practice stims
+granularity_pic <- granularity_data %>%
+  filter(Spreadsheet..Image != "") %>%
+  filter(Spreadsheet..Image != "Coffee 1.jpg") %>%
+  select(-c("Spreadsheet..Audio"))
+
+granularity_music <- granularity_data %>%
+  filter(Spreadsheet..Audio != "") %>%
+  filter(Spreadsheet..Audio != "8_pieceA_dreamy_calm_joyous_1.mp3") %>%
+  select(-c("Spreadsheet..Image"))
+```
+
+##-----Subsetting by valence and stimulus type--------
+```{r}
+# List of emotions
+neg_emotions <- c("Angry", "Sad", "Scared", "Anxious", "Upset")
+pos_emotions <- c("Happy", "Satisfied", "Excited", "Joyful", "Relaxed")
+
+# Function to filter and rename
+filter_and_rename <- function(data, emotion, media_type, keep_id = FALSE) {
+  columns_to_select <- if (keep_id) {
+    c("Participant.Public.ID", "Response")
+  } else {
+    c("Response")
+  }
+  
+  data %>%
+    filter(Object.Name == paste(emotion, "Slider")) %>%
+    select(-c(paste0("Spreadsheet..", media_type), "Object.Name")) %>%
+    select(all_of(columns_to_select)) %>%
+    rename(!!tolower(emotion) := "Response")
+}
+
+```
+
+##--Separating pics and music by valence (pos/neg)--
+```{r}
+pos_pic <- c("Beach 1.jpg", "Cat 5.jpg", "Fireworks 6.jpg", "Lake 12.jpg", "Rainbow 2.jpg", "Clean 1.jpg", "Cups 3.jpg", "Heart 3.jpg", "Rocks 1.jpg", "Snow 1.jpg")
+pos_pic_data <- granularity_pic %>%
+  filter(Spreadsheet..Image %in% pos_pic)
+
+neg_pic <- c("Cockroach 3.jpg", "Dirt 1.jpg", "Ferret 1.jpg", "Fire 10.jpg", "Flood 1.jpg", "Garbage dump 2.jpg", "Destruction 2.jpg", "Garbage dump 1.jpg", "Prison 2.jpg", "Toilet 4.jpg")
+neg_pic_data <- granularity_pic %>%
+  filter(Spreadsheet..Image %in% neg_pic)
+
+pos_music <- c("3_pieceB_joyous_anxious_sad_5.mp3", "6_pieceB_anxious_calm_joyous_8.mp3", "7_pieceB_joyous_anxious_sad_5.mp3", "7_pieceB_joyous_anxious_sad_6.mp3", "5_pieceB_calm_sad_anxious_7.mp3", "6_pieceB_anxious_calm_joyous_5.mp3", "6_pieceB_anxious_calm_joyous_7.mp3", "12_pieceA_joyous_sad_anxious_2.mp3", "12_pieceA_joyous_sad_anxious_3.mp3", "12_pieceA_joyous_sad_anxious_9.mp3")
+pos_music_data <- granularity_music %>%
+  filter(Spreadsheet..Audio %in% pos_music)
+
+neg_music <- c("3_pieceB_joyous_anxious_sad_1.mp3", "11_pieceA_calm_anxious_sad_4.mp3", "11_pieceA_calm_anxious_sad_5.mp3", "11_pieceA_calm_anxious_sad_6.mp3", "11_pieceA_calm_anxious_sad_8.mp3", "5_pieceB_calm_sad_anxious_1.mp3", "5_pieceB_calm_sad_anxious_2.mp3", "5_pieceB_calm_sad_anxious_3.mp3", "5_pieceB_calm_sad_anxious_9.mp3", "11_pieceA_calm_anxious_sad_2.mp3")
+neg_music_data <- granularity_music %>%
+  filter(Spreadsheet..Audio %in% neg_music)
+```
+
+## Confusion matrices - 8/15/24
+```{r}
+# 8 clips
+averages_pos_music <- pos_music_data %>%
+  group_by(Spreadsheet..Audio, Object.Name) %>%
+  summarise(
+    Average.Response = mean(Response, na.rm = TRUE),
+    se_value = sd(Response, na.rm = TRUE) / sqrt(n())
+    )
+
+# 8 clips
+averages_neg_music <- neg_music_data %>%
+  group_by(Spreadsheet..Audio, Object.Name) %>%
+  summarise(
+    Average.Response = mean(Response, na.rm = TRUE),
+    se_value = sd(Response, na.rm = TRUE) / sqrt(n())
+    )
+
+# 8 pics
+averages_pos_pic <- pos_pic_data %>%
+  group_by(Spreadsheet..Image, Object.Name) %>%
+  summarise(
+    Average.Response = mean(Response, na.rm = TRUE),
+    se_value = sd(Response, na.rm = TRUE) / sqrt(n())
+    )
+
+# 8 pics
+averages_neg_pic <- neg_pic_data %>%
+  group_by(Spreadsheet..Image, Object.Name) %>%
+  summarise(
+    Average.Response = mean(Response, na.rm = TRUE),
+    se_value = sd(Response, na.rm = TRUE) / sqrt(n())
+    )
+
+all_averages <- bind_rows(
+  averages_pos_music %>% mutate(Type = "Positive Valence Music"),
+  averages_neg_music %>% mutate(Type = "Negative Valence Music"),
+  averages_pos_pic %>% mutate(Type = "Positive Valence Pictures"),
+  averages_neg_pic %>% mutate(Type = "Negative Valence Pictures"),
+)
+
+all_averages$Object.Name <- gsub("Slider", "", all_averages$Object.Name)
+
+# Trim any extra whitespace that might be left after removing "Slider"
+all_averages$Object.Name <- trimws(all_averages$Object.Name)
+
+emotion_order <- c("Angry", "Anxious", "Sad", "Scared", "Upset", "Excited", "Happy", "Joyful", "Relaxed", "Satisfied")
+all_averages$Object.Name <- factor(all_averages$Object.Name, levels = emotion_order)
+
+grouped_averages <- split(all_averages, all_averages$Type)
+
+for(group_name in names(grouped_averages)) {
+  # Get the specific dataframe for the current group
+  df_group <- grouped_averages[[group_name]]
+  
+  # Identify the non-NA column (either Spreadsheet..Audio or Spreadsheet..Image)
+  df_group <- df_group %>%
+    mutate(Stimulus = ifelse(!is.na(Spreadsheet..Audio), Spreadsheet..Audio, Spreadsheet..Image))
+  
+  # Create the confusion matrix plot
+  p <- ggplot(df_group, aes(x = Object.Name, y = Stimulus, fill = Average.Response)) +
+    geom_tile() +
+    ggtitle(paste("Average Responses by Emotion and Stimulus for", group_name)) +
+    xlab("Emotion") +
+    ylab("Stimulus") +
+    scale_fill_gradient(low = "blue", high = "red") +  # Adjust color scheme as needed
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, color = "black"), axis.text.y = element_text(color = "black"), plot.background = element_rect(fill = "white", color = NA),  # Set plot background to white
+        panel.background = element_rect(fill = "white", color = NA))  # Rotate x-axis labels for readability
+  
+  # Print and save the plots
+  print(p)
+  ggsave(paste("../results/rating-task/", group_name, ".png"), p, width = 9)
+}
+
+```
+
+```{r}
+all_averages$Category <- ifelse(all_averages$Object.Name %in% c("Angry", "Anxious", "Sad", "Scared", "Upset"),
+                      "Negative Emotions",
+                      "Positive Emotions")
+
+summary_df <- all_averages %>%
+  group_by(Type, Category) %>%
+  summarise(
+    Average.Response = mean(Average.Response),
+    Combined.SE = sqrt(sum(se_value^2) / n())
+  )
+
+summary_plot <- ggplot(summary_df, aes(x = Category, y = Average.Response, color = Type, ymin = 0)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = Average.Response - Combined.SE, ymax = Average.Response + Combined.SE), 
+                width = 0.2) +
+  labs(title = "Emotion Categories - Mean Response by Stimulus Valence/Type", x = "Emotion", y = "Mean") +
+  theme_bw() +
+  ylim(0, 51)
+
+# Save the plots
+ggsave('../results/presentation/Emotion_Category_Means_8_13_24.png', summary_plot, width = 9)
+
+```
+
+```{r}
+# 10 clips
+averages_pos_music <- pos_music_data %>%
+  group_by(Spreadsheet..Audio) %>%
+  summarise(
+    Average.Response = mean(Response, na.rm = TRUE),
+    se_value = sd(Response, na.rm = TRUE) / sqrt(n())
+    )
+
+# 10 clips
+averages_neg_music <- neg_music_data %>%
+  group_by(Spreadsheet..Audio) %>%
+  summarise(
+    Average.Response = mean(Response, na.rm = TRUE),
+    se_value = sd(Response, na.rm = TRUE) / sqrt(n())
+    )
+
+# 10 pics
+averages_pos_pic <- pos_pic_data %>%
+  group_by(Spreadsheet..Image) %>%
+  summarise(
+    Average.Response = mean(Response, na.rm = TRUE),
+    se_value = sd(Response, na.rm = TRUE) / sqrt(n())
+    )
+
+# 10 pics
+averages_neg_pic <- neg_pic_data %>%
+  group_by(Spreadsheet..Image) %>%
+  summarise(
+    Average.Response = mean(Response, na.rm = TRUE),
+    se_value = sd(Response, na.rm = TRUE) / sqrt(n())
+    )
+
+all_averages <- bind_rows(
+  averages_pos_music %>% mutate(Type = "pos_music"),
+  averages_neg_music %>% mutate(Type = "neg_music"),
+  averages_pos_pic %>% mutate(Type = "pos_pic"),
+  averages_neg_pic %>% mutate(Type = "neg_pic"),
+)
+
+# min_values_pos_music <- all_averages %>%
+#   filter(Type == "pos_music") %>%
+#   slice_min(Average.Response, n = 2)
+# 
+# min_values_neg_music <- all_averages %>%
+#   filter(Type == "neg_music") %>%
+#   slice_min(Average.Response, n = 2)
+# 
+# min_values_neg_pic <- all_averages %>%
+#   filter(Type == "neg_pic") %>%
+#   slice_min(Average.Response, n = 2)
+# 
+# min_values_pos_pic <- all_averages %>%
+#   filter(Type == "pos_pic") %>%
+#   slice_min(Average.Response, n = 2)
+# 
+# max_values_pos_pic <- all_averages %>%
+#   filter(Type == "pos_pic") %>%
+#   slice_max(Average.Response, n = 2)
+# 
+# max_values_neg_pic <- all_averages %>%
+#   filter(Type == "neg_pic") %>%
+#   slice_max(Average.Response, n = 2)
+
+# ## REMOVING SOME STIMULI
+# 
+# all_averages <- anti_join(all_averages, max_values_pos_pic, by = c("Spreadsheet..Audio", "Average.Response", "se_value", "Type", "Spreadsheet..Image"))
+# all_averages <- anti_join(all_averages, min_values_pos_pic, by = c("Spreadsheet..Audio", "Average.Response", "se_value", "Type", "Spreadsheet..Image"))
+# all_averages <- anti_join(all_averages, max_values_neg_pic, by = c("Spreadsheet..Audio", "Average.Response", "se_value", "Type", "Spreadsheet..Image"))
+# all_averages <- anti_join(all_averages, min_values_neg_pic, by = c("Spreadsheet..Audio", "Average.Response", "se_value", "Type", "Spreadsheet..Image"))
+# 
+# all_averages <- anti_join(all_averages, min_values_neg_music, by = c("Spreadsheet..Audio", "Average.Response", "se_value", "Type", "Spreadsheet..Image"))
+# all_averages <- anti_join(all_averages, min_values_pos_music, by = c("Spreadsheet..Audio", "Average.Response", "se_value", "Type", "Spreadsheet..Image"))
+
+library(ggrepel)
+
+all_averages$Type[all_averages$Type == "neg_music" | all_averages$Type == "pos_music"] = "Music"
+all_averages$Type[all_averages$Type == "neg_pic" | all_averages$Type == "pos_pic"] = "Picture"
+
+all_stims_plotted <- ggplot(all_averages, aes(x = Type, y = Average.Response)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = Average.Response - se_value, ymax = Average.Response + se_value), alpha = 0.4, width = 0.2) +
+  labs(title = "All Stimuli - Average Responses", x = "Stimulus Type", y = "Mean Response") +
+  theme_bw()
+
+ggsave('../results/presentation/All_Stims_Means_8_13_24.png', all_stims_plotted, width = 14)
+
+collapsed_stims <- all_averages %>%
+  group_by(Type) %>%
+  summarise(
+    Mean_Value = mean(Average.Response),
+    Combined_SE = sqrt(sum(se_value^2) / n())  # Combining standard errors
+  )

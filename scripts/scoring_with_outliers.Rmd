@@ -1,4 +1,10 @@
 ---
+title: "scoring_with_outliers_preserved"
+output: html_document
+date: "2024-08-15"
+---
+
+---
 title: "Gorilla_v11_Analysis"
 output: html_document
 date: "2024-08-13"
@@ -11,7 +17,6 @@ if (!(require("psych"))) install.packages("psych"); require("psych")
 if (!require("irr")) {install.packages("irr"); require("irr")} 
 if (!require("reshape2")) {install.packages("reshape2"); require("reshape2")} 
 if (!require("ggrepel")) {install.packages("ggrepel"); require("ggrepel")} 
-if (!require("pwr")) {install.packages("pwr"); require("pwr")}
 ```
 
 #---------Load in data--------
@@ -55,62 +60,6 @@ granularity_data <- granularity_data %>%
   # SECOND MIN POS MUSIC
   filter(Spreadsheet..Audio != "5_pieceB_calm_sad_anxious_7.mp3")
   
-```
-
-```{r}
-# granularity_data <- granularity_data %>%
-#   # MAX NEG PIC
-#   filter(Spreadsheet..Image != "Garbage dump 2.jpg") %>%
-#   
-#   # SECOND MAX NEG PIC
-#   filter(Spreadsheet..Image != "Destruction 2.jpg") %>%
-#   
-#   # MAX POS PIC
-#   filter(Spreadsheet..Image != "Cat 5.jpg") %>%
-#   
-#   # SECOND MAX POS PIC
-#   filter(Spreadsheet..Image != "Lake 12.jpg") %>%
-#   
-#   # MIN NEG MUSIC
-#   filter(Spreadsheet..Audio != "11_pieceA_calm_anxious_sad_6.mp3") %>%
-#   
-#   # SECOND MIN NEG MUSIC
-#   filter(Spreadsheet..Audio != "5_pieceB_calm_sad_anxious_9.mp3") %>%
-#   
-#   # MIN POS MUSIC
-#   filter(Spreadsheet..Audio != "12_pieceA_joyous_sad_anxious_3.mp3") %>%
-#   
-#   # SECOND MIN POS MUSIC
-#   filter(Spreadsheet..Audio != "5_pieceB_calm_sad_anxious_7.mp3")
-#   
-```
-
-```{r}
-# granularity_data <- granularity_data %>%
-#   # MIN NEG PIC
-#   filter(Spreadsheet..Image != "Cockroach 3.jpg") %>%
-#   
-#   # SECOND MIN NEG PIC
-#   filter(Spreadsheet..Image != "Dirt 1.jpg") %>%
-#   
-#   # MIN POS PIC
-#   filter(Spreadsheet..Image != "Cups 3.jpg") %>%
-#   
-#   # SECOND MIN POS PIC
-#   filter(Spreadsheet..Image != "Heart 3.jpg") %>%
-#   
-#   # MIN NEG MUSIC
-#   filter(Spreadsheet..Audio != "11_pieceA_calm_anxious_sad_6.mp3") %>%
-#   
-#   # SECOND MIN NEG MUSIC
-#   filter(Spreadsheet..Audio != "5_pieceB_calm_sad_anxious_9.mp3") %>%
-#   
-#   # MIN POS MUSIC
-#   filter(Spreadsheet..Audio != "12_pieceA_joyous_sad_anxious_3.mp3") %>%
-#   
-#   # SECOND MIN POS MUSIC
-#   filter(Spreadsheet..Audio != "5_pieceB_calm_sad_anxious_7.mp3")
-#   
 ```
 
 ```{r}
@@ -595,13 +544,9 @@ results$pospicICC <- compute_icc(pic_positive_list, "pospicICC")
 results
 ```
 
-# after removing outliers
+##Recoding scores above 1 as 1
 ```{r}
-results <- results %>%
-  filter(negpicICC < 1) %>%
-  filter(negmusicICC < 1) %>%
-  filter(pospicICC < 1) %>%
-  filter(posmusicICC < 1)
+results[, 2:5] <- lapply(results[, 2:5], function(x) ifelse(x > 1, 1, x))
 ```
 
 ##Plotting some things
@@ -613,35 +558,35 @@ df_long2 <- results %>% gather(key = "Variable", value = "Value", posmusicICC, p
 # Create and print histograms
 negICChist <- ggplot(df_long1, aes(x = Value, fill = Variable)) +
   geom_histogram(position = "identity", alpha = 0.5) +
-  labs(title = "Negative Emotions - Granularity Scores", x = "Granularity Score", y = "Count")
-ggsave('../results/presentation/Negative ICCs 8_13_24.png', negICChist, width = 14)
+  labs(title = "Negative Emotions - Granularity Scores (Outliers Recoded)", x = "Granularity Score", y = "Count")
+ggsave('../results/presentation/Negative ICCs (Outliers Recoded) 8_14_24.png', negICChist, width = 14)
 
 posICChist <- ggplot(df_long2, aes(x = Value, fill = Variable)) +
   geom_histogram(position = "identity", alpha = 0.5) +
-  labs(title = "Positive Emotions - Granularity Scores", x = "Granularity Score", y = "Count")
-ggsave('../results/presentation/Positive ICCs 8_13_24.png', posICChist, width = 14)
+  labs(title = "Positive Emotions - Granularity Scores (Outliers Recoded)", x = "Granularity Score", y = "Count")
+ggsave('../results/presentation/Positive ICCs (Outliers Recoded) 8_14_24.png', posICChist, width = 14)
 
 pos_graph <- ggplot(data = results, aes(x = pospicICC, y = posmusicICC)) +
   geom_point() +
   stat_smooth(method = 'lm') +
   xlab('Positive Emotion Granularity (Pictures)') +
   ylab('Positive Emotion Granularity (Music)') +
-  ggtitle('Correlation of Positive Emotion Granularity Scores') +
+  ggtitle('Correlation of Positive Emotion Granularity Scores (Outliers Recoded)') +
   theme_classic() +
   theme(axis.title.x = element_text(size=14, face='bold'), axis.title.y = element_text(size=14, face='bold'), axis.text.x = element_text(size=12), axis.text.y = element_text(size=12), plot.title = element_text(size=16, face='bold', hjust = 0.5))
 
-ggsave('../results/presentation/Pos_Graph 8_13_24.png', pos_graph, width = 9)
+ggsave('../results/presentation/Pos_Graph (Outliers Recoded) 8_14_24.png', pos_graph, width = 9)
 
 neg_graph <- ggplot(data = results, aes(x = negpicICC, y = negmusicICC)) +
   geom_point() +
   stat_smooth(method = 'lm') +
   xlab('Negative Emotion Granularity (Pictures)') +
   ylab('Negative Emotion Granularity (Music)') +
-  ggtitle('Correlation of Negative Emotion Granularity Scores') +
+  ggtitle('Correlation of Negative Emotion Granularity Scores (Outliers Recoded)') +
   theme_classic() +
   theme(axis.title.x = element_text(size=14, face='bold'), axis.title.y = element_text(size=14, face='bold'), axis.text.x = element_text(size=12), axis.text.y = element_text(size=12), plot.title = element_text(size=16, face='bold', hjust = 0.5))
 
-ggsave('../results/presentation/Neg_Graph 8_13_24.png', neg_graph, width = 9)
+ggsave('../results/presentation/Neg_Graph (Outliers Recoded) 8_14_24.png', neg_graph, width = 9)
 
 ```
 
@@ -662,78 +607,84 @@ mean_comparison <- results %>%
   theme(axis.title.x = element_text(size=14, face='bold'), axis.title.y = element_text(size=14, face='bold'), axis.text.x = element_text(size=12), axis.text.y = element_text(size=12)) +
   scale_x_discrete(labels = c('Negative Music', 'Negative Picture', 'Positive Music', 'Positive Picture'))
 
-ggsave('../results/presentation/Mean_Comparisons.png', mean_comparison, width = 9)
+ggsave('../results/presentation/Mean_Comparisons (Outliers Recoded).png', mean_comparison, width = 9)
 ```
 
-##Power analysis - NEW FOR 8/15/24
 ```{r}
-effect_size <- function(x, y) {
-  mean_diff <- mean(x - y, na.rm = TRUE)
-  sd_diff <- sd(x - y, na.rm = TRUE)
-  return(mean_diff / sd_diff)
+scores <- df %>%
+  dplyr::select("PROLIFIC_PID", "STAI_total":"sMEDT")
+
+scores$PROLIFIC_PID[2] = "29734"
+scores$PROLIFIC_PID[3] = "29710"
+scores$PROLIFIC_PID[4] = "29740"
+scores$PROLIFIC_PID[5] = "21682"
+scores$PROLIFIC_PID[6] = "29662"
+scores$PROLIFIC_PID[7] = "29698"
+scores$PROLIFIC_PID[13] = "Ryanne"
+scores$PROLIFIC_PID[14] = "Ray"
+scores$PROLIFIC_PID[26] = "Autumn"
+
+redcap_scores <- read.csv("../data/qualtrics/redcap_scores.csv")
+redcap_scores <- redcap_scores[, 2:ncol(redcap_scores)]
+
+# Perform an outer join across all dataframes
+merged_scores <- merge(scores, redcap_scores, by.x = "PROLIFIC_PID", by.y = "participant_id", all = TRUE, suffixes = c(".df1", ".df2"))
+common_cols <- intersect(names(scores), names(redcap_scores))
+
+for (col in common_cols) {
+  merged_scores[col] <- ifelse(is.na(merged_scores[[paste0(col, ".df1")]]),
+                             merged_scores[[paste0(col, ".df2")]],
+                             merged_scores[[paste0(col, ".df1")]])
 }
 
-round_up <- function(x, digits) {
-  factor <- 10^digits
-  return(ceiling(x * factor) / factor)
-}
+# Remove the now redundant columns with suffixes
+merged_scores <- merged_scores[, !grepl("\\.df1$|\\.df2$", names(merged_scores))]
 
-## Power analysis for difference of means of positive granularity scores
-# Set desired significance level (alpha) and power
-# I just set like super stringent criteria for now since the differences are so significant
-alpha <- 0.05
-power <- 0.8
-
-# Calculate the effect size
-d_pos <- effect_size(results$posmusicICC, results$pospicICC)
-mean(results$posmusicICC - results$pospicICC)
-sd(results$posmusicICC - results$pospicICC)
-
-# Calculate the necessary sample size
-sample_size_pos <- pwr.t.test(d = d_pos, power = power, sig.level = alpha, type = "paired")$n
-
-paste("Effect size for difference in means of positive granularity scores is", round(d_pos, 2), "--> N =", round_up(sample_size_pos, 0), "for 95% power.")
-
-## Repeat for negative granularity scores
-
-d_neg <- effect_size(results$negmusicICC, results$negpicICC)
-mean(results$negmusicICC - results$negpicICC)
-sd(results$negmusicICC - results$negpicICC)
-
-sample_size_neg <- pwr.t.test(d = d_neg, power = power, sig.level = alpha, type = "paired")$n
-
-paste("Effect size for difference in means of negative granularity scores is", round(d_neg, 2), "--> N =", round_up(sample_size_neg, 0), "for 95% power.")
-
+merged_df <- merge(merged_scores, results, by.x = "PROLIFIC_PID", by.y = "ID", all = FALSE)
 
 ```
 
-## Maybe try powering with negative emotion granularity score correlation? - 8/15/24
+#correlations
 ```{r}
-cor_test_neg <- cor.test(results$negmusicICC, results$negpicICC, method = "pearson")
+# Select only the numeric columns for the correlation matrix
+numeric_columns <- merged_df[, sapply(merged_df, is.numeric)]
 
-# Extract the correlation coefficient (r)
-r <- cor_test_neg$estimate
+# Calculate the correlation matrix
+correlation_matrix <- cor(numeric_columns, use = "pairwise.complete.obs")
 
-alpha <- 0.05
-power <- 0.8
+# Function to compute significance levels
+cor.mtest <- function(mat, conf.level = 0.95) {
+  mat <- as.matrix(mat)
+  n <- ncol(mat)
+  p.mat <- matrix(NA, n, n)
+  diag(p.mat) <- 0
+  for (i in 1:(n - 1)) {
+    for (j in (i + 1):n) {
+      tmp <- cor.test(mat[, i], mat[, j], conf.level = conf.level)
+      p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
+    }
+  }
+  colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
+  p.mat
+}
 
-# Perform power analysis
-power_analysis_neg <- pwr.r.test(r = r, sig.level = alpha, power = power)
+# Compute p-values
+p_values <- cor.mtest(numeric_columns)
 
-# Print the power analysis result
-print(power_analysis_neg)
+# Specify the folder where you want to save the file
+output_folder <- "../results/presentation/"
 
-cor_test_pos <- cor.test(results$posmusicICC, results$pospicICC, method = "pearson")
+# Combine the folder path with the file name
+output_file <- file.path(output_folder, "Significant Correlations Plot (Outliers Recoded).png")
 
-# Extract the correlation coefficient (r)
-r <- cor_test_pos$estimate
+# Open a PNG device with the specified file path
+png(output_file, width = 800, height = 800)
 
-alpha <- 0.05
-power <- 0.8
+# Generate the corrplot
+corrplot(correlation_matrix, method = "circle", type = "upper", 
+         p.mat = p_values, sig.level = 0.05, insig = "blank",
+         tl.col = "black", tl.srt = 45, addCoef.col = NULL)
 
-# Perform power analysis
-power_analysis_pos <- pwr.r.test(r = r, sig.level = alpha, power = power)
-
-# Print the power analysis result
-print(power_analysis_pos)
+# Close the PNG device
+dev.off()
 ```

@@ -6,6 +6,8 @@ date: "2024-08-11"
 #replace "df" in script w/ dataframe name of survey.csv
 ```{r}
 library(tidyverse)
+install.packages("corrplot")
+library(corrplot)
 source("reverseCode.R")
 
 data <- read.csv("../data/qualtrics/emo-granularity_August 11, 2024_18.12.csv")
@@ -307,4 +309,86 @@ sMEDT$I18_sMEDT_resposne <- ifelse(sMEDT$I18_sMEDT_resposne == 1, 1, 0)
 df$sMEDT <- apply(sMEDT,1, sum)/18
 
 hist(df$sMEDT)
+```
+
+```{r}
+scores <- df %>%
+  dplyr::select("PROLIFIC_PID", "STAI_total":"sMEDT")
+
+scores$PROLIFIC_PID[2] = "29734"
+scores$PROLIFIC_PID[3] = "29710"
+scores$PROLIFIC_PID[4] = "29740"
+scores$PROLIFIC_PID[5] = "21682"
+scores$PROLIFIC_PID[6] = "29662"
+scores$PROLIFIC_PID[7] = "29698"
+scores$PROLIFIC_PID[13] = "Ryanne"
+scores$PROLIFIC_PID[14] = "Ray"
+scores$PROLIFIC_PID[26] = "Autumn"
+
+```
+
+```{r}
+redcap_scores <- read.csv("../data/qualtrics/redcap_scores.csv")
+redcap_scores <- redcap_scores[, 2:ncol(redcap_scores)]
+
+# Perform an outer join across all dataframes
+merged_scores <- merge(scores, redcap_scores, by.x = "PROLIFIC_PID", by.y = "participant_id", all = TRUE, suffixes = c(".df1", ".df2"))
+common_cols <- intersect(names(scores), names(redcap_scores))
+
+for (col in common_cols) {
+  merged_scores[col] <- ifelse(is.na(merged_scores[[paste0(col, ".df1")]]),
+                             merged_scores[[paste0(col, ".df2")]],
+                             merged_scores[[paste0(col, ".df1")]])
+}
+
+# Remove the now redundant columns with suffixes
+merged_scores <- merged_scores[, !grepl("\\.df1$|\\.df2$", names(merged_scores))]
+
+merged_df <- merge(merged_scores, results, by.x = "PROLIFIC_PID", by.y = "ID", all = FALSE)
+```
+
+#correlations
+```{r}
+# Select only the numeric columns for the correlation matrix
+numeric_columns <- merged_df[, sapply(merged_df, is.numeric)]
+
+# Calculate the correlation matrix
+correlation_matrix <- cor(numeric_columns, use = "complete.obs")
+
+# Function to compute significance levels
+cor.mtest <- function(mat, conf.level = 0.95) {
+  mat <- as.matrix(mat)
+  n <- ncol(mat)
+  p.mat <- matrix(NA, n, n)
+  diag(p.mat) <- 0
+  for (i in 1:(n - 1)) {
+    for (j in (i + 1):n) {
+      tmp <- cor.test(mat[, i], mat[, j], conf.level = conf.level)
+      p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
+    }
+  }
+  colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
+  p.mat
+}
+
+# Compute p-values
+p_values <- cor.mtest(numeric_columns)
+
+# Specify the folder where you want to save the file
+output_folder <- "../results/presentation/"
+
+# Combine the folder path with the file name
+output_file <- file.path(output_folder, "Significant Correlations Plot.png")
+
+# Open a PNG device with the specified file path
+png(output_file, width = 800, height = 800)
+
+# Generate the corrplot
+corrplot(correlation_matrix, method = "circle", type = "upper", 
+         p.mat = p_values, sig.level = 0.05, insig = "blank",
+         tl.col = "black", tl.srt = 45, addCoef.col = NULL)
+
+# Close the PNG device
+dev.off()
+
 ```
