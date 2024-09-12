@@ -172,7 +172,6 @@ music_positive <- bind_cols(filtered_music_pos)
 pic_negative <- bind_cols(filtered_pic_neg)
 
 pic_positive <- bind_cols(filtered_pic_pos)
-
 ```
 
 ##--Plotting means of emotion word ratings--
@@ -408,6 +407,10 @@ all_averages$Category <- ifelse(all_averages$Object.Name %in% c("Angry", "Anxiou
                       "Negative Emotions",
                       "Positive Emotions")
 
+# REMOVE ANGRY TO CHECK
+all_averages <- all_averages %>%
+  filter(Object.Name != "Angry")
+
 summary_df <- all_averages %>%
   group_by(Type, Category) %>%
   summarise(
@@ -419,12 +422,12 @@ summary_plot <- ggplot(summary_df, aes(x = Category, y = Average.Response, color
   geom_point() +
   geom_errorbar(aes(ymin = Average.Response - Combined.SE, ymax = Average.Response + Combined.SE), 
                 width = 0.2) +
-  labs(title = "Emotion Categories - Mean Response by Stimulus Valence/Type", x = "Emotion", y = "Mean") +
+  labs(title = "Emotion Categories - Mean Response by Stimulus Valence/Type (with Anger Removed)", x = "Emotion", y = "Mean") +
   theme_bw() +
   ylim(0, 51)
 
 # Save the plots
-ggsave('../results/presentation/Emotion_Category_Means_8_13_24.png', summary_plot, width = 9)
+ggsave('../results/rating-task/Emotion_Category_Means_No_Anger_8_27_24.png', summary_plot, width = 9)
 
 ```
 
@@ -553,14 +556,25 @@ cat("p-value:", p_value, "\n")
 
 ```{r}
 
+# for 8-27-24
+all_averages$Type[all_averages$Type == "Negative Valence Music" | all_averages$Type == "Positive Valence Music"] = "Music"
+all_averages$Type[all_averages$Type == "Negative Valence Pictures" | all_averages$Type == "Positive Valence Pictures"] = "Picture"
+
+collapsed_stims <- all_averages %>%
+  group_by(Type) %>%
+  summarise(
+    Mean_Value = mean(Average.Response),
+    Combined_SE = sqrt(sum(se_value^2) / n())  # Combining standard errors
+  )
+
 collapsed_plot <- ggplot(collapsed_stims, aes(x = Type, y = Mean_Value, color = Mean_Value, label = Mean_Value)) +
   geom_point() +
   geom_text(hjust=0, vjust=0) +
   geom_errorbar(aes(ymin = Mean_Value - Combined_SE, ymax = Mean_Value + Combined_SE, color = Mean_Value), alpha = 0.4, width = 0.2) +
-  labs(title = "Stimulus Response Averages", x = "Stimulus Type", y = "Mean Response") +
+  labs(title = "Stimulus Response Averages (with Anger Removed)", x = "Stimulus Type", y = "Mean Response") +
   theme_bw()
 
-ggsave('../results/presentation/Average_Stims_Means_8_13_24_Error_Bars.png', collapsed_plot, width = 10)
+ggsave('../results/rating-task/Average_Stims_Means_8_27_24_Error_Bars.png', collapsed_plot, width = 10)
 
 ```
 
@@ -582,6 +596,10 @@ music_positive_list <- split(music_positive, music_positive$Participant.Public.I
 pic_negative_list <- split(pic_negative, pic_negative$Participant.Public.ID)
 pic_positive_list <- split(pic_positive, pic_positive$Participant.Public.ID)
 
+# To test without "angry" data
+# music_negative <- music_negative %>%
+#   select(-c("angry"))
+
 # Initialize results DataFrame
 results <- expand.grid(ID = names(music_negative_list))
 
@@ -591,8 +609,41 @@ results$posmusicICC <- compute_icc(music_positive_list, "posmusicICC")
 results$negpicICC <- compute_icc(pic_negative_list, "negpicICC")
 results$pospicICC <- compute_icc(pic_positive_list, "pospicICC")
 
+## 8-28-24 ADDING COMBINED SCORES
+results$allmusicICC <- rowMeans(results[, c("negmusicICC", "posmusicICC")])
+results$allpicICC <- rowMeans(results[, c("negpicICC", "pospicICC")])
+
 # Display the result
 results
+```
+
+#scoring granularity responses # FISHER Z TRANSFORM VERSION
+```{r}
+# WITHOUT RECODING
+compute_icc <- function(data_list, result_column) {
+  sapply(seq_along(data_list), function(i) {
+    icc_result <- data_list[[i]] %>%
+      select(-Participant.Public.ID) %>%
+      icc(model = "twoway", type = "consistency", unit = "average")
+    
+    1 - fisherz(icc_result$value)
+  })
+}
+
+# FOR RECODED VERSION
+compute_icc <- function(data_list, result_column) {
+  sapply(seq_along(data_list), function(i) {
+    icc_result <- data_list[[i]] %>%
+      select(-Participant.Public.ID) %>%
+      icc(model = "twoway", type = "consistency", unit = "average")
+    
+    # recode correlations less than 0 as 0
+    icc_value <- ifelse(icc_result$value < 0, 0, icc_result$value)
+    
+    # Fisher transformation and reverse scoring
+    1 - fisherz(icc_value)
+  })
+}
 ```
 
 # after removing outliers
@@ -601,10 +652,13 @@ results <- results %>%
   filter(negpicICC < 1) %>%
   filter(negmusicICC < 1) %>%
   filter(pospicICC < 1) %>%
-  filter(posmusicICC < 1)
+  filter(posmusicICC < 1) %>%
+  filter(allpicICC < 1) %>%
+  filter(allmusicICC < 1)
 ```
 
-##Plotting some things
+##Plotting granularity scores for overall spread and correlations and 
+##UPDATED 8-27-24 WITH FISHER R TO Z TRANSFORMS
 ```{r}
 # Reshape data for both histograms
 df_long1 <- results %>% gather(key = "Variable", value = "Value", negmusicICC, negpicICC)
@@ -613,37 +667,58 @@ df_long2 <- results %>% gather(key = "Variable", value = "Value", posmusicICC, p
 # Create and print histograms
 negICChist <- ggplot(df_long1, aes(x = Value, fill = Variable)) +
   geom_histogram(position = "identity", alpha = 0.5) +
-  labs(title = "Negative Emotions - Granularity Scores", x = "Granularity Score", y = "Count")
-ggsave('../results/presentation/Negative ICCs 8_13_24.png', negICChist, width = 14)
+  labs(title = "Negative Emotions - Granularity Scores (Fisher r to z) (Scores > 1 Recoded)", x = "Granularity Score", y = "Count")
+ggsave('../results/rating-task/Negative ICCs 8_27_24v2.png', negICChist, width = 14)
 
 posICChist <- ggplot(df_long2, aes(x = Value, fill = Variable)) +
   geom_histogram(position = "identity", alpha = 0.5) +
-  labs(title = "Positive Emotions - Granularity Scores", x = "Granularity Score", y = "Count")
-ggsave('../results/presentation/Positive ICCs 8_13_24.png', posICChist, width = 14)
+  labs(title = "Positive Emotions - Granularity Scores (Fisher r to z) (Scores > 1 Recoded)", x = "Granularity Score", y = "Count")
+ggsave('../results/rating-task/Positive ICCs 8_27_24v2.png', posICChist, width = 14)
 
 pos_graph <- ggplot(data = results, aes(x = pospicICC, y = posmusicICC)) +
   geom_point() +
   stat_smooth(method = 'lm') +
   xlab('Positive Emotion Granularity (Pictures)') +
   ylab('Positive Emotion Granularity (Music)') +
-  ggtitle('Correlation of Positive Emotion Granularity Scores') +
+  ggtitle('Correlation of Positive Emotion Granularity Scores (Fisher r to z) (Scores > 1 Recoded)') +
   theme_classic() +
   theme(axis.title.x = element_text(size=14, face='bold'), axis.title.y = element_text(size=14, face='bold'), axis.text.x = element_text(size=12), axis.text.y = element_text(size=12), plot.title = element_text(size=16, face='bold', hjust = 0.5))
 
-ggsave('../results/presentation/Pos_Graph 8_13_24.png', pos_graph, width = 9)
+ggsave('../results/rating-task/Pos_Graph 8_27_24v2.png', pos_graph, width = 10)
 
 neg_graph <- ggplot(data = results, aes(x = negpicICC, y = negmusicICC)) +
   geom_point() +
   stat_smooth(method = 'lm') +
   xlab('Negative Emotion Granularity (Pictures)') +
   ylab('Negative Emotion Granularity (Music)') +
-  ggtitle('Correlation of Negative Emotion Granularity Scores') +
+  ggtitle('Correlation of Negative Emotion Granularity Scores (Fisher r to z) (Scores > 1 Recoded)') +
   theme_classic() +
   theme(axis.title.x = element_text(size=14, face='bold'), axis.title.y = element_text(size=14, face='bold'), axis.text.x = element_text(size=12), axis.text.y = element_text(size=12), plot.title = element_text(size=16, face='bold', hjust = 0.5))
 
-ggsave('../results/presentation/Neg_Graph 8_13_24.png', neg_graph, width = 9)
+ggsave('../results/rating-task/Neg_Graph 8_27_24v2.png', neg_graph, width = 10)
 
 ```
+## GRAPHING COMBINED SCORES
+```{r}
+df_long3 <- results %>% gather(key = "Variable", value = "Value", allmusicICC, allpicICC)
+
+allICChist <- ggplot(df_long3, aes(x = Value, fill = Variable)) +
+  geom_histogram(position = "identity", alpha = 0.5) +
+  labs(title = "All Emotions - Granularity Scores (Fisher r to z) (Scores > 1 Recoded)", x = "Granularity Score", y = "Count")
+ggsave('../results/rating-task/Combined ICCs (Fisher r to z) (Scores > 1 Recoded) 8_28_24.png', allICChist, width = 14)
+
+all_graph <- ggplot(data = results, aes(x = allpicICC, y = allmusicICC)) +
+  geom_point() +
+  stat_smooth(method = 'lm') +
+  xlab('Positive Emotion Granularity (Pictures)') +
+  ylab('Positive Emotion Granularity (Music)') +
+  ggtitle('Correlation of Combined Emotion Granularity Scores (Fisher r to z) (Scores > 1 Recoded)') +
+  theme_classic() +
+  theme(axis.title.x = element_text(size=14, face='bold'), axis.title.y = element_text(size=14, face='bold'), axis.text.x = element_text(size=12), axis.text.y = element_text(size=12), plot.title = element_text(size=16, face='bold', hjust = 0.5))
+ggsave('../results/rating-task/Combined Graph (Fisher r to z) (Scores > 1 Recoded) 8_28_24.png', all_graph, width = 10)
+
+```
+
 
 ```{r}
 cor.test(results$posmusicICC, results$pospicICC)
@@ -659,10 +734,14 @@ mean_comparison <- results %>%
   theme_bw() +
   xlab('Stimulus and Valence') +
   ylab('Average Emotion Granularity') +
+  ggtitle('Average Granularity Scores by Stimulus Type/Valence (Fisher r to z)') +
   theme(axis.title.x = element_text(size=14, face='bold'), axis.title.y = element_text(size=14, face='bold'), axis.text.x = element_text(size=12), axis.text.y = element_text(size=12)) +
   scale_x_discrete(labels = c('Negative Music', 'Negative Picture', 'Positive Music', 'Positive Picture'))
 
-ggsave('../results/presentation/Mean_Comparisons.png', mean_comparison, width = 9)
+ggsave('../results/rating-task/Mean_Comparisons_8_27_24v1.png', mean_comparison, width = 9)
+
+cor.test(results$allmusicICC, results$allpicICC)
+
 ```
 
 ##Power analysis - NEW FOR 8/15/24
@@ -682,7 +761,7 @@ round_up <- function(x, digits) {
 # Set desired significance level (alpha) and power
 # I just set like super stringent criteria for now since the differences are so significant
 alpha <- 0.05
-power <- 0.8
+power <- 0.80
 
 # Calculate the effect size
 d_pos <- effect_size(results$posmusicICC, results$pospicICC)
@@ -692,7 +771,7 @@ sd(results$posmusicICC - results$pospicICC)
 # Calculate the necessary sample size
 sample_size_pos <- pwr.t.test(d = d_pos, power = power, sig.level = alpha, type = "paired")$n
 
-paste("Effect size for difference in means of positive granularity scores is", round(d_pos, 2), "--> N =", round_up(sample_size_pos, 0), "for 95% power.")
+paste("Effect size for difference in means of positive granularity scores is", round(d_pos, 2), "--> N =", round_up(sample_size_pos, 0), "for 80% power.")
 
 ## Repeat for negative granularity scores
 
@@ -702,8 +781,15 @@ sd(results$negmusicICC - results$negpicICC)
 
 sample_size_neg <- pwr.t.test(d = d_neg, power = power, sig.level = alpha, type = "paired")$n
 
-paste("Effect size for difference in means of negative granularity scores is", round(d_neg, 2), "--> N =", round_up(sample_size_neg, 0), "for 95% power.")
+paste("Effect size for difference in means of negative granularity scores is", round(d_neg, 2), "--> N =", round_up(sample_size_neg, 0), "for 80% power.")
 
+d_all <- effect_size(results$allmusicICC, results$allpicICC)
+mean(results$allmusicICC - results$allpicICC)
+sd(results$allmusicICC - results$allpicICC)
+
+sample_size_all <- pwr.t.test(d = d_all, power = power, sig.level = alpha, type = "paired")$n
+
+paste("Effect size for difference in means of combined granularity scores is", round(d_neg, 2), "--> N =", round_up(sample_size_all, 0), "for 80% power.")
 
 ```
 
@@ -728,12 +814,20 @@ cor_test_pos <- cor.test(results$posmusicICC, results$pospicICC, method = "pears
 # Extract the correlation coefficient (r)
 r <- cor_test_pos$estimate
 
-alpha <- 0.05
-power <- 0.8
-
 # Perform power analysis
 power_analysis_pos <- pwr.r.test(r = r, sig.level = alpha, power = power)
 
 # Print the power analysis result
 print(power_analysis_pos)
+
+cor_test_all <- cor.test(results$allmusicICC, results$allpicICC, method = "pearson")
+
+# Extract the correlation coefficient (r)
+r <- cor_test_all$estimate
+
+# Perform power analysis
+power_analysis_all <- pwr.r.test(r = r, sig.level = alpha, power = power)
+
+# Print the power analysis result
+print(power_analysis_all)
 ```

@@ -189,6 +189,19 @@ for(group_name in names(grouped_averages)) {
 ```
 
 ```{r}
+neg_music_averages <- as.data.frame(grouped_averages[1])
+
+neg_music_plotted <- ggplot(neg_music_averages, aes(x = Negative.Valence.Music.Object.Name, y = Negative.Valence.Music.Average.Response, color = Negative.Valence.Music.Spreadsheet..Audio)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = Negative.Valence.Music.Average.Response - Negative.Valence.Music.se_value, ymax = Negative.Valence.Music.Average.Response + Negative.Valence.Music.se_value), alpha = 0.3, width = 0.2) +
+  labs(title = "Average Emotion Response by Stimulus", x = "Emotion", y = "Average Response", color = "Negative.Valence.Music.Spreadsheet..Audio") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggsave("../results/rating-task/Negative Music Average Emotion.png", neg_music_plotted, width = 12)
+```
+
+```{r}
 all_averages$Category <- ifelse(all_averages$Object.Name %in% c("Angry", "Anxious", "Sad", "Scared", "Upset"),
                       "Negative Emotions",
                       "Positive Emotions")

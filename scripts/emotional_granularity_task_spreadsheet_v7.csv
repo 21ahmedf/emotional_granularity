@@ -1,0 +1,72 @@
+﻿display,Image,Audio,randomise_block,gloomy_rating,upset_rating,scared_rating,sad_rating,anxious_rating,happy_rating,satisfied_rating,excited_rating,joyful_rating,relaxed_rating
+Instructions,,,,,,,,,,,,,
+Fixation_Image_Practice,Coffee 1.jpg,,,,,,,,,,,,
+Ratings_Practice,Coffee 1.jpg,,,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Music_Practice,,8_pieceA_dreamy_calm_joyous_1.mp3,,,,,,,,,,,
+Ratings_Practice,,8_pieceA_dreamy_calm_joyous_1.mp3,,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Practice_End,,,,,,,,,,,,,
+Fixation_Image,Beach 1.jpg,,1,,,,,,,,,,
+Ratings,Beach 1.jpg,,1,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Image,Clean 1.jpg,,2,,,,,,,,,,
+Ratings,Clean 1.jpg,,2,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Image,Destruction 2.jpg,,3,,,,,,,,,,
+Ratings,Destruction 2.jpg,,3,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Image,Dirt 1.jpg,,4,,,,,,,,,,
+Ratings,Dirt 1.jpg,,4,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Image,Ferret 1.jpg,,5,,,,,,,,,,
+Ratings,Ferret 1.jpg,,5,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Image,Fire 10.jpg,,6,,,,,,,,,,
+Ratings,Fire 10.jpg,,6,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Image,Fireworks 6.jpg,,7,,,,,,,,,,
+Ratings,Fireworks 6.jpg,,7,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Image,Flood 1.jpg,,8,,,,,,,,,,
+Ratings,Flood 1.jpg,,8,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Image,Garbage dump 1.jpg,,9,,,,,,,,,,
+Ratings,Garbage dump 1.jpg,,9,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Image,Heart 3.jpg,,10,,,,,,,,,,
+Ratings,Heart 3.jpg,,10,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Image,Lake 12.jpg,,11,,,,,,,,,,
+Ratings,Lake 12.jpg,,11,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Image,Prison 2.jpg,,12,,,,,,,,,,
+Ratings,Prison 2.jpg,,12,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Image,Rainbow 2.jpg,,13,,,,,,,,,,
+Ratings,Rainbow 2.jpg,,13,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Image,Rocks 1.jpg,,14,,,,,,,,,,
+Ratings,Rocks 1.jpg,,14,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Image,Snow 1.jpg,,15,,,,,,,,,,
+Ratings,Snow 1.jpg,,15,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Image,Toilet 4.jpg,,16,,,,,,,,,,
+Ratings,Toilet 4.jpg,,16,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Music,,10_1.mp3,17,,,,,,,,,,
+Ratings,,10_1.mp3,17,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Music,,10_2.mp3,18,,,,,,,,,,
+Ratings,,10_2.mp3,18,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Music,,11_10.mp3,19,,,,,,,,,,
+Ratings,,11_10.mp3,19,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Music,,11_11.mp3,20,,,,,,,,,,
+Ratings,,11_11.mp3,20,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Music,,11_2.mp3,21,,,,,,,,,,
+Ratings,,11_2.mp3,21,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Music,,12_2.mp3,22,,,,,,,,,,
+Ratings,,12_2.mp3,22,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Music,,2_1.mp3,23,,,,,,,,,,
+Ratings,,2_1.mp3,23,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Music,,3_1.mp3,24,,,,,,,,,,
+Ratings,,3_1.mp3,24,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Music,,4_1.mp3,25,,,,,,,,,,
+Ratings,,4_1.mp3,25,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Music,,4_2.mp3,26,,,,,,,,,,
+Ratings,,4_2.mp3,26,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Music,,5_14.mp3,27,,,,,,,,,,
+Ratings,,5_14.mp3,27,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Music,,6_10.mp3,28,,,,,,,,,,
+Ratings,,6_10.mp3,28,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Music,,6_5.mp3,29,,,,,,,,,,
+Ratings,,6_5.mp3,29,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Music,,7_10.mp3,30,,,,,,,,,,
+Ratings,,7_10.mp3,30,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Music,,7_13.mp3,31,,,,,,,,,,
+Ratings,,7_13.mp3,31,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+Fixation_Music,,8_2.mp3,32,,,,,,,,,,
+Ratings,,8_2.mp3,32,gloomy,upset,scared,sad,anxious,happy,satisfied,excited,joyful,relaxed
+End,,,,,,,,,,,,,

@@ -542,11 +542,17 @@ results$pospicICC <- compute_icc(pic_positive_list, "pospicICC")
 
 # Display the result
 results
+
+music_all_list <- split(music_all, music_all$Participant.Public.ID)
+pic_all_list <- split(pic_all, pic_all$Participant.Public.ID)
+
+results$allmusicICC <- compute_icc(music_all_list, "allmusicICC")
+results$allpicICC <- compute_icc(pic_all_list, "allmusicICC")
 ```
 
 ##Recoding scores above 1 as 1
 ```{r}
-results[, 2:5] <- lapply(results[, 2:5], function(x) ifelse(x > 1, 1, x))
+results[, 2:7] <- lapply(results[, 2:5], function(x) ifelse(x > 1, 1, x))
 ```
 
 ##Plotting some things
