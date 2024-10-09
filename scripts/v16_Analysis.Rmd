@@ -418,7 +418,7 @@ compute_icc_fisher <- function(data_list) {
       select(-Participant.Public.ID) %>%
       icc(model = "twoway", type = "consistency", unit = "average")
     
-    1 - fisherz(icc_result$value)  # Fisher transform and reverse score
+    -1 * fisherz(icc_result$value)  # Fisher transform and reverse score
   })
 }
 
@@ -433,7 +433,7 @@ compute_icc_fisher_recode <- function(data_list) {
     icc_value <- ifelse(icc_result$value < 0, 0, icc_result$value)
     
     # Fisher transformation and reverse scoring
-    1 - fisherz(icc_value)
+    -1 * fisherz(icc_value)
   })
 }
 
