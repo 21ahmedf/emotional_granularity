@@ -59,9 +59,7 @@ granularity_check <- granularity_data %>%
   filter(Spreadsheet..Audio == "6_5.mp3") %>%
   group_by(Participant.Public.ID) %>%
   summarize(count = n())
-
 ```
-
 
 ##-----Subsetting by valence and stimulus type--------
 ```{r}
@@ -98,6 +96,13 @@ music_negative <- apply_filter(granularity_music, emotions$neg, "Audio")
 music_positive <- apply_filter(granularity_music, emotions$pos, "Audio")
 pic_negative <- apply_filter(granularity_pic, emotions$neg, "Image")
 pic_positive <- apply_filter(granularity_pic, emotions$pos, "Image")
+```
+
+## 10-9-24 correlation between emotions
+```{r}
+
+
+
 ```
 
 ##--Plotting means of emotion word ratings--
@@ -265,6 +270,53 @@ all_averages$Object.Name <- factor(all_averages$Object.Name, levels = emotion_or
 
 grouped_averages <- split(all_averages, all_averages$Type)
 
+```
+
+## 10-9-24
+```{r}
+library(ggcorrplot)
+df_wide <- pivot_wider(all_averages[, c("Spreadsheet..Audio", "Object.Name", "Average.Response", "Spreadsheet..Image")], 
+                       names_from = Object.Name, 
+                       values_from = Average.Response)
+
+df_wide <- df_wide[, c("Spreadsheet..Audio", "Spreadsheet..Image", emotion_order)]
+
+# Split into audio and image datasets
+audio_df <- df_wide[!is.na(df_wide$Spreadsheet..Audio), ]
+image_df <- df_wide[!is.na(df_wide$Spreadsheet..Image), ]
+
+# Drop the unnecessary columns for correlation
+audio_corr <- cor(audio_df[ , -c(1, 2)])  # Removing 'Spreadsheet.Audio' and 'Spreadsheet.Image'
+image_corr <- cor(image_df[ , -c(1, 2)])  # Removing 'Spreadsheet.Audio' and 'Spreadsheet.Image'
+
+# Plot heatmap for audio correlation
+music_corr_plot <- ggcorrplot(audio_corr, 
+           method = "square", 
+           type = "lower", 
+           lab = TRUE, 
+           lab_size = 3, 
+           colors = c("blue", "white", "red"), 
+           title = "Correlations of Emotion Responses to Music",
+           tl.cex = 10,
+           ggtheme = theme_classic())
+
+# Plot heatmap for image correlation
+pic_corr_plot <- ggcorrplot(image_corr, 
+           method = "square", 
+           type = "lower", 
+           lab = TRUE, 
+           lab_size = 3, 
+           colors = c("blue", "white", "red"), 
+           title = "Correlations of Emotion Responses to Pictures",
+           tl.cex = 10,
+           ggtheme = theme_classic())
+
+ggsave('../results/rating-task/Picture Emotion Correlations 10-9-24.png', pic_corr_plot, width = 9)
+ggsave('../results/rating-task/Music Emotion Correlations 10-9-24.png', music_corr_plot, width = 9)
+
+```
+
+```{r}
 for(group_name in names(grouped_averages)) {
   # Get the specific dataframe for the current group
   df_group <- grouped_averages[[group_name]]
@@ -477,6 +529,63 @@ results_recode$negpicICC <- compute_icc_fisher_recode(pic_negative_list)
 results_recode$pospicICC <- compute_icc_fisher_recode(pic_positive_list)
 results_recode$allmusicICC <- rowMeans(results_recode[, c("negmusicICC", "posmusicICC")], na.rm = TRUE)
 results_recode$allpicICC <- rowMeans(results_recode[, c("negpicICC", "pospicICC")], na.rm = TRUE)
+
+```
+
+## 10-9-24
+```{r}
+# Drop the ID column
+music_neg_corr <- cor(music_negative[ , -c(1)])
+pic_neg_corr <- cor(pic_negative[ , -c(1)])
+music_pos_corr <- cor(music_positive[ , -c(1)]) 
+pic_pos_corr <- cor(pic_positive[ , -c(1)])
+
+# Plot heatmap for audio correlation
+music_neg_corr_plot <- ggcorrplot(music_neg_corr, 
+           method = "square", 
+           type = "lower", 
+           lab = TRUE, 
+           lab_size = 3, 
+           colors = c("blue", "white", "red"), 
+           title = "Correlations of Negative Emotion Responses to Music",
+           tl.cex = 10,
+           ggtheme = theme_classic())
+
+music_pos_corr_plot <- ggcorrplot(music_pos_corr, 
+           method = "square", 
+           type = "lower", 
+           lab = TRUE, 
+           lab_size = 3, 
+           colors = c("blue", "white", "red"), 
+           title = "Correlations of Positive Emotion Responses to Music",
+           tl.cex = 10,
+           ggtheme = theme_classic())
+
+# Plot heatmap for image correlation
+pic_neg_corr_plot <- ggcorrplot(pic_neg_corr, 
+           method = "square", 
+           type = "lower", 
+           lab = TRUE, 
+           lab_size = 3, 
+           colors = c("blue", "white", "red"), 
+           title = "Correlations of Negative Emotion Responses to Pictures",
+           tl.cex = 10,
+           ggtheme = theme_classic())
+
+pic_pos_corr_plot <- ggcorrplot(pic_pos_corr, 
+           method = "square", 
+           type = "lower", 
+           lab = TRUE, 
+           lab_size = 3, 
+           colors = c("blue", "white", "red"), 
+           title = "Correlations of Positive Emotion Responses to Pictures",
+           tl.cex = 10,
+           ggtheme = theme_classic())
+
+ggsave('../results/rating-task/Picture Negative Emotion Correlations 10-9-24.png', pic_neg_corr_plot, width = 9)
+ggsave('../results/rating-task/Music Negative Emotion Correlations 10-9-24.png', music_neg_corr_plot, width = 9)
+ggsave('../results/rating-task/Picture Positive Emotion Correlations 10-9-24.png', pic_pos_corr_plot, width = 9)
+ggsave('../results/rating-task/Music Positive Emotion Correlations 10-9-24.png', music_pos_corr_plot, width = 9)
 
 ```
 
