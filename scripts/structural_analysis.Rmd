@@ -5,12 +5,15 @@ date: "2024-10-01"
 ---
 
 ```{r}
-library(corrplot)
-aparc_stats <- read.csv("../data/structural/aparc_stats_10124.csv")
+structural_ids <- read.csv("../data/structural/TEAM_analysislog - granularity_wholebrain_log.csv") %>%
+  select(c("Participant.ID", "BIDS.ID"))
 
-aparc_stats_sub <- aparc_stats[, -1]
-cor_matrix <- cor(aparc_stats_sub)
+structural_results <- merge(results_study2_recode, structural_ids, by.x = "ID", by.y = "Participant.ID", all = FALSE)
 
+
+```
+
+```{r}
 # Function to compute significance levels
 cor.mtest <- function(mat, conf.level = 0.95) {
   mat <- as.matrix(mat)
@@ -26,24 +29,201 @@ cor.mtest <- function(mat, conf.level = 0.95) {
   colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
   p.mat
 }
+```
+
+```{r}
+library(corrplot)
+
+aparc_stats_a2009s_left <- read.csv("../data/structural/aparc_stats_2009_left.csv")
+aparc_stats_a2009s_right <- read.csv("../data/structural/aparc_stats_2009_right.csv")
+
+# Select the relevant columns for both left (lh) and right (rh) hemispheres
+# These are the regions of interest (ROIs) for the user
+
+ROIs_right <- aparc_stats_a2009s_right %>%
+  select(
+    # Right hemisphere (rh)
+    rh.aparc.a2009s.thickness,
+    rh_G_front_inf.Opercular_thickness,
+    rh_G_front_inf.Triangul_thickness,
+    rh_G_front_inf.Orbital_thickness,
+    rh_G_orbital_thickness,
+    rh_S_orbital_lateral_thickness,
+    rh_S_orbital.H_Shaped_thickness,
+    rh_G_Ins_lg_and_S_cent_ins_thickness,
+    rh_S_circular_insula_sup_thickness,
+  )
+
+ROIs_left <- aparc_stats_a2009s_left %>%
+  select(
+    # Left hemisphere (lh)
+    lh.aparc.a2009s.thickness,
+    lh_G_front_inf.Opercular_thickness,
+    lh_G_front_inf.Triangul_thickness,
+    lh_G_front_inf.Orbital_thickness,
+    lh_G_orbital_thickness,
+    lh_S_orbital_lateral_thickness,
+    lh_S_orbital.H_Shaped_thickness,
+    lh_G_Ins_lg_and_S_cent_ins_thickness,
+    lh_S_circular_insula_sup_thickness,
+  )
+
+structural_results_left <- merge(structural_results, ROIs_left, by.x = "BIDS.ID", by.y = "lh.aparc.a2009s.thickness", all = FALSE)
+structural_results_right <- merge(structural_results, ROIs_right, by.x = "BIDS.ID", by.y = "rh.aparc.a2009s.thickness", all = FALSE)
+
+numeric_columns_left <- structural_results_left[, sapply(structural_results_left, is.numeric)]
+numeric_columns_right <- structural_results_right[, sapply(structural_results_right, is.numeric)]
+
+# Calculate the correlation matrix
+correlation_matrix_left <- cor(numeric_columns_left, use = "complete.obs")
+correlation_matrix_right <- cor(numeric_columns_right, use = "complete.obs")
 
 # Compute p-values
-p_values <- cor.mtest(cor_matrix)
+p_values_left <- cor.mtest(numeric_columns_left)
+p_values_right <- cor.mtest(numeric_columns_right)
 
 # Specify the folder where you want to save the file
 output_folder <- "../results/structural/"
 
 # Combine the folder path with the file name
-output_file <- file.path(output_folder, "Structural MRI Correlations.png")
+output_file <- file.path(output_folder, "Structural Correlations Left Hemisphere 2-26-25.png")
 
 # Open a PNG device with the specified file path
 png(output_file, width = 800, height = 800)
 
-corrplot(cor_matrix, method = "circle", type = "upper", 
-         p.mat = p_values, sig.level = 0.05, insig = "blank",
-         tl.col = "black", tl.srt = 45, addCoef.col = NULL)
+# Generate the corrplot
+corrplot(correlation_matrix_left, method = "circle", type = "upper", 
+         p.mat = p_values_left, sig.level = 0.05, insig = "blank",
+         tl.col = "black", tl.srt = 45, addCoef.col = NULL,
+         col = colorRampPalette(c("blue", "white", "red"))(200))
+
+title(main = "Structural Correlations Left Hemisphere Study 2", col.main = "black", font.main = 4)
 
 # Close the PNG device
 dev.off()
+
+# Specify the folder where you want to save the file
+output_folder <- "../results/structural/"
+
+# Combine the folder path with the file name
+output_file <- file.path(output_folder, "Structural Correlations Right Hemisphere 2-26-25.png")
+
+# Open a PNG device with the specified file path
+png(output_file, width = 800, height = 800)
+
+# Generate the corrplot
+corrplot(correlation_matrix_right, method = "circle", type = "upper", 
+         p.mat = p_values_right, sig.level = 0.05, insig = "blank",
+         tl.col = "black", tl.srt = 45, addCoef.col = NULL,
+         col = colorRampPalette(c("blue", "white", "red"))(200))
+
+title(main = "Structural Correlations Right Hemisphere Study 2", col.main = "black", font.main = 4)
+
+# Close the PNG device
+dev.off()
+
+```
+
+
+## Desikan-Killiany Atlas
+```{r}
+
+aparc_stats_left <- read.csv("../data/structural/aparc_stats_left.csv")
+aparc_stats_right <- read.csv("../data/structural/aparc_stats_right.csv")
+
+# Select the relevant columns for both left (lh) and right (rh) hemispheres
+# These are the regions of interest (ROIs) for the user
+
+ROIs_right <- aparc_stats_right %>%
+  select(
+    # Right hemisphere (rh)
+    rh.aparc.thickness,
+    rh_parsopercularis_thickness,
+    rh_parstriangularis_thickness,
+    rh_parsorbitalis_thickness,
+    rh_lateralorbitofrontal_thickness,
+    rh_medialorbitofrontal_thickness,
+    rh_insula_thickness)
+
+ROIs_left <- aparc_stats_left %>%
+  select(
+    # Left hemisphere (lh)
+    lh.aparc.thickness,
+    lh_parsopercularis_thickness,
+    lh_parstriangularis_thickness,
+    lh_parsorbitalis_thickness,
+    lh_lateralorbitofrontal_thickness,
+    lh_medialorbitofrontal_thickness,
+    lh_insula_thickness)
+
+structural_results_left <- merge(structural_results, ROIs_left, by.x = "BIDS.ID", by.y = "lh.aparc.thickness", all = FALSE)
+structural_results_right <- merge(structural_results, ROIs_right, by.x = "BIDS.ID", by.y = "rh.aparc.thickness", all = FALSE)
+
+numeric_columns_left <- structural_results_left[, sapply(structural_results_left, is.numeric)]
+numeric_columns_right <- structural_results_right[, sapply(structural_results_right, is.numeric)]
+
+# Calculate the correlation matrix
+correlation_matrix_left <- cor(numeric_columns_left, use = "complete.obs")
+correlation_matrix_right <- cor(numeric_columns_right, use = "complete.obs")
+
+# Compute p-values
+p_values_left <- cor.mtest(numeric_columns_left)
+p_values_right <- cor.mtest(numeric_columns_right)
+
+# Specify the folder where you want to save the file
+output_folder <- "../results/structural/"
+
+# Combine the folder path with the file name
+output_file <- file.path(output_folder, "Structural Correlations Desikan-Killiany Left Hemisphere 2-26-25.png")
+
+# Open a PNG device with the specified file path
+png(output_file, width = 800, height = 800)
+
+# Generate the corrplot
+corrplot(correlation_matrix_left, method = "circle", type = "upper", 
+         p.mat = p_values_left, sig.level = 0.05, insig = "blank",
+         tl.col = "black", tl.srt = 45, addCoef.col = NULL,
+         col = colorRampPalette(c("blue", "white", "red"))(200))
+
+title(main = "Structural Correlations Desikan-Killiany Left Hemisphere Study 2", col.main = "black", font.main = 4)
+
+# Close the PNG device
+dev.off()
+
+# Specify the folder where you want to save the file
+output_folder <- "../results/structural/"
+
+# Combine the folder path with the file name
+output_file <- file.path(output_folder, "Structural Correlations Desikan-Killiany Right Hemisphere 2-26-25.png")
+
+# Open a PNG device with the specified file path
+png(output_file, width = 800, height = 800)
+
+# Generate the corrplot
+corrplot(correlation_matrix_right, method = "circle", type = "upper", 
+         p.mat = p_values_right, sig.level = 0.05, insig = "blank",
+         tl.col = "black", tl.srt = 45, addCoef.col = NULL,
+         col = colorRampPalette(c("blue", "white", "red"))(200))
+
+title(main = "Structural Correlations Desikan-Killiany Right Hemisphere Study 2", col.main = "black", font.main = 4)
+
+# Close the PNG device
+dev.off()
+
+```
+
+```{r}
+create_scatter_plot(structural_results_right, "negmusicICC", "rh_G_front_inf.Triangul_thickness", 
+                    "Negative Emotional Granularity (Music)", 
+                    "RH Area 45 Cortical Thickness (mm)", 
+                    "Correlation of Negative Granularity (Music) and RH Area 45", 
+                    "../results/structural/Negative Music and Right Area 45 2_28.png")
+
+create_scatter_plot(structural_results_left, "negmusicICC", "lh_G_front_inf.Triangul_thickness", 
+                    "Negative Emotion Granularity (Music)", 
+                    "LH Area 45 Cortical Thickness (mm)", 
+                    "Correlation of Negative Granularity (Music) and LH Area 45", 
+                    "../results/structural/Negative Music and Left Area 45 2-27-25.png")
+
 
 ```

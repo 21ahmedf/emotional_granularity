@@ -1,0 +1,857 @@
+---
+title: "Final_Study_2_Scoring"
+output: html_document
+date: "2025-02-26"
+---
+
+#replace "df" in script w/ dataframe name of survey.csv
+```{r}
+library(tidyverse)
+library(corrplot)
+source("reverseCode.R")
+
+surveys_study2 <- read.csv("../data/redcap/TEAMYAInPersonSurvey_DATA_2025-02-25_1539.csv") %>%
+  filter(participant_id %in% results_study2$ID)
+
+missing_goldmsi <- c("TEAM_YA_003","TEAM_YA_013","TEAM_YA_022","TEAM_YA_023","TEAM_YA_030","TEAM_YA_031")
+
+followup_surveys <- read.csv("../data/qualtrics/granularity followup surveys_February 26, 2025_11.46.csv") %>%
+  select(c("gmsi39", "id")) %>%
+  mutate(id = ifelse(grepl("^5", id), 
+                               paste0("TEAM_YA_0", substr(id, 2, nchar(id))), 
+                               id)) %>%
+  filter(id %in% missing_goldmsi)
+
+# Update goldmsi_39_v2 in surveys_study2 using matching id values from followup_surveys
+surveys_study2 <- surveys_study2 %>%
+  left_join(followup_surveys, by = c("participant_id" = "id")) %>%
+  mutate(goldmsi_39_v2 = ifelse(!is.na(gmsi39), gmsi39, goldmsi_39_v2)) %>%
+  select(-gmsi39) %>% # Remove the gmsi39 column after merging
+  mutate(goldmsi_39_v2 = as.integer(goldmsi_39_v2))  # Ensure it's stored as integers
+  
+final_scores_study2 <- surveys_study2 %>%
+  select("participant_id") %>%
+  rename(SURVEY_CODE = participant_id)
+  
+```
+
+#STAI - NOT IN STUDY 2
+```{r}
+# STAI <- df %>%
+#   select("SURVEY_CODE", "STAI1_1":"STAI20_1")
+# 
+# STAI[,-1] <- lapply(STAI[,-1], as.integer)
+# 
+# cols_reverse <- c("STAI1_1","STAI3_1","STAI6_1","STAI7_1","STAI10_1","STAI13_1","STAI14_1","STAI16_1","STAI19_1")
+# STAI[cols_reverse] <- lapply(STAI[cols_reverse], reverseCode, min=1, max=4)
+# 
+# STAI$STAI_total <- apply(STAI[,-1],1,sum)
+# 
+# final_scores_study2 <- merge(final_scores_study2, STAI[, c(1, ncol(STAI))], by.x = "SURVEY_CODE", by.y = "SURVEY_CODE", all.x = TRUE)
+# hist(final_scores_study2$STAI_total)
+```
+
+#CD-RISC - NOT IN STUDY 2
+```{r}
+# CD.RISC <- df %>%
+#   select("SURVEY_CODE", "CD.RISC1_1":"CD.RISC10_1")
+# 
+# CD.RISC[ ,-1] <- lapply(CD.RISC[,-1], as.integer)
+# 
+# CD.RISC$CD.RISC_total <- apply(CD.RISC[,-1],1,sum)
+# 
+# final_scores_study2 <- merge(final_scores_study2, CD.RISC[, c(1, ncol(CD.RISC))], by.x = "SURVEY_CODE", by.y = "SURVEY_CODE", all.x = TRUE)
+# 
+# hist(final_scores_study2$CD.RISC_total)
+```
+
+#GoldMSI Scoring
+```{r}
+# Gold <- df %>%
+#   select("SURVEY_CODE", "Q1.1_1":"Q1.38")
+
+Gold_study_2 <- surveys_study2 %>%
+  # excluding write-in question
+  select("participant_id", "goldmsi_1_v2":"goldmsi_37_v2", "goldmsi_39_v2") %>%
+  rename(
+    SURVEY_CODE = participant_id,
+    Q1.1_1 = goldmsi_1_v2,
+    Q1.2_1 = goldmsi_2_v2,
+    Q1.3_1 = goldmsi_3_v2,
+    Q1.4_1 = goldmsi_4_v2,
+    Q1.5_1 = goldmsi_5_v2,
+    Q1.6_1 = goldmsi_6_v2,
+    Q1.7_1 = goldmsi_7_v2,
+    Q1.8_1 = goldmsi_8_v2,
+    Q1.9_1 = goldmsi_9_v2,
+    Q1.10_1 = goldmsi_10_v2,
+    Q1.11_1 = goldmsi_11_v2,
+    Q1.12_1 = goldmsi_12_v2,
+    Q1.13_1 = goldmsi_13_v2,
+    Q1.14_1 = goldmsi_14_v2,
+    Q1.15_1 = goldmsi_15_v2,
+    Q1.16_1 = goldmsi_16_v2,
+    Q1.17_1 = goldmsi_17_v2,
+    Q1.18_1 = goldmsi_18_v2,
+    Q1.19_1 = goldmsi_19_v2,
+    Q1.20_1 = goldmsi_20_v2,
+    Q1.21_1 = goldmsi_21_v2,
+    Q1.22_1 = goldmsi_22_v2,
+    Q1.23_1 = goldmsi_23_v2,
+    Q1.24_1 = goldmsi_24_v2,
+    Q1.25_1 = goldmsi_25_v2,
+    Q1.26_1 = goldmsi_26_v2,
+    Q1.27_1 = goldmsi_27_v2,
+    Q1.28_1 = goldmsi_28_v2,
+    Q1.29_1 = goldmsi_29_v2,
+    Q1.30_1 = goldmsi_30_v2,
+    Q1.31_1 = goldmsi_31_v2,
+    Q1.32 = goldmsi_39_v2, # this one was left out from redcap initially, need to swap order here
+    Q1.33 = goldmsi_32_v2,
+    Q1.34 = goldmsi_33_v2,
+    Q1.35 = goldmsi_34_v2,
+    Q1.36 = goldmsi_35_v2,
+    Q1.37 = goldmsi_36_v2,
+    Q1.38 = goldmsi_37_v2,
+  )
+
+# #delete atttention checking question
+# Gold$Qcheck <- NULL
+# 
+# Gold[, -1] <- lapply(Gold[, -1], as.integer)
+
+# Gold_study_2 <- bind_rows(Gold, Gold_redcap)
+
+# GoldMSI columns to reverse code and sub-score (for these questions, the correct answer (ie the more positive answer) is a higher number. Negative questions are reverse coded.) 
+
+cols_reverse <- c("Q1.21_1" ,
+"Q1.11_1" ,
+"Q1.13_1" ,
+"Q1.23_1" ,
+"Q1.14_1" ,
+"Q1.27_1" ,
+"Q1.17_1" ,
+"Q1.25_1" ,
+"Q1.9_1")
+
+cols_activeengagement <- c("Q1.1_1" ,
+"Q1.3_1" ,
+"Q1.8_1" ,
+"Q1.15_1" ,
+"Q1.21_1" ,
+"Q1.24_1" ,
+"Q1.28_1" ,
+"Q1.34" ,
+"Q1.38")
+
+cols_perceptualabilities <- c("Q1.5_1" ,
+"Q1.6_1" ,
+"Q1.11_1" ,
+"Q1.12_1" ,
+"Q1.13_1" ,
+"Q1.18_1" ,
+"Q1.22_1" ,
+"Q1.23_1" ,
+"Q1.26_1")
+
+cols_musicaltraining <- c("Q1.14_1" , "Q1.27_1",
+"Q1.32" ,
+"Q1.33" , ## think about how this is scored? doesn't seem like a lot of people answered
+"Q1.35" ,
+"Q1.36" ,
+"Q1.37")
+
+
+cols_singingabilities <- c("Q1.4_1" ,
+"Q1.7_1" ,
+"Q1.10_1" ,
+"Q1.17_1" ,
+"Q1.25_1" ,
+"Q1.29_1" ,
+"Q1.30_1")
+
+cols_emotion <- c("Q1.2_1" ,
+"Q1.9_1" ,
+"Q1.16_1" ,
+"Q1.19_1" ,
+"Q1.20_1" ,
+"Q1.31_1")
+
+cols_musicalsophistication <- c("Q1.1_1" ,
+           "Q1.3_1" ,
+"Q1.4_1" ,
+"Q1.7_1" ,
+"Q1.10_1" ,
+"Q1.12_1" ,
+"Q1.14_1" ,
+"Q1.15_1" ,
+"Q1.17_1" ,
+"Q1.19_1" ,
+"Q1.23_1" ,
+"Q1.24_1" ,
+"Q1.25_1" ,
+"Q1.27_1" ,
+"Q1.29_1" ,
+"Q1.32" ,
+"Q1.33")
+
+# Reverse code
+
+Gold_study_2[cols_reverse] <- lapply(Gold_study_2[cols_reverse], reverseCode, min=1, max=7)
+
+# Add sub-scores and total to main df
+
+Gold_study_2$Gold_total <- apply(Gold_study_2[, -1],1, sum)/38 # total GoldMSI score
+Gold_study_2$Gold_activeengagement <- apply(Gold_study_2[cols_activeengagement], 1,sum)/9
+Gold_study_2$Gold_perceptualabilities <- apply(Gold_study_2[cols_perceptualabilities],1, sum)/9
+Gold_study_2$Gold_musicaltraining <-apply(Gold_study_2[cols_musicaltraining],1, sum)/7
+Gold_study_2$Gold_singingabilities <- apply(Gold_study_2[cols_singingabilities],1, sum)/7
+Gold_study_2$Gold_emotion <- apply(Gold_study_2[cols_emotion],1, sum)/6
+Gold_study_2$Gold_musicalsophistication <- apply(Gold_study_2[cols_musicalsophistication],1, sum)/18
+
+final_scores_study2 <- merge(final_scores_study2, Gold_study_2[, c(1, 40:46)], by.x = "SURVEY_CODE", by.y = "SURVEY_CODE", all.x = TRUE)
+
+hist(final_scores_study2$Gold_total)
+```
+
+#eBMRQ
+```{r}
+# bmrq <- df %>%
+#   select("SURVEY_CODE", "Q2_1":"Q21_1", "Q23_1":"Q26_1")
+# 
+# bmrq[,-1] <- lapply(bmrq[,-1], as.integer)
+
+#need to add aims_3 as Q23, aims_13 as Q24, aims_15 as Q25, aims_29 as Q26
+bmrq_study_2 <- surveys_study2 %>%
+  select("participant_id", "ebmrq_1":"ebmrq_20", "aims_3", "aims_13", "aims_15", "aims_29") %>%
+  rename(
+    SURVEY_CODE = participant_id,
+    Q2_1 = ebmrq_1,
+    Q3_1 = ebmrq_2,
+    Q4_1 = ebmrq_3,
+    Q5_1 = ebmrq_4,
+    Q6_1 = ebmrq_5,
+    Q7_1 = ebmrq_6,
+    Q8_1 = ebmrq_7,
+    Q9_1 = ebmrq_8,
+    Q10_1 = ebmrq_9,
+    Q11_1 = ebmrq_10,
+    Q12_1 = ebmrq_11,
+    Q13_1 = ebmrq_12,
+    Q14_1 = ebmrq_13,
+    Q15_1 = ebmrq_14,
+    Q16_1 = ebmrq_15,
+    Q17_1 = ebmrq_16,
+    Q18_1 = ebmrq_17,
+    Q19_1 = ebmrq_18,
+    Q20_1 = ebmrq_19,
+    Q21_1 = ebmrq_20,
+    Q23_1 = aims_3,
+    Q24_1 = aims_13,
+    Q25_1 = aims_15,
+    Q26_1 = aims_29
+  )
+
+# bmrq[, -1] <- lapply(bmrq[, -1], as.integer)
+# 
+# bmrq_study_2 <- bind_rows(bmrq, bmrq_redcap)
+
+# BMRQ columns to reverse code and sub-score
+cols_reverse <- c("Q3_1",
+                  "Q6_1")
+
+cols_emotion <- c("Q4_1",
+  "Q9_1",
+  "Q13_1",
+  "Q19_1")
+
+cols_sensorimotor <-c("Q6_1",
+  "Q11_1",
+  "Q16_1",
+  "Q21_1")
+                      
+cols_moodreg <- c("Q5_1",
+  "Q10_1",
+  "Q15_1",
+  "Q20_1")
+
+cols_musicseek <- c("Q3_1",
+  "Q8_1",
+  "Q12_1",
+  "Q18_1")
+
+cols_socialreward <-c("Q2_1",
+  "Q7_1",
+  "Q14_1",
+  "Q17_1")
+
+cols_absorption <- c("Q23_1", "Q24_1", "Q25_1", "Q26_1")
+
+# Reverse code
+bmrq_study_2[cols_reverse] <- lapply(bmrq_study_2[cols_reverse], reverseCode)
+
+# Add sub-scores and total to main df
+bmrq_study_2$eBMRQ_total <- apply(bmrq_study_2[,-1],1, sum) 
+bmrq_study_2$BMRQ_emotion <- apply(bmrq_study_2[cols_emotion], 1,sum)
+bmrq_study_2$BMRQ_sensorimotor <- apply(bmrq_study_2[cols_sensorimotor],1, sum)
+bmrq_study_2$BMRQ_moodreg <-apply(bmrq_study_2[cols_moodreg],1, sum)
+bmrq_study_2$BMRQ_musicseek <- apply(bmrq_study_2[cols_musicseek],1, sum)
+bmrq_study_2$BMRQ_socialreward <- apply(bmrq_study_2[cols_socialreward],1, sum)
+bmrq_study_2$BMRQ_absorption<- apply(bmrq_study_2[cols_absorption],1, sum)
+
+final_scores_study2 <- merge(final_scores_study2, bmrq_study_2[, c(1, 26:32)], by.x = "SURVEY_CODE", by.y = "SURVEY_CODE", all.x = TRUE)
+
+hist(final_scores_study2$eBMRQ_total)
+```
+
+#BDI --> items asking about changes in appetite (BDI_17) and sleep (BDI_15) need to be scored differently (see Attachment_AU in named attachments folder - there are two answers for both 1, 2, and 3 scores; also the responses should range from 0 to 3 )
+```{r}
+# BDI <- df %>%
+#   select("SURVEY_CODE", "BDI_1":"BDI_20")
+# 
+# BDI[, -1] <- lapply(BDI[, -1], as.integer)
+
+BDI_study_2 <- surveys_study2 %>%
+  select("participant_id", "bdi_1":"bdi_20") %>%
+  rename(
+    SURVEY_CODE = participant_id,
+    BDI_1 = bdi_1,
+    BDI_2 = bdi_2,
+    BDI_3 = bdi_3,
+    BDI_4 = bdi_4,
+    BDI_5 = bdi_5,
+    BDI_6 = bdi_6,
+    BDI_7 = bdi_7,
+    BDI_8 = bdi_8,
+    BDI_9 = bdi_9,
+    BDI_10 = bdi_10,
+    BDI_11 = bdi_11,
+    BDI_12 = bdi_12,
+    BDI_13 = bdi_13,
+    BDI_14 = bdi_14,
+    BDI_15 = bdi_15,
+    BDI_16 = bdi_16,
+    BDI_17 = bdi_17,
+    BDI_18 = bdi_18,
+    BDI_19 = bdi_19,
+    BDI_20 = bdi_20
+  )
+
+# BDI_study_2 <- bind_rows(BDI, BDI_redcap)
+
+BDI_study_2$BDI_15[BDI_study_2$BDI_15 == 3] <- 2
+BDI_study_2$BDI_15[BDI_study_2$BDI_15 == 4 | BDI_study_2$BDI_15 == 5] <- 3
+BDI_study_2$BDI_15[BDI_study_2$BDI_15 == 6 | BDI_study_2$BDI_15 == 7] <- 4
+
+BDI_study_2$BDI_17[BDI_study_2$BDI_17 == 3] <- 2
+BDI_study_2$BDI_17[BDI_study_2$BDI_17 == 4 | BDI_study_2$BDI_17 == 5] <- 3
+BDI_study_2$BDI_17[BDI_study_2$BDI_17 == 6 | BDI_study_2$BDI_17 == 7] <- 4
+
+BDI_study_2[BDI_study_2 == 1] <- 0
+BDI_study_2[BDI_study_2 == 2] <- 1
+BDI_study_2[BDI_study_2 == 3] <- 2
+BDI_study_2[BDI_study_2 == 4] <- 3
+
+BDI_study_2$BDI_total <- apply(BDI_study_2[,-1], 1, sum)
+
+final_scores_study2 <- merge(final_scores_study2, BDI_study_2[, c(1, 22)], by.x = "SURVEY_CODE", by.y = "SURVEY_CODE", all.x = TRUE)
+
+hist(final_scores_study2$BDI_total)
+```
+
+#M@H
+```{r}
+# MH <- df %>%
+#   select("SURVEY_CODE", "M.H_child1_1":"M.H_child20_1")
+# 
+# MH <- MH[complete.cases(MH),]
+# MH[,-1] <- lapply(MH[,-1], as.integer)
+
+MH_study_2 <- surveys_study2 %>%
+  select("participant_id", "mhr_1":"mhr_20") %>%
+  rename(
+    SURVEY_CODE = participant_id,
+    M.H_child1_1 = mhr_1,
+    M.H_child2_1 = mhr_2,
+    M.H_child3_1 = mhr_3,
+    M.H_child4_1 = mhr_4,
+    M.H_child5_1 = mhr_5,
+    M.H_child6_1 = mhr_6,
+    M.H_child7_1 = mhr_7,
+    M.H_child8_1 = mhr_8,
+    M.H_child9_1 = mhr_9,
+    M.H_child10_1 = mhr_10,
+    M.H_child11_1 = mhr_11,
+    M.H_child12_1 = mhr_12,
+    M.H_child13_1 = mhr_13,
+    M.H_child14_1 = mhr_14,
+    M.H_child15_1 = mhr_15,
+    M.H_child16_1 = mhr_16,
+    M.H_child17_1 = mhr_17,
+    M.H_child18_1 = mhr_18,
+    M.H_child19_1 = mhr_19,
+    M.H_child20_1 = mhr_20
+  )
+
+# MH_study_2 <- bind_rows(MH, MH_redcap)
+
+cols_reverse <- c("M.H_child6_1","M.H_child7_1","M.H_child11_1","M.H_child12_1","M.H_child18_1","M.H_child19_1","M.H_child20_1")
+MH_study_2[cols_reverse] <- lapply(MH_study_2[cols_reverse], reverseCode, min=1, max=7)
+
+MH_study_2$MH_total <- apply(MH_study_2[,-1],1, sum) # total M@H scores
+
+final_scores_study2 <- merge(final_scores_study2, MH_study_2[, c(1, 22)], by.x = "SURVEY_CODE", by.y = "SURVEY_CODE", all.x = TRUE)
+
+hist(final_scores_study2$MH_total)
+
+
+# # started putting these together but I'm not sure what goes where
+# cols_caregiverbeliefs <- c("M.H_child1_1", "M.H_child2_1", "M.H_child3_1", "M.H_child4_1")
+# 
+# cols_caregiversinging <- c("M.H_child9_1")
+# 
+# cols_childhoodattitude <- c("M.H_child8_1")
+# 
+# cols_socialcontexts <- c("")
+# 
+# cols_musicmaking <- c("M.H_child5_1", "M.H_child6_1", "M.H_child7_1")
+# 
+# df$MH_caregiverbeliefs <- apply(MH[cols_caregiverbeliefs], 1,sum)
+# df$MH_caregiversinging <- apply(MH[cols_caregiversinging],1, sum)
+# df$MH_childhoodattitude <-apply(MH[cols_childhoodattitude],1, sum)
+# df$MH_socialcontexts <- apply(MH[cols_socialcontexts],1, sum)
+# df$MH_musicmaking <- apply(MH[cols_musicmaking],1, sum)
+```
+
+#RDEES
+```{r}
+# rdees <- df %>%
+#   select("SURVEY_CODE", "RDEES_1_1":"RDEES_14_1")
+# 
+# rdees[,-1] <- lapply(rdees[,-1], as.integer)
+
+rdees_study_2 <- surveys_study2 %>%
+  select("participant_id", "rdees_1":"rdees_14") %>%
+  rename(
+    SURVEY_CODE = participant_id,
+    RDEES_1_1 = rdees_1,
+    RDEES_2_1 = rdees_2,
+    RDEES_3_1 = rdees_3,
+    RDEES_4_1 = rdees_4,
+    RDEES_5_1 = rdees_5,
+    RDEES_6_1 = rdees_6,
+    RDEES_7_1 = rdees_7,
+    RDEES_8_1 = rdees_8,
+    RDEES_9_1 = rdees_9,
+    RDEES_10_1 = rdees_10,
+    RDEES_11_1 = rdees_11,
+    RDEES_12_1 = rdees_12,
+    RDEES_13_1 = rdees_13,
+    RDEES_14_1 = rdees_14
+  )
+
+# rdees_study_2 <- bind_rows(rdees, rdees_redcap)
+
+cols_reverse <- c("RDEES_1_1","RDEES_5_1","RDEES_9_1", "RDEES_11_1")
+
+rdees_study_2[cols_reverse] <- lapply(rdees_study_2[cols_reverse], reverseCode, min=1, max=5)
+
+cols_range <- c("RDEES_1_1","RDEES_3_1","RDEES_5_1","RDEES_7_1", "RDEES_9_1", "RDEES_11_1", "RDEES_13_1")
+cols_differentation <- c("RDEES_2_1","RDEES_4_1","RDEES_6_1","RDEES_8_1", "RDEES_10_1", "RDEES_12_1", "RDEES_14_1")
+
+rdees_study_2$rdees_range <- apply(rdees_study_2[cols_range], 1,sum)
+rdees_study_2$rdees_differentiation <- apply(rdees_study_2[cols_differentation],1, sum)
+rdees_study_2$rdees_total <- rdees_study_2$rdees_differentiation + rdees_study_2$rdees_range
+
+final_scores_study2 <- merge(final_scores_study2, rdees_study_2[, c(1, 16:18)], by.x = "SURVEY_CODE", by.y = "SURVEY_CODE", all.x = TRUE)
+
+hist(final_scores_study2$rdees_total)
+```
+
+## REMOVE THE SECOND OPTION IF THERE ARE DUPLICATES
+```{r}
+# # Check for duplicates in the SURVEY_CODE column and keep only the first occurrence
+# df_unique <- df[!duplicated(df$SURVEY_CODE), ]
+# 
+# # If you want to see the duplicate entries that were removed
+# duplicates <- df[duplicated(df$SURVEY_CODE), ]
+# 
+# # Display the result
+# print(df_unique)
+# print(duplicates)
+```
+
+
+```{r}
+# # Find SURVEY_CODE in scores that do not match any ID in results
+# non_matching_in_scores <- final_scores_study2[!final_scores_study2$SURVEY_CODE %in% results$ID, ]
+# 
+# # Find ID in results that do not match any SURVEY_CODE in scores
+# non_matching_in_results <- results[!results$ID %in% final_scores_study2$SURVEY_CODE, ]
+# 
+# # Display the non-matching entries
+# print("SURVEY_CODEs in scores that do not match any ID in results:")
+# print(non_matching_in_scores)
+# 
+# print("IDs in results that do not match any SURVEY_CODE in scores:")
+# print(non_matching_in_results)
+
+```
+
+## MERGE WITH ICC SCORING
+```{r}
+merged_df_study2 <- merge(final_scores_study2, results_study2, by.x = "SURVEY_CODE", by.y = "ID", all = FALSE)
+merged_df_study2_recoded <- merge(final_scores_study2, results_study2_recode, by.x = "SURVEY_CODE", by.y = "ID", all = FALSE)
+```
+
+#correlations
+```{r}
+# Select only the numeric columns for the correlation matrix
+numeric_columns <- merged_df_study2[, sapply(merged_df_study2, is.numeric)]
+numeric_columns_recoded <- merged_df_study2_recoded[, sapply(merged_df_study2_recoded, is.numeric)]
+
+# Calculate the correlation matrix
+correlation_matrix <- cor(numeric_columns, use = "complete.obs")
+correlation_matrix_recoded <- cor(numeric_columns_recoded, use = "complete.obs")
+
+# Function to compute significance levels
+cor.mtest <- function(mat, conf.level = 0.95) {
+  mat <- as.matrix(mat)
+  n <- ncol(mat)
+  p.mat <- matrix(NA, n, n)
+  diag(p.mat) <- 0
+  for (i in 1:(n - 1)) {
+    for (j in (i + 1):n) {
+      tmp <- cor.test(mat[, i], mat[, j], conf.level = conf.level)
+      p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
+    }
+  }
+  colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
+  p.mat
+}
+
+# Compute p-values
+p_values <- cor.mtest(numeric_columns)
+p_values_recoded <- cor.mtest(numeric_columns_recoded)
+
+# Specify the folder where you want to save the file
+output_folder <- "../results/qualtrics/study2/"
+
+# Combine the folder path with the file name
+output_file <- file.path(output_folder, "Significant Correlations Plot Study 2 (without Recoding ICC) 2-26-25.png")
+
+# Open a PNG device with the specified file path
+png(output_file, width = 800, height = 800)
+
+# Generate the corrplot
+corrplot(correlation_matrix, method = "circle", type = "upper", 
+         p.mat = p_values, sig.level = 0.05, insig = "blank",
+         tl.col = "black", tl.srt = 45, addCoef.col = NULL,
+         col = colorRampPalette(c("blue", "white", "red"))(200))
+
+title(main = "Significant Correlations Study 2 (without Recoding Granularity Scores)", col.main = "black", font.main = 4)
+
+# Close the PNG device
+dev.off()
+
+# Specify the folder where you want to save the file
+output_folder <- "../results/qualtrics/study2/"
+
+# Combine the folder path with the file name
+output_file <- file.path(output_folder, "Significant Correlations Plot Study 2 (with Recoding ICC) 2-26-25.png")
+
+# Open a PNG device with the specified file path
+png(output_file, width = 800, height = 800)
+
+# Generate the corrplot
+corrplot(correlation_matrix_recoded, method = "circle", type = "upper", 
+         p.mat = p_values, sig.level = 0.05, insig = "blank",
+         tl.col = "black", tl.srt = 45, addCoef.col = NULL,
+         col = colorRampPalette(c("blue", "white", "red"))(200))
+
+title(main = "Significant Correlations Study 2 (WITH Recoding Granularity Scores)", col.main = "black", font.main = 4)
+
+# Close the PNG device
+dev.off()
+```
+## USED TO GET PAIRWISE CORRELATION SAMPLE SIZES, DIDN'T USE FOR CORRELATION GRAPH
+```{r}
+# Select only numeric columns for correlation matrix
+numeric_columns <- merged_df_study2[, sapply(merged_df_study2, is.numeric)]
+numeric_columns_recoded <- merged_df_study2_recoded[, sapply(merged_df_study2_recoded, is.numeric)]
+
+# Calculate the correlation matrix
+correlation_matrix <- cor(numeric_columns, use = "pairwise.complete.obs")
+correlation_matrix_recoded <- cor(numeric_columns_recoded, use = "pairwise.complete.obs")
+
+# Function to compute significance levels and sample sizes
+cor.mtest <- function(mat, conf.level = 0.95) {
+  mat <- as.matrix(mat)
+  n <- ncol(mat)
+  p.mat <- matrix(NA, n, n)
+  n.mat <- matrix(NA, n, n)  # Matrix to store sample sizes
+  diag(p.mat) <- 0
+  diag(n.mat) <- NA  # Diagonal sample size is irrelevant
+  
+  for (i in 1:(n - 1)) {
+    for (j in (i + 1):n) {
+      complete_cases <- complete.cases(mat[, i], mat[, j])  # Count non-NA pairs
+      tmp <- cor.test(mat[complete_cases, i], mat[complete_cases, j], conf.level = conf.level)
+      
+      p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
+      n.mat[i, j] <- n.mat[j, i] <- sum(complete_cases)  # Store sample size
+    }
+  }
+  
+  colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
+  colnames(n.mat) <- rownames(n.mat) <- colnames(mat)
+  
+  list(p_values = p.mat, sample_sizes = n.mat)
+}
+
+# Compute p-values and sample sizes
+cor_results <- cor.mtest(numeric_columns)
+p_values <- cor_results$p_values
+sample_sizes <- cor_results$sample_sizes
+
+cor_results_recoded <- cor.mtest(numeric_columns_recoded)
+p_values_recoded <- cor_results_recoded$p_values
+sample_sizes_recoded <- cor_results_recoded$sample_sizes
+
+# Specify the folder where you want to save the file
+output_folder <- "../results/qualtrics/study2/"
+
+# Save first correlation plot (without recoding)
+output_file <- file.path(output_folder, "Significant_Correlations_Plot_Study2_Without_Recoding.png")
+png(output_file, width = 800, height = 800)
+
+corrplot(correlation_matrix, method = "circle", type = "upper", 
+         p.mat = p_values, sig.level = 0.05, insig = "blank",
+         tl.col = "black", tl.srt = 45, addCoef.col = "black",
+         col = colorRampPalette(c("blue", "white", "red"))(200),
+         number.cex = 0.8)  # Adjust size of correlation coefficients
+
+title(main = "Significant Correlations Study 2 (Without Recoding Granularity Scores)", col.main = "black", font.main = 4)
+
+# Close the PNG device
+dev.off()
+
+# Save second correlation plot (with recoding)
+output_file <- file.path(output_folder, "Significant_Correlations_Plot_Study2_With_Recoding.png")
+png(output_file, width = 800, height = 800)
+
+corrplot(correlation_matrix_recoded, method = "circle", type = "upper", 
+         p.mat = p_values_recoded, sig.level = 0.05, insig = "blank",
+         tl.col = "black", tl.srt = 45, addCoef.col = "black",
+         col = colorRampPalette(c("blue", "white", "red"))(200),
+         number.cex = 0.8)  # Adjust size of correlation coefficients
+
+title(main = "Significant Correlations Study 2 (With Recoding Granularity Scores)", col.main = "black", font.main = 4)
+
+# Close the PNG device
+dev.off()
+
+# Save sample size matrix as CSV for reference
+write.csv(sample_sizes, file.path(output_folder, "Correlation_Sample_Sizes_Study2.csv"), row.names = TRUE)
+write.csv(sample_sizes_recoded, file.path(output_folder, "Correlation_Sample_Sizes_Study2_Recoded.csv"), row.names = TRUE)
+
+
+```
+
+## aMEDT
+```{r}
+## CLEANED DATA BEFOREHAND, REMOVED DEVELOPMENTAL SAMPLE AND FIXED NAMING OF IDS TO MATCH GRANULARITY TASK
+## also added the ones that were saved on Nick's laptop
+## removed data from people that did not do the granularity task
+aMEDT_inperson <- read.csv("../data/EDT/aMEDT In-Person Cleaned.csv") %>%
+  select(c("session.p_id", "EDT.ability")) %>%
+  rename(SURVEY_CODE = session.p_id)
+
+## ADDING 3 WHO COMPLETED aMEDT AS FOLLOW-UP
+aMEDT_followup <- read.csv("../data/EDT/aMEDT Follow-Up.csv") %>%
+  select(c("session.p_id", "EDT.ability"))
+
+aMEDT_followup <- aMEDT_followup %>%
+  mutate(session.p_id = ifelse(grepl("^5", session.p_id), 
+                               paste0("TEAM_YA_0", substr(session.p_id, 2, nchar(session.p_id))), 
+                               session.p_id)) %>%
+  rename(SURVEY_CODE = session.p_id)
+
+aMEDT_all <- bind_rows(online_aMEDT, aMEDT_inperson, aMEDT_followup)
+
+merged_study_2_with_aMEDT <- merge(aMEDT_all, merged_df_study2, by.x = "SURVEY_CODE", by.y = "SURVEY_CODE", all = FALSE)
+
+merged_study_2_recoded_with_aMEDT <- merge(aMEDT_all, merged_df_study2_recoded, by.x = "SURVEY_CODE", by.y = "SURVEY_CODE", all = FALSE)
+
+```
+
+# Function to compute significance levels
+```{r}
+cor.mtest <- function(mat, conf.level = 0.95) {
+  mat <- as.matrix(mat)
+  n <- ncol(mat)
+  p.mat <- matrix(NA, n, n)
+  diag(p.mat) <- 0
+  for (i in 1:(n - 1)) {
+    for (j in (i + 1):n) {
+      tmp <- cor.test(mat[, i], mat[, j], conf.level = conf.level)
+      p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
+    }
+  }
+  colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
+  p.mat
+}
+```
+
+## EDT correlation with granularity scores
+```{r}
+# Function to create correlation scatter plots with linear model fit
+create_scatter_plot <- function(data, x_var, y_var, x_label, y_label, title, output_file) {
+  # Calculate correlation coefficient and p-value
+  correlation <- cor.test(data[[x_var]], data[[y_var]], method = "pearson")
+  corr_coeff <- round(correlation$estimate, 2)
+  p_value <- sub("^0.", ".", round(correlation$p.value, 3))
+  
+  # Create scatter plot
+  scatter_plot <- ggplot(data, aes(x = !!ensym(x_var), y = !!ensym(y_var))) +
+    geom_point() +
+    stat_smooth(method = 'lm', formula = y ~ x, color = "blue") +
+    xlab(x_label) +
+    ylab(y_label) +
+    ggtitle(title) +
+    theme_classic() +
+    theme(axis.title.x = element_text(size = 14, face = 'bold'),
+          axis.title.y = element_text(size = 14, face = 'bold'),
+          axis.text.x = element_text(size = 12),
+          axis.text.y = element_text(size = 12),
+          plot.title = element_text(size = 16, face = 'bold', hjust = 0.5)) +
+    # Add correlation coefficient and p-value as annotation
+    annotate("text", x = Inf, y = Inf, label = paste("r =", corr_coeff, "\np =", p_value), 
+             hjust = 1.1, vjust = 1.5, size = 5, color = "red", fontface = "bold")
+  
+  # Save plot to file
+  ggsave(output_file, scatter_plot, width = 11)
+}
+
+create_scatter_plot(merged_study_2_with_aMEDT, "EDT.ability", "negmusicICC", 
+                    "aMEDT Score", 
+                    "Negative Emotion Granularity (Music)", 
+                    "Study 2 - Negative Emotion Granularity Scores (Music) and aMEDT Score", 
+                    "../results/EDT/study2/Neg_Graph_2_26_25.png")
+
+create_scatter_plot(merged_study_2_with_aMEDT, "EDT.ability", "posmusicICC", 
+                    "aMEDT Score", 
+                    "Positive Emotion Granularity (Music)", 
+                    "Study 2 - Positive Emotion Granularity Scores (Music) and aMEDT Score", 
+                    "../results/EDT/study2/Pos_Graph_2_26_25.png")
+
+create_scatter_plot(merged_study_2_with_aMEDT, "EDT.ability", "allmusicICC", 
+                    "aMEDT Score", 
+                    "Combined Emotion Granularity (Music)", 
+                    "Study 2 - Combined Emotion Granularity Scores (Music) and aMEDT Score", 
+                    "../results/EDT/study2/Combined_Graph_2_26_25.png")
+
+# Plotting correlation scatter plots - Recoded
+create_scatter_plot(merged_study_2_recoded_with_aMEDT, "EDT.ability", "negmusicICC", 
+                    "aMEDT Score", 
+                    "Negative Emotion Granularity (Music)", 
+                    "Study 2 - Negative Emotion Granularity Scores (Music) (Scores > 1 Recoded) and aMEDT Score", 
+                    "../results/EDT/study2/Neg_Graph_Recoded_2_26_25.png")
+
+create_scatter_plot(merged_study_2_recoded_with_aMEDT, "EDT.ability", "posmusicICC", 
+                    "aMEDT Score", 
+                    "Positive Emotion Granularity (Music)", 
+                    "Study 2 - Positive Emotion Granularity Scores (Music) (Scores > 1 Recoded) and aMEDT Score", 
+                    "../results/EDT/study2/Pos_Graph_Recoded_2_26_25.png")
+
+create_scatter_plot(merged_study_2_recoded_with_aMEDT, "EDT.ability", "allmusicICC", 
+                    "aMEDT Score", 
+                    "Combined Emotion Granularity (Music)", 
+                    "Study 2 - Combined Emotion Granularity Scores (Music) (Scores > 1 Recoded) and aMEDT Score", 
+                    "../results/EDT/study2/Combined_Graph_Recoded_2_26_25.png")
+```
+
+```{r}
+study2_dems <- surveys_study2 %>%
+  select("participant_id","sex":"education")
+
+study2_sex <- table(factor(study2_dems$sex, levels = c(1, 2), 
+                              labels = c("Male", "Female")))
+
+print(study2_sex)
+
+# for Redcap Define gender column names
+gender_columns <- c("gender___1", "gender___2", "gender___3", "gender___4", "gender___5", 
+                    "gender___6", "gender___7", "gender___8", "gender___9", "gender___10")
+
+# Summarize counts for each gender category (counting occurrences of 1)
+study2_gender <- colSums(study2_dems[gender_columns] == 1, na.rm = TRUE)
+
+# Assign descriptive names
+names(study2_gender) <- c("Cisgender Man", "Cisgender Woman", "Transgender Man", 
+                          "Transgender Woman", "Gender non-conforming", "Non-binary", 
+                          "Genderfluid", "Genderqueer", "Other gender identity", "Prefer not to answer")
+
+print(study2_gender)
+```
+
+## ethnicity/race
+```{r}
+
+# Define race/ethnicity column names
+race_columns <- c("race_and_ethnicity___1", "race_and_ethnicity___2", "race_and_ethnicity___3", 
+                  "race_and_ethnicity___4", "race_and_ethnicity___5", "race_and_ethnicity___6", 
+                  "race_and_ethnicity___7")
+
+num_selected <- rowSums(study2_dems[race_columns] == 1, na.rm = TRUE)
+single_race <- num_selected == 1
+
+# Summarize counts for each race/ethnicity category (counting occurrences of 1)
+study2_races <- colSums(study2_dems[single_race, race_columns] == 1, na.rm = TRUE)
+
+# Count number of respondents selecting more than one category
+multi_race_count <- sum(rowSums(study2_dems[race_columns] == 1, na.rm = TRUE) > 1)
+study2_races <- c(study2_races, "Two or more races" = multi_race_count)
+
+# Assign descriptive names
+names(study2_races) <- c("American Indian or Alaska Native", "Asian", "Black or African American", 
+                        "Hispanic or Latino", "Native Hawaiian or Other Pacific Islander", 
+                        "White", "Prefer not to answer", "Two or more races")
+
+# Print results
+print(study2_races)
+```
+
+## age
+```{r}
+# Calculate statistics
+mean_age <- mean(as.numeric(study2_dems$age))
+sd_age <- sd(as.numeric(study2_dems$age))
+range_age <- range(as.numeric(study2_dems$age))
+
+# Print results
+cat("Mean Age:", mean_age, "\n")
+cat("Standard Deviation:", sd_age, "\n")
+cat("Age Range:", range_age[1], "to", range_age[2], "\n")
+
+
+```
+
+## combo time! BDI
+```{r}
+combined_BDI <- bind_rows(merged_df_recoded, merged_df_study2_recoded)
+
+create_scatter_plot(combined_BDI, "BDI_total", "negpicICC", 
+                    "Beck Depression Inventory II Score", 
+                    "Negative Emotion Granularity (Picture)", 
+                    "Correlation of BDI and Negative Granularity (Picture) - Combined Studies", 
+                    "../results/rating-task/BDI and Negative Picture Combined Studies 2/27/25.png")
+
+create_scatter_plot(combined_BDI, "BDI_total", "negmusicICC", 
+                    "Beck Depression Inventory II Score", 
+                    "Negative Emotion Granularity (Picture)", 
+                    "Correlation of BDI and Negative Granularity (Music) - Combined Studies", 
+                    "../results/rating-task/BDI and Negative Music Combined Studies 2/27/25.png")
+
+
+```

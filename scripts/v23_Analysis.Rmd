@@ -30,6 +30,7 @@ granularity_data <- data %>%
   filter(Response.Type == "response") %>% 
   select("Participant.Public.ID","Response","Object.Name", "Spreadsheet..Image", "Spreadsheet..Audio") %>%
   mutate(Response = as.numeric(Response))
+
 ```
 
 ### EXCLUDE IN-PERSON PARTICIPANTS
@@ -38,6 +39,8 @@ granularity_data <- granularity_data %>%
   filter(Participant.Public.ID != "TEAM_YA_028") %>%
   filter(Participant.Public.ID != "TEAM_YA_045") %>%
   filter(Participant.Public.ID != "32578")
+
+## 32578 is missing response data for 6_5.mp3 for some reason
 
 ```
 
@@ -96,13 +99,6 @@ music_negative <- apply_filter(granularity_music, emotions$neg, "Audio")
 music_positive <- apply_filter(granularity_music, emotions$pos, "Audio")
 pic_negative <- apply_filter(granularity_pic, emotions$neg, "Image")
 pic_positive <- apply_filter(granularity_pic, emotions$pos, "Image")
-```
-
-## 10-9-24 correlation between emotions
-```{r}
-
-
-
 ```
 
 ##--Plotting means of emotion word ratings--

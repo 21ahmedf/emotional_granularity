@@ -1,0 +1,87 @@
+Participant ID,BIDS ID,Granularity Score,Task Version,aMEDT Score,aMEDT Found?,temp,Missing Survey Qs,Sex,Age
+TEAM_YA_001,sub-001,,,,,both,"goldmsi_39_v2, posdeva30/46, posdevc36 (17 in questionnaire)",,
+TEAM_YA_003,sub-002,Y,27,Y,,both,"goldmsi_39_v2, posdeva30/46, posdevc36 (17 in questionnaire)",,
+TEAM_YA_004,sub-003,,,,,both,"goldmsi_39_v2, posdeva30/46, posdevc36 (17 in questionnaire)",,
+TEAM_YA_005,sub-004,,,,,both,"goldmsi_39_v2, posdeva30/46, posdevc36 (17 in questionnaire)",,
+TEAM_YA_006,sub-005,,,,,both,"goldmsi_39_v2, posdeva30/46, posdevc36 (17 in questionnaire)",,
+TEAM_YA_007,sub-006,,,,,both,"goldmsi_39_v2, posdeva30/46, posdevc36 (17 in questionnaire)",,
+TEAM_YA_008,sub-009,,,,,both,"goldmsi_39_v2, posdeva30/46, posdevc36 (17 in questionnaire)",,
+TEAM_YA_011,sub-007,,,,,both,"goldmsi_39_v2, posdeva30/46, posdevc36 (17 in questionnaire)",,
+TEAM_YA_013,sub-008,Y,27,Y,,both,"goldmsi_39_v2, posdeva30/46, posdevc36 (17 in questionnaire)",,
+TEAM_YA_015,sub-010,,,,,both,"goldmsi_39_v2, posdeva30/46, posdevc36 (17 in questionnaire)",,
+TEAM_YA_016,sub-011,,,,,both,"goldmsi_39_v2, posdeva30/46, posdevc36 (17 in questionnaire)",,
+TEAM_YA_017,sub-019,,,,,both,"goldmsi_39_v2, posdeva30/46, posdevc36 (17 in questionnaire)",,
+TEAM_YA_018,sub-015,,,,,both,"goldmsi_39_v2, posdeva30/46, posdevc36 (17 in questionnaire)",,
+TEAM_YA_019,sub-012,,,,,both,"goldmsi_39_v2, posdeva30/46, posdevc36 (17 in questionnaire)",,
+TEAM_YA_020,sub-016,,,,,both,"goldmsi_39_v2, posdeva30/46, posdevc36 (17 in questionnaire)",,
+TEAM_YA_021,sub-017,,,,,both,"goldmsi_39_v2, posdeva30/46, posdevc36 (17 in questionnaire)",,
+TEAM_YA_022,sub-013,Y,27,,,both,"goldmsi_39_v2, posdeva30/46, posdevc36 (17 in questionnaire)",,
+TEAM_YA_023,sub-022,Y,27,Y,,both,"goldmsi_39_v2, posdeva30/46, posdevc36 (17 in questionnaire)",F,21
+TEAM_YA_025,sub-018,,,,,both,"goldmsi_39_v2, posdeva30/46, posdevc36 (17 in questionnaire)",,
+TEAM_YA_027,sub-014,,,,,both,"goldmsi_39_v2, posdeva30/46, posdevc36 (17 in questionnaire)",,
+TEAM_YA_029,sub-020,Y,8,Y,,granularity,"goldmsi_39_v2, posdeva30/46, posdevc36 (17 in questionnaire)",M,21
+TEAM_YA_030,sub-023,Y,27,Y,Y,granularity,"goldmsi_39_v2, posdeva30/46, posdevc36 (17 in questionnaire)",M,22
+TEAM_YA_031,sub-021,Y,27,Y,Y,granularity,"goldmsi_39_v2, posdeva30/46, posdevc36 (17 in questionnaire)",F,20
+TEAM_YA_035,sub-024,Y,11,,,both,"goldmsi_39_v2, posdeva30/46, posdevc36 (17 in questionnaire)",M,23
+TEAM_YA_032,sub-025,Y,11,Y,,granularity,"goldmsi_39_v2, posdeva30/46, posdevc36 (17 in questionnaire)",M,19
+TEAM_YA_033,sub-026,Y,11,Y,,granularity,"goldmsi_39_v2, posdeva30/46, posdevc36 (17 in questionnaire)",M,24
+TEAM_YA_034,sub-027,Y,12,Y,,granularity,"goldmsi_39_v2, posdeva30/46, posdevc36 (17 in questionnaire)",F,24
+TEAM_YA_037,sub-028,Y,16,Y,,granularity,"posdeva30/46, posdevc36 (17 in questionnaire)",M,21
+TEAM_YA_038,sub-029,Y,16,Y,,granularity,"posdeva30/46, posdevc36 (17 in questionnaire)",M,21
+TEAM_YA_036,sub-030,Y,27,Y,Y,granularity,"posdeva30/46, posdevc36 (17 in questionnaire)",F,22
+TEAM_YA_039,sub-031,Y,16,Y,,granularity,"posdeva30/46, posdevc36 (17 in questionnaire)",M,21
+TEAM_YA_041,sub-032,,,Y,,granularity,"posdeva30/46, posdevc36 (17 in questionnaire)",M,24
+TEAM_YA_044,sub-033,Y,27,Y,Y,granularity,"posdeva30/46, posdevc36 (17 in questionnaire)",M,24
+TEAM_YA_043,sub-034,,,Y,,granularity,"posdeva30/46, posdevc36 (17 in questionnaire)",M,23
+TEAM_YA_045,sub-035,Y,23,Y,Y,,posdevc36 (17 in questionnaire),M,24
+TEAM_YA_028,sub-036,Y,23,Y,Y,,posdevc36 (17 in questionnaire),F,
+TEAM_YA_053,sub-042,,23,Y,Y,,,,
+TEAM_YA_049,sub-039,,23,Y,Y,,,,
+TEAM_YA_050,sub-037,,23,Y,Y,,,M,23
+TEAM_YA_051,sub-043,,23,Y,Y,,,,
+TEAM_YA_052,sub-045,,23,Y,Y,,,,
+TEAM_YA_055,sub-040,,23,Y,Y,,,,
+TEAM_YA_058,sub-046,,23,Y,Y,,,,
+TEAM_YA_046,sub-047,,24,Y,Y,,,,
+TEAM_YA_056,sub-049,,24,Y,Y,,,,
+TEAM_YA_048,sub-044,,24,Y,Y,,,,
+TEAM_YA_054,sub-048,,24,Y,Y,,,,
+TEAM_YA_047,sub-041,,,Y,Y,granularity,,,
+TEAM_YA_080,No scan,,25,,,,,,
+TEAM_YA_065,sub-055,,25,Y,Y,,,,
+TEAM_YA_082,No scan,,26,Y,Y,,,,
+TEAM_YA_083,No scan,,26,,,,,,
+TEAM_YA_069,sub-057,,26,Y,Y,,,,
+TEAM_YA_064,sub-056,,26,Y,Y,,,,
+TEAM_YA_084,No scan,,26,Y,Y,,,,
+TEAM_YA_085,No scan,,26,Y,Y,,,,
+TEAM_YA_062,sub-058,,26,Y,Y,,,,
+TEAM_YA_061,sub-072,,26,Y,Y,,,,
+TEAM_YA_081,sub-059,,26,Y,Y,,,,
+TEAM_YA_071,sub-060,,27,,,missed aMEDT,,,
+TEAM_YA_067,sub-061,,27,Y,Y,,,,
+TEAM_YA_074,sub-066,,27,Y,Y,,,,
+TEAM_YA_072,sub-062,,27,Y,Y,,,,
+TEAM_YA_073,sub-063,,27,Y,Y,,,,
+TEAM_YA_077,No scan,,27,Y,Y,,,,
+TEAM_YA_068,sub-068,,27,Y,Y,,,,
+TEAM_YA_075,sub-067,,27,Y,Y,,,,
+TEAM_YA_092,sub-069,,27,Y,Y,,,,
+TEAM_YA_089,sub-070,,27,Y,Y,,,,
+TEAM_YA_066,sub-071,,27,Y,Y,,,,
+TEAM_YA_079,sub-065,,27,Y,Y,,,,
+TEAM_YA_100,sub-073,,27,Y,Y,,,,
+TEAM_YA_098,sub-074,,27,Y,Y,,,,
+TEAM_YA_090,sub-075,,27,Y,Y,,,,
+TEAM_YA_102,sub-076,,27,Y,Y,,,,
+TEAM_YA_103,sub-077,,27,Y,Y,,,,
+TEAM_YA_106,sub-079,,27,Y,Y,,,,
+TEAM_YA_112,sub-080,,27,Y,Y,,,,
+TEAM_YA_108,sub-084,,27,Y,Y,,,,
+TEAM_YA_109,sub-085,,27,Y,,,,,
+TEAM_YA_111,sub-087,,27,Y,Y,,,,
+TEAM_YA_097,sub-089,,27,Y,,,,,
+TEAM_YA_101,sub-091,,27,Y,Y,,,,
+,,,,,,,,,
+Fully completed:,50,,,,,,,,
+,(2 no aMEDT),,,,,,,,
