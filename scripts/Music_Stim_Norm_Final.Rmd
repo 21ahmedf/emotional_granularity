@@ -75,11 +75,11 @@ process_data <- function(portions_file, tracking_file) {
   
   # 1st plot: Color-coded by `final.label`
   color_plot <- ggplot(plot_data, aes(x = Valence, y = Arousal, group = file.name, color = Final.Label)) +
-    geom_point(aes(shape = factor(Type)), size = 4) +
+    geom_point(aes(shape = Type), size = 4) +
     geom_line(size = 1) +
     scale_shape_manual(values = c("Start" = 15, "End" = 17), name = "Time") +  # Square and Triangle
     scale_color_manual(values = colors, name = "Final Category") +
-    theme_minimal() +
+    theme_classic()+
     theme(axis.title = element_text(size = 30),
           axis.text = element_text(size = 28),
           panel.grid = element_blank(),
@@ -94,7 +94,7 @@ process_data <- function(portions_file, tracking_file) {
     geom_point(aes(shape = factor(Type)), size = 4, color = "black") +
     geom_line(size = 1, color = "black") +
     scale_shape_manual(values = c("Start" = 15, "End" = 17), name = "Time") +  # Square and Triangle
-    theme_minimal() +
+    theme_classic() +
     theme(axis.title = element_text(size = 30),
           axis.text = element_text(size = 28),
           panel.grid = element_blank(),
@@ -105,14 +105,12 @@ process_data <- function(portions_file, tracking_file) {
     labs(x = "Normed Valence Rating", y = "Normed Arousal Rating")
 
   # Save plots
-  ggsave("Color_Coded_Stimuli.pdf", plot = color_plot, width = 15, height = 15)
-  ggsave("Black_White_Stimuli.pdf", plot = bw_plot, width = 15, height = 15)
+  ggsave("Color_Coded_Stimuli.png", plot = color_plot, width = 12, height = 12, dpi = 1000)
+  ggsave("Black_White_Stimuli.png", plot = bw_plot, width = 12, height = 12, dpi = 1000)
 
   return(list(Color_Plot = color_plot, BW_Plot = bw_plot))
 }
 
 # Example usage
 result <- process_data(data, stimulus_tracking)
-
-
 ```
