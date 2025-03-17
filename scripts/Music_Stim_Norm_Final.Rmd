@@ -1,0 +1,118 @@
+---
+title: "Music_Stim_Norm_Final"
+output: html_document
+date: "2025-03-17"
+---
+
+```{r}
+library(tidyverse)
+library(forcats)
+install.packages("zoo")
+library(zoo)
+```
+
+```{r}
+data <- read.csv("../stimuli/sachs/SourceData_1.csv")
+
+data$song <- gsub("^stimuli/", "", data$song)
+
+# actual time in song is +5 from data
+data$second <- data$second + 5
+
+neg_portions <- data %>%
+  subset(valence_filt < 0) %>%
+  select(c("song", "song.1", "second", "valence_filt","arousal_filt"))
+
+ggplot(data=neg_portions,
+       aes(x = second, y = valence_filt)) +
+theme_classic() +
+  geom_point(aes(color = song)) +
+  labs(title = "Negative Valence Sections of Musical Stimuli", x = "Time", y = "Valence") +
+  theme(legend.position = "none") #uncomment this for a clearer timing est
+
+pos_portions <- data %>%
+  subset(valence_filt > 0) %>%
+  select(c("song", "song.1", "second", "valence_filt","arousal_filt"))
+
+ggplot(data=pos_portions,
+       aes(x = second, y = valence_filt)) +
+theme_classic() +
+  labs(title = "Positive Valence Sections of Musical Stimuli", x = "Time", y = "Valence") +
+  geom_point(aes(color = song)) +
+  theme(legend.position = "none") #uncomment this for a clearer timing est
+
+```
+
+```{r}
+# Read stimulus tracking data
+stimulus_tracking <- read.csv("../stimuli/sachs/stims_v2/Final Stimuli Labeled.csv")
+
+# Function to process data and generate two plots
+process_data <- function(portions_file, tracking_file) {
+  stimulus_tracking$start.time <- as.numeric(stimulus_tracking$start.time)
+  stimulus_tracking$end.time <- as.numeric(stimulus_tracking$end.time)
+
+  # Merge to get start and end valence/arousal for each stimulus
+  extracted_sections <- stimulus_tracking %>%
+    left_join(data, by = c("original.song" = "song", "start.time" = "second")) %>%
+    rename(Valence_Start = valence_filt, Arousal_Start = arousal_filt) %>%
+    left_join(data, by = c("original.song" = "song", "end.time" = "second")) %>%
+    rename(Valence_End = valence_filt, Arousal_End = arousal_filt) %>%
+    select(original.song, file.name, Final.Label, Valence_Start, Arousal_Start, Valence_End, Arousal_End)
+
+  # Create a long-format dataframe for plotting
+  plot_data <- extracted_sections %>%
+    pivot_longer(cols = c(Valence_Start, Valence_End, Arousal_Start, Arousal_End),
+                 names_to = c("Metric", "Type"),
+                 names_pattern = "(.*)_(.*)") %>%
+    pivot_wider(names_from = Metric, values_from = value)
+
+  # Set shapes for start and end
+  plot_data$Shape <- ifelse(plot_data$Type == "Start", 15, 17)  # Square for start, triangle for end
+
+  # Define colors for different final.label categories
+  colors <- c("red", "blue", "green", "purple")
+  
+  # 1st plot: Color-coded by `final.label`
+  color_plot <- ggplot(plot_data, aes(x = Valence, y = Arousal, group = file.name, color = Final.Label)) +
+    geom_point(aes(shape = factor(Type)), size = 4) +
+    geom_line(size = 1) +
+    scale_shape_manual(values = c("Start" = 15, "End" = 17), name = "Time") +  # Square and Triangle
+    scale_color_manual(values = colors, name = "Final Category") +
+    theme_minimal() +
+    theme(axis.title = element_text(size = 30),
+          axis.text = element_text(size = 28),
+          panel.grid = element_blank(),
+          legend.title = element_text(size = 24),
+          legend.text = element_text(size = 22)) +
+    geom_hline(yintercept = 0, linetype = "dotted", color = "red") +
+    geom_vline(xintercept = 0, linetype = "dotted", color = "red") +
+    labs(x = "Normed Valence Rating", y = "Normed Arousal Rating")
+
+  # 2nd plot: Black and white version
+  bw_plot <- ggplot(plot_data, aes(x = Valence, y = Arousal, group = file.name)) +
+    geom_point(aes(shape = factor(Type)), size = 4, color = "black") +
+    geom_line(size = 1, color = "black") +
+    scale_shape_manual(values = c("Start" = 15, "End" = 17), name = "Time") +  # Square and Triangle
+    theme_minimal() +
+    theme(axis.title = element_text(size = 30),
+          axis.text = element_text(size = 28),
+          panel.grid = element_blank(),
+          legend.title = element_text(size = 24),
+          legend.text = element_text(size = 22)) +
+    geom_hline(yintercept = 0, linetype = "dotted", color = "red") +
+    geom_vline(xintercept = 0, linetype = "dotted", color = "red") +
+    labs(x = "Normed Valence Rating", y = "Normed Arousal Rating")
+
+  # Save plots
+  ggsave("Color_Coded_Stimuli.pdf", plot = color_plot, width = 15, height = 15)
+  ggsave("Black_White_Stimuli.pdf", plot = bw_plot, width = 15, height = 15)
+
+  return(list(Color_Plot = color_plot, BW_Plot = bw_plot))
+}
+
+# Example usage
+result <- process_data(data, stimulus_tracking)
+
+
+```

@@ -1,0 +1,17 @@
+﻿Final Label,ID,original song,file name,start time,end time,normed label
+NegLow,NL1,3_pieceB_joyous_anxious_sad,3_1,110,118,high
+NegLow,NL2,5_pieceB_calm_sad_anxious,5_14,62,70,low
+NegLow,NL3,7_pieceB_joyous_anxious_sad,7_13,99,107,high
+NegLow,NL4,11_pieceA_calm_anxious_sad,11_11,117,125,high
+NegHigh,NH1,6_pieceB_anxious_calm_joyous,6_10,24.5,32.5,low then high
+NegHigh,NH2,7_pieceB_joyous_anxious_sad,7_10,65,73,high
+NegHigh,NH3,5_pieceB_calm_sad_anxious,11_2,75,83,low
+NegHigh,NH4,11_pieceA_calm_anxious_sad,11_10,42,50,high
+PosLow,PL1,2_pieceB_anxious_calm_joyous,2_1,67,75,high
+PosLow,PL2,4_pieceB_sad_joy_calm,4_2,115,123,low
+PosLow,PL3,10_pieceA_anxious_joy_calm,10_1,64.5,72.5,high
+PosLow,PL4,12_pieceA_joyous_sad_anxious,12_2,10,18,low
+PosHigh,PH1,4_pieceB_sad_joy_calm,4_1,62,70,low
+PosHigh,PH2,6_pieceB_anxious_calm_joyous,6_5,95,103,high then low
+PosHigh,PH3,8_pieceA_dreamy_calm_joyous,8_2,101,109,low
+PosHigh,PH4,10_pieceA_anxious_joy_calm,10_2,79,87,high
