@@ -73,7 +73,7 @@ ggsave("../results/rating-task/Steepest Valence Sections of All Stims.png", stee
 
 ```{r}
 # Read stimulus tracking data
-stimulus_tracking <- read.csv("../stimuli/sachs/stims/cropped_stims/Stimulus Tracking.csv")
+stimulus_tracking <- read.csv("../stimuli/sachs/SourceData_1.csv")
 
 # Function to process data and generate plots
 process_data <- function(portions, tracking_indices, title) {
@@ -107,7 +107,7 @@ process_data <- function(portions, tracking_indices, title) {
     theme_classic() +
     theme(plot.title = element_text(size = 14, hjust = 0.5),
           axis.title = element_text(size = 12),
-          legend.position = "top",
+          legend.position = "none",
           legend.title = element_text(size = 10),
           legend.text = element_text(size = 8))
 
@@ -137,7 +137,7 @@ process_data(pos_pos_portions, 34:50, "Positive Valence Positive Arousal")
 ```
 ```{r}
 # Read stimulus tracking data
-stimulus_tracking <- read.csv("../stimuli/sachs/cropped_stims/Stimulus Tracking.csv")
+stimulus_tracking <- read.csv("../stimuli/sachs/cropped_stims/stim tracking sheets/Stimulus Tracking.csv")
 
 # Function to process data, generate plots, and save to PDF
 process_data <- function(portions, tracking_indices, title) {
@@ -200,14 +200,16 @@ process_data <- function(portions, tracking_indices, title) {
 }
 
 # Apply function to different data subsets
-process_data(neg_neg_portions, 1:13, "Negative Valence Negative Arousal")
+process_data(neg_neg_portions, 3:4, "Negative Valence Negative Arousal")
 process_data(neg_pos_portions, 17:30, "Negative Valence Positive Arousal")
 process_data(pos_neg_portions, 54:69, "Positive Valence Negative Arousal")
 process_data(pos_pos_portions, 34:50, "Positive Valence Positive Arousal")
 ```
+
 ```{r}
 # Read stimulus tracking data
-stimulus_tracking <- read.csv("../stimuli/sachs/cropped_stims/Stimulus Tracking 5_16_24.csv")
+stimulus_tracking <- read.csv("../stimuli/sachs/cropped_stims/stim tracking sheets/Stimulus Tracking.csv") #%>%
+  #subset(file.name=="3_pieceB_joyous_anxious_sad_1" | file.name=="11_pieceA_calm_anxious_sad_4")
 
 # Function to process data, generate plots, and save to PDF
 process_data <- function(portions, tracking_indices, title) {
@@ -248,19 +250,21 @@ process_data <- function(portions, tracking_indices, title) {
   pdf(file_name, width = 9, height = 9)
 
   # Create plot for Valence vs. Arousal
-  combined_plot <- ggplot(extracted_sections, aes(x = Valence, y = Arousal, group = SectionID, color = SectionID)) +
+  combined_plot <- ggplot(extracted_sections, aes(x = Valence, y = Arousal, group = SectionID)) +
     geom_point(aes(shape = Type)) +  # Distinguish start and end points with shapes
     geom_line() +  # Connect start and end points
-    labs(title = paste("Valence vs. Arousal -", title),
-         x = "Valence",
-         y = "Arousal") +
+    labs(
+         x = "Normed Valence Rating",
+         y = "Normed Arousal Rating") +
     theme_classic() +
-    scale_shape_manual(values = c("Start" = 16, "End" = 15)) + # Using different shapes for start and end
-    theme(plot.title = element_text(size = 14, hjust = 0.5),
-          axis.title = element_text(size = 12),
-          legend.position = "top",
-          legend.title = element_text(size = 10),
-          legend.text = element_text(size = 8))
+    geom_vline(xintercept=0,color="red", linetype="dashed")+
+    geom_hline(yintercept=0,color="red", linetype="dashed")+
+    scale_shape_manual(values = c("Start" = 15, "End" = 17)) + # Using different shapes for start and end
+    theme(
+          axis.title = element_text(size = 20),
+          legend.position = "none",
+          legend.title = element_text(size = 20),
+          axis.text = element_text(size = 16))
 
   # Print plots to PDF
   print(combined_plot)
@@ -270,10 +274,15 @@ process_data <- function(portions, tracking_indices, title) {
 }
 
 # Apply function to different data subsets
-process_data(neg_neg_portions, 1:13, "Negative Valence Negative Arousal 5_16_24")
+process_data(neg_neg_portions,1:13, "Negative Valence Negative Arousal")
 process_data(neg_pos_portions, 17:30, "Negative Valence Positive Arousal 5_16_24")
 process_data(pos_neg_portions, 54:69, "Positive Valence Negative Arousal 5_16_24")
 process_data(pos_pos_portions, 34:50, "Positive Valence Positive Arousal 5_16_24")
+
+master <- rbind(neg_pos_portions,neg_neg_portions, pos_neg_portions,pos_pos_portions)
+
+process_data(master, c(3:5,9,2,21,18,19,25,27,66,67,69,55,56,62,36,41,47,48), "Selected")
+
 
 ```
 

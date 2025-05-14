@@ -921,3 +921,59 @@ cat("Age Range:", range_age[1], "to", range_age[2], "\n")
 
 
 ```
+
+##corr plot for poster
+```{r}
+# Select only the numeric columns for the correlation matrix
+numeric_columns_recoded <- merged_df_recoded[, sapply(merged_df_recoded, is.numeric)] %>%
+  select("STAI_total", "CD.RISC_total","Gold_musicaltraining", "BDI_total", "rdees_range", "rdees_differentiation", "rdees_total", "negmusicICC":"pospicICC")
+
+# Calculate the correlation matrix
+#correlation_matrix <- cor(numeric_columns, use = "complete.obs")
+correlation_matrix_recoded <- cor(numeric_columns_recoded, use = "complete.obs")
+
+# Function to compute significance levels
+cor.mtest <- function(mat, conf.level = 0.95) {
+  mat <- as.matrix(mat)
+  n <- ncol(mat)
+  p.mat <- matrix(NA, n, n)
+  diag(p.mat) <- 0
+  for (i in 1:(n - 1)) {
+    for (j in (i + 1):n) {
+      tmp <- cor.test(mat[, i], mat[, j], conf.level = conf.level)
+      p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
+    }
+  }
+  colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
+  p.mat
+}
+
+# Compute p-values
+p_values <- cor.mtest(correlation_matrix_recoded)
+#p_values_recoded <- cor.mtest(numeric_columns_recoded)
+
+# Specify the folder where you want to save the file
+output_folder <- "../results/qualtrics/study1/"
+
+# Combine the folder path with the file name
+output_file <- file.path(output_folder, "corrplotstudy1_postertest.pdf")
+
+# Open a PNG device with the specified file path
+pdf(output_file, width=10)
+colnames(correlation_matrix_recoded) <- c('STAI Trait Score', 'CD.RISC Score', 'Gold-MSI: Musical Training', 'BDI Score', 'RDEES: Range Score', 'RDEES: Differentiation Score', 'Total RDEES Score',  "Negative Emotional Granularity Score: Music", "Positive Emotional Granularity Score: Music", 
+                           "Negative Emotional Granularity Score: Pictures","Positive Emotional Granularity Score: Pictures")
+rownames(correlation_matrix_recoded) <- c('STAI Trait Score', 'CD.RISC Score', 'Gold-MSI: Musical Training', 'BDI Score', 'RDEES: Range Score', 'RDEES: Differentiation Score', 'Total RDEES Score',  "Negative Emotional Granularity Score: Music", "Positive Emotional Granularity Score: Music", 
+                           "Negative Emotional Granularity Score: Pictures","Positive Emotional Granularity Score: Pictures")
+
+# Generate the corrplot
+corrplot(correlation_matrix_recoded, method = "circle", type = "upper", 
+         p.mat = p_values, sig.level = 0.05, insig = "blank", show.diag = FALSE,
+         tl.col = "black", tl.srt = 45, addCoef.col = NULL, tl.pos = 'n',
+         col = colorRampPalette(c("blue", "white", "red"))(200))
+
+title(main = "", col.main = "black", font.main = 4)
+
+# Close the PNG device
+dev.off()
+
+```
