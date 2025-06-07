@@ -58,6 +58,7 @@ STAI$STAI_total <- apply(STAI[,-1],1,sum)
 
 final_scores <- merge(final_scores, STAI[, c(1, ncol(STAI))], by.x = "SURVEY_CODE", by.y = "SURVEY_CODE", all.x = TRUE)
 hist(final_scores$STAI_total)
+boxplot.stats(merged_df_recoded$STAI_total)$out
 ```
 
 #CD-RISC
@@ -366,6 +367,7 @@ BDI_merged$BDI_total <- apply(BDI_merged[,-1],1,sum)
 final_scores <- merge(final_scores, BDI_merged[, c(1, 22)], by.x = "SURVEY_CODE", by.y = "SURVEY_CODE", all.x = TRUE)
 
 hist(final_scores$BDI_total)
+boxplot.stats(merged_df_recoded$BDI_total)$out
 ```
 
 #M@H
@@ -516,11 +518,9 @@ merged_df_recoded <- merge(final_scores, results_recode, by.x = "SURVEY_CODE", b
 #correlations
 ```{r}
 # Select only the numeric columns for the correlation matrix
-numeric_columns <- merged_df[, sapply(merged_df, is.numeric)]
 numeric_columns_recoded <- merged_df_recoded[, sapply(merged_df_recoded, is.numeric)]
 
 # Calculate the correlation matrix
-correlation_matrix <- cor(numeric_columns, use = "complete.obs")
 correlation_matrix_recoded <- cor(numeric_columns_recoded, use = "complete.obs")
 
 # Function to compute significance levels
@@ -540,45 +540,24 @@ cor.mtest <- function(mat, conf.level = 0.95) {
 }
 
 # Compute p-values
-p_values <- cor.mtest(numeric_columns)
 p_values_recoded <- cor.mtest(numeric_columns_recoded)
-
-# Specify the folder where you want to save the file
-output_folder <- "../results/qualtrics/study1/"
-
-# Combine the folder path with the file name
-output_file <- file.path(output_folder, "Significant Correlations Plot (without Recoding ICC) 2-26-25.png")
-
-# Open a PNG device with the specified file path
-png(output_file, width = 800, height = 800)
-
-# Generate the corrplot
-corrplot(correlation_matrix, method = "circle", type = "upper", 
-         p.mat = p_values, sig.level = 0.05, insig = "blank",
-         tl.col = "black", tl.srt = 45, addCoef.col = NULL,
-         col = colorRampPalette(c("blue", "white", "red"))(200))
-
-title(main = "Significant Correlations (without Recoding Granularity Scores)", col.main = "black", font.main = 4)
-
-# Close the PNG device
-dev.off()
 
 # Specify the folder where you want to save the file
 output_folder <- "../results/qualtrics/study1"
 
 # Combine the folder path with the file name
-output_file <- file.path(output_folder, "Significant Correlations Plot (with Recoding ICC) 2-26-25.png")
+output_file <- file.path(output_folder, "Significant Correlations Plot - OUTLIER KEPT 3-22-25.png")
 
 # Open a PNG device with the specified file path
 png(output_file, width = 800, height = 800)
 
 # Generate the corrplot
 corrplot(correlation_matrix_recoded, method = "circle", type = "upper", 
-         p.mat = p_values, sig.level = 0.05, insig = "blank",
+         p.mat = p_values_recoded, sig.level = 0.05, insig = "blank",
          tl.col = "black", tl.srt = 45, addCoef.col = NULL,
          col = colorRampPalette(c("blue", "white", "red"))(200))
 
-title(main = "Significant Correlations (WITH Recoding Granularity Scores)", col.main = "black", font.main = 4)
+title(main = "Significant Correlations - Oulier Kept", col.main = "black", font.main = 4)
 
 # Close the PNG device
 dev.off()
@@ -666,61 +645,6 @@ cor.mtest <- function(mat, conf.level = 0.95) {
   colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
   p.mat
 }
-```
-
-## correlations w/ aMEDT 2/26/25
-```{r}
-# # Select only the numeric columns for the correlation matrix
-# numeric_columns <- merged_df[, sapply(merged_df, is.numeric)]
-# numeric_columns_recoded <- merged_df_recoded[, sapply(merged_df_recoded, is.numeric)]
-# 
-# # Calculate the correlation matrix
-# correlation_matrix <- cor(numeric_columns, use = "complete.obs")
-# correlation_matrix_recoded <- cor(numeric_columns_recoded, use = "complete.obs")
-# 
-# # Compute p-values
-# p_values <- cor.mtest(numeric_columns)
-# p_values_recoded <- cor.mtest(numeric_columns_recoded)
-# 
-# # Specify the folder where you want to save the file
-# output_folder <- "../results/qualtrics/"
-# 
-# # Combine the folder path with the file name
-# output_file <- file.path(output_folder, "Significant Correlations Plot (without Recoding ICC) 10-25-24.png")
-# 
-# # Open a PNG device with the specified file path
-# png(output_file, width = 800, height = 800)
-# 
-# # Generate the corrplot
-# corrplot(correlation_matrix, method = "circle", type = "upper", 
-#          p.mat = p_values, sig.level = 0.05, insig = "blank",
-#          tl.col = "black", tl.srt = 45, addCoef.col = NULL,
-#          col = colorRampPalette(c("blue", "white", "red"))(200))
-# 
-# title(main = "Significant Correlations (without Recoding Granularity Scores) 10-25-24", col.main = "black", font.main = 4)
-# 
-# # Close the PNG device
-# dev.off()
-# 
-# # Specify the folder where you want to save the file
-# output_folder <- "../results/qualtrics/"
-# 
-# # Combine the folder path with the file name
-# output_file <- file.path(output_folder, "Significant Correlations Plot (with Recoding ICC) 10-25-24.png")
-# 
-# # Open a PNG device with the specified file path
-# png(output_file, width = 800, height = 800)
-# 
-# # Generate the corrplot
-# corrplot(correlation_matrix_recoded, method = "circle", type = "upper", 
-#          p.mat = p_values, sig.level = 0.05, insig = "blank",
-#          tl.col = "black", tl.srt = 45, addCoef.col = NULL,
-#          col = colorRampPalette(c("blue", "white", "red"))(200))
-# 
-# title(main = "Significant Correlations (WITH Recoding Granularity Scores) 10-25-24", col.main = "black", font.main = 4)
-# 
-# # Close the PNG device
-# dev.off()
 ```
 
 ## EDT correlation with granularity scores
@@ -918,6 +842,14 @@ range_age <- range(all_ages)
 cat("Mean Age:", mean_age, "\n")
 cat("Standard Deviation:", sd_age, "\n")
 cat("Age Range:", range_age[1], "to", range_age[2], "\n")
+```
 
-
+```{r}
+# Step 1: Set the rdees values to NA for the RDEES outlier
+boxplot.stats(merged_df_recoded$rdees_range)$out
+boxplot.stats(merged_df_recoded$rdees_differentiation)$out
+boxplot.stats(merged_df_recoded$rdees_total)$out
+merged_df_recoded$rdees_range[merged_df_recoded$SURVEY_CODE == 30022] <- NA
+merged_df_recoded$rdees_differentiation[merged_df_recoded$SURVEY_CODE == 30022] <- NA
+merged_df_recoded$rdees_total[merged_df_recoded$SURVEY_CODE == 30022] <- NA
 ```

@@ -227,3 +227,13 @@ create_scatter_plot(structural_results_left, "negmusicICC", "lh_G_front_inf.Tria
 
 
 ```
+
+```{r}
+# Loop over both data frames and plot histograms for columns 9 through 16
+for (df in list(structural_results_left, structural_results_right)) {
+  for (i in 9:16) {
+    hist(df[[i]], main = paste("Histogram of", colnames(df)[i]),
+         xlab = colnames(df)[i], col = "lightblue", border = "white")
+  }
+}
+```
