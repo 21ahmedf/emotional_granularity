@@ -152,16 +152,21 @@ plot_emotion_means <- function(data, title, file_name, type) {
     geom_point() +
     geom_errorbar(aes(ymin = mean_value - se_value, ymax = mean_value + se_value), width = 0.2) +
     labs(title = title, x = "Emotion", y = "Mean Response") +
+    theme(
+    axis.title.y = element_text(family="Arial",size=30),
+    axis.text.x = element_text(family="Arial", size=20),
+    axis.text.y = element_text(family="Arial",size=18),
+    strip.text = element_text(family="Arial",size=24,color='black') )+
     theme_bw()
   
-  ggsave(file_name, plot, width = 9)
+  ggsave(file_name, plot, width = 9, dpi=1000)
   
   # Return the summary for further use
   return(summary)
 }
 
 # Get summaries and plots for negative and positive emotions
-music_negative_summary <- plot_emotion_means(music_negative, "Music Negative Emotion Means", "../results/rating-task/Music_Negative_Means_2_12_25.png", "Music")
+music_negative_summary <- plot_emotion_means(music_negative, "Music Negative Emotion Means", "../results/rating-task/Music_Negative_Means_3_10_25.png", "Music")
 music_positive_summary <- plot_emotion_means(music_positive, "Music Positive Emotion Means", "../results/rating-task/Music_Positive_Means_2_12_25.png", "Music")
 pic_negative_summary <- plot_emotion_means(pic_negative, "Picture Negative Emotion Means", "../results/rating-task/Picture_Negative_Means_2_12_25.png", "Picture")
 pic_positive_summary <- plot_emotion_means(pic_positive, "Picture Positive Emotion Means", "../results/rating-task/Picture_Positive_Means_2_12_25.png", "Picture")
@@ -439,6 +444,26 @@ summary_plot <- ggplot(summary_df, aes(x = Category, y = Average.Response, color
 # Save the plots
 ggsave('../results/rating-task/Emotion_Category_Means_2_12_25.png', summary_plot, width = 9)
 
+
+#plotting stimulus type (pic or music) + emotion average for valence
+all_averages$Type1 <- ifelse(grepl("Music", all_averages$Type),"Music", "Image" )
+
+summary_plot <- 
+  ggplot(all_averages, aes(x = Category, y = Average.Response, color=Type1)) +
+  stat_summary(fun.data = 'mean_se', geom = 'errorbar', width = 0.025,linewidth=1,position=position_dodge(width=0.1)) +
+  stat_summary(fun.data = 'mean_se', geom = 'pointrange', size=0.5,position=position_dodge(width=0.1)) + theme_bw() +
+    theme(
+    axis.text.x = element_text(family="Arial", size=24),
+    axis.text.y = element_text(family="Arial",size=24),
+    axis.title.x = element_text(family="Arial",size=30),
+    axis.title.y = element_text(family="Arial",size=30),
+    legend.position = "none")+
+    scale_color_manual(values=c("#0072B2", "#D55E00" )) +
+  scale_fill_manual(values=c("#0072B2","#D55E00"))+
+  xlab("Emotion Valence") +
+    ylab("Average Emotion Rating")
+
+ggsave('../results/rating-task/Emotion_Category_Means_pervalencestim.png', summary_plot, width = 9, dpi=1000)
 ```
 
 ```{r}
@@ -482,7 +507,7 @@ all_stims_plotted <- ggplot(all_averages, aes(x = Type, y = Average.Response)) +
   theme_bw()
 
 # Save the plot
-ggsave('../results/rating-task/All_Stims_Means_2_12_25.png', all_stims_plotted, width = 14)
+ggsave('../results/rating-task/All_Stims_Means_3_10_25.png', all_stims_plotted, width = 14)
 
 # Summarize collapsed stimulus types
 collapsed_stims <- all_averages %>%
@@ -495,7 +520,7 @@ collapsed_stims <- all_averages %>%
 all_averages$Type[all_averages$Type == "Negative Valence Music" | all_averages$Type == "Positive Valence Music"] = "Music"
 all_averages$Type[all_averages$Type == "Negative Valence Pictures" | all_averages$Type == "Positive Valence Pictures"] = "Picture"
 
-collapsed_plot <- ggplot(collapsed_stims, aes(x = Type, y = Mean_Value, color = Mean_Value, label = round(Mean_Value, 2))) +
+collapsed_plot <- ggplot(collapsed_stims, aes(x = Type, y = Mean_Value)) +
   geom_point() +
   geom_text(hjust=0, vjust=0) +
   geom_errorbar(aes(ymin = Mean_Value - Combined_SE, ymax = Mean_Value + Combined_SE, color = Mean_Value), alpha = 0.4, width = 0.2) +
@@ -564,7 +589,9 @@ results_recode$allpicICC <- rowMeans(results_recode[, c("negpicICC", "pospicICC"
 # Drop the ID column
 music_neg_corr <- cor(music_negative[ , -c(1)])
 pic_neg_corr <- cor(pic_negative[ , -c(1)])
+music_positive <- music_positive[,c("Participant.Public.ID","happy","satisfied","relaxed", "joyful", "excited")]
 music_pos_corr <- cor(music_positive[ , -c(1)]) 
+pic_positive <- pic_positive[,c("Participant.Public.ID","happy","satisfied","relaxed", "joyful", "excited")]
 pic_pos_corr <- cor(pic_positive[ , -c(1)])
 
 # Plot heatmap for audio correlation
@@ -572,20 +599,22 @@ music_neg_corr_plot <- ggcorrplot(music_neg_corr,
            method = "square", 
            type = "lower", 
            lab = TRUE, 
-           lab_size = 3, 
+           lab_size = 10, 
            colors = c("blue", "white", "red"), 
-           title = "Correlations of Negative Emotion Responses to Music",
-           tl.cex = 10,
+           #title = "Correlations between Negative Emotion Ratings to Music",
+           tl.cex = 20,
            ggtheme = theme_classic())
 
-music_pos_corr_plot <- ggcorrplot(music_pos_corr, 
+music_pos_corr_plot <- 
+ggcorrplot(music_pos_corr, 
            method = "square", 
            type = "lower", 
+           show.diag = TRUE,
            lab = TRUE, 
-           lab_size = 3, 
+           lab_size = 10, 
            colors = c("blue", "white", "red"), 
-           title = "Correlations of Positive Emotion Responses to Music",
-           tl.cex = 10,
+           #title = "Correlations between Positive Emotion Ratings to Music",
+           tl.cex = 20,
            ggtheme = theme_classic())
 
 # Plot heatmap for image correlation
@@ -593,26 +622,29 @@ pic_neg_corr_plot <- ggcorrplot(pic_neg_corr,
            method = "square", 
            type = "lower", 
            lab = TRUE, 
-           lab_size = 3, 
+           show.diag = TRUE,
+           lab_size = 10, 
            colors = c("blue", "white", "red"), 
-           title = "Correlations of Negative Emotion Responses to Pictures",
-           tl.cex = 10,
+           #title = "Correlations between Negative Emotion Ratings to Pictures",
+           tl.cex = 20,
            ggtheme = theme_classic())
 
-pic_pos_corr_plot <- ggcorrplot(pic_pos_corr, 
+pic_pos_corr_plot <- 
+ggcorrplot(pic_pos_corr, 
            method = "square", 
            type = "lower", 
            lab = TRUE, 
-           lab_size = 3, 
+           lab_size = 10, 
+           show.diag = TRUE,
            colors = c("blue", "white", "red"), 
-           title = "Correlations of Positive Emotion Responses to Pictures",
-           tl.cex = 10,
+           #title = "Correlations between Positive Emotion Ratings to Pictures",
+           tl.cex = 20,
            ggtheme = theme_classic())
 
-ggsave('../results/rating-task/Picture Negative Emotion Correlations 2_12_25.png', pic_neg_corr_plot, width = 9)
-ggsave('../results/rating-task/Music Negative Emotion Correlations 2_12_25.png', music_neg_corr_plot, width = 9)
-ggsave('../results/rating-task/Picture Positive Emotion Correlations 2_12_25.png', pic_pos_corr_plot, width = 9)
-ggsave('../results/rating-task/Music Positive Emotion Correlations 2_12_25.png', music_pos_corr_plot, width = 9)
+ggsave('../results/rating-task/Picture Negative Emotion Correlations3_11_25.png', pic_neg_corr_plot, width = 9, dpi=1000)
+ggsave('../results/rating-task/Music Negative Emotion Correlations3_11_25.png', music_neg_corr_plot, width = 9, dpi=1000)
+ggsave('../results/rating-task/Picture Positive Emotion Correlations3_11_25.png', pic_pos_corr_plot, width = 9, dpi=1000)
+ggsave('../results/rating-task/Music Positive Emotion Correlations3_11_25.png', music_pos_corr_plot, width = 9, dpi=1000)
 
 ```
 
@@ -681,13 +713,13 @@ create_scatter_plot <- function(data, x_var, y_var, x_label, y_label, title, out
     ylab(y_label) +
     ggtitle(title) +
     theme_classic() +
-    theme(axis.title.x = element_text(size = 14, face = 'bold'),
-          axis.title.y = element_text(size = 14, face = 'bold'),
-          axis.text.x = element_text(size = 12),
-          axis.text.y = element_text(size = 12),
-          plot.title = element_text(size = 16, face = 'bold', hjust = 0.5))
+    theme(axis.title.x = element_text(size = 30),
+          axis.title.y = element_text(size = 30),
+          axis.text.x = element_text(size = 24),
+          axis.text.y = element_text(size = 24))
+          #plot.title = element_text(size = 16, face = 'bold', hjust = 0.5))
   
-  ggsave(output_file, scatter_plot, width = 10)
+  ggsave(output_file, scatter_plot, width = 10, dpi=1000)
 }
 
 # Plotting histograms - recoded
@@ -708,22 +740,22 @@ create_histogram(results_recode, c("allmusicICC", "allpicICC"),
 
 # Plotting correlation scatter plots - Recoded
 create_scatter_plot(results_recode, "negpicICC", "negmusicICC", 
-                    "Negative Emotional Granularity (Pictures)", 
-                    "Negative Emotional Granularity (Music)", 
-                    "Correlation of Negative Emotional Granularity Scores", 
-                    "../results/rating-task/final/Neg_Graph_Final_2_27.png")
+                    "Negative Emotional\nGranularity (Pictures)", 
+                    "Negative Emotional\nGranularity (Music)", 
+                    "", 
+                    "../results/rating-task/final/Neg_Graph_Final_3_12.png")
 
 create_scatter_plot(results_recode, "pospicICC", "posmusicICC", 
-                    "Positive Emotional Granularity (Pictures)", 
-                    "Positive Emotional Granularity (Music)", 
-                    "Correlation of Positive Emotional Granularity Scores", 
-                    "../results/rating-task/final/Pos_Graph_Final_2_27.png")
+                    "Positive Emotional\nGranularity (Pictures)", 
+                    "Positive Emotional\nGranularity (Music)", 
+                    "", 
+                    "../results/rating-task/final/Pos_Graph_Final_3_12.png")
 
 create_scatter_plot(results_recode, "allpicICC", "allmusicICC", 
                     "Combined Emotional Granularity (Pictures)", 
                     "Combined Emotional Granularity (Music)", 
-                    "Correlation of Combined Emotion Granularity Scores", 
-                    "../results/rating-task/final/Combined_Graph_Final_2_27.png")
+                    "", 
+                    "../results/rating-task/final/Combined_Graph_Final_3_10.png")
 ```
 
 ## correlations for non-recoded versions
@@ -780,7 +812,7 @@ run_tests <- function(data, label) {
 # Function to create and save mean comparison plot
 create_mean_comparison_plot <- function(data, title, output_file) {
   mean_comparison <- data %>%
-    pivot_longer(negmusicICC:allpicICC) %>%
+    pivot_longer(negmusicICC:pospicICC) %>%
     ggplot(aes(x = name, y = value)) +
     stat_summary(fun.data = 'mean_cl_normal', geom = 'errorbar', width = 0.2) +
     stat_summary(fun.data = 'mean_cl_normal', geom = 'pointrange', width = 0.2) +
@@ -788,12 +820,13 @@ create_mean_comparison_plot <- function(data, title, output_file) {
     xlab('Stimulus and Valence') +
     ylab('Average Emotion Granularity') +
     ggtitle(title) +
-    theme(axis.title.x = element_text(size = 14, face = 'bold'),
-          axis.title.y = element_text(size = 14, face = 'bold'),
-          axis.text.x = element_text(size = 12),
-          axis.text.y = element_text(size = 12),
-          plot.title = element_text(size = 16, face = 'bold', hjust = 0.5)) +
-    scale_x_discrete(labels = c('Negative Music', 'Negative Picture', 'Positive Music', 'Positive Picture', 'Combined Music', 'Combined Picture'))
+    theme(axis.title.x = element_text(size = 20, face = 'bold'),
+          axis.title.y = element_text(size = 20, face = 'bold'),
+          axis.text.x = element_text(size = 18),
+          axis.text.y = element_text(size = 18)) +
+          #plot.title = element_text(size = 16, face = 'bold', hjust = 0.5)) +
+    facet_grid(~name)
+    #scale_x_discrete(labels = c('Negative Music', 'Negative Picture', 'Positive Music', 'Positive Picture', 'Combined Music', 'Combined Picture'))
   
   ggsave(output_file, mean_comparison, width = 10)
 }
@@ -807,8 +840,40 @@ create_mean_comparison_plot <- function(data, title, output_file) {
 # Run tests and create plots for recoded data
 run_tests(results_recode, "Recoded Data")
 create_mean_comparison_plot(results_recode, 
-                            'Average Granularity Scores by Stimulus Type and Valence', 
-                            '../results/rating-task/final/Mean_Comparisons_Final_2_27.png')
+                            '', 
+                            '../results/rating-task/final/Mean_Comparisons_Final_3_10.png')
+
+
+results_recode1 <- results_recode %>%
+    pivot_longer(negmusicICC:pospicICC)
+
+results_recode1$stim <- str_replace(results_recode1$name, "ICC", "")
+results_recode1$valence <- str_replace(results_recode1$stim, "music", "")
+results_recode1$valence <- str_replace(results_recode1$valence, "pic", "")
+results_recode1$stim <- str_replace(results_recode1$stim, "neg", "")
+results_recode1$stim <- str_replace(results_recode1$stim, "pos", "")
+results_recode1 <- 
+  results_recode1 %>%
+  mutate(stim = recode(stim, "music" = "Music", "pic" = "Pictures")) %>%
+  mutate(valence = recode(valence, "neg" = "Negative", "pos" = "Positive"))
+
+poster_means<-
+  ggplot(data=results_recode1, aes(x=valence, y=value, color=stim))+
+  stat_summary(fun.data = 'mean_se', geom = 'errorbar', width = 0.015, size=0.75) +
+  stat_summary(fun.data = 'mean_se', geom = 'pointrange', width = 0.015, size=0.5) +
+  scale_color_manual(values=c("#0072B2", "#D55E00" )) +
+  scale_fill_manual(values=c("#0072B2","#D55E00")) +
+  xlab("Emotional Granularity Valence") +
+  ylab("Emotional Granularity Score") +
+  theme_bw() +
+  theme(axis.title.x = element_text(size = 30),
+          axis.title.y = element_text(size = 30),
+          axis.text.x = element_text(size = 24),
+          axis.text.y = element_text(size = 24),
+        legend.position = "none") 
+  
+
+ggsave('../results/rating-task/final/Mean_Comparisons_Final_3_12.png', poster_means, width=10, dpi=1000)
 ```
 
 ##descriptive statistics

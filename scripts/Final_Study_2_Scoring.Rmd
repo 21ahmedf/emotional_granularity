@@ -465,7 +465,7 @@ rdees_study_2$rdees_total <- rdees_study_2$rdees_differentiation + rdees_study_2
 
 final_scores_study2 <- merge(final_scores_study2, rdees_study_2[, c(1, 16:18)], by.x = "SURVEY_CODE", by.y = "SURVEY_CODE", all.x = TRUE)
 
-hist(final_scores_study2$rdees_differentiation)
+hist(final_scores_study2$rdees_total)
 ```
 
 ## REMOVE THE SECOND OPTION IF THERE ARE DUPLICATES
@@ -480,6 +480,16 @@ hist(final_scores_study2$rdees_differentiation)
 # print(df_unique)
 # print(duplicates)
 ```
+
+#SCAARED
+```{r}
+scaared <- surveys_study2 %>%
+  dplyr::select("scaared1":"scaared44")
+
+final_scores_study2$scaared_total <- apply(scaared, 1,sum)
+```
+
+
 
 
 ```{r}
@@ -507,9 +517,11 @@ merged_df_study2_recoded <- merge(final_scores_study2, results_study2_recode, by
 #correlations
 ```{r}
 # Select only the numeric columns for the correlation matrix
+numeric_columns <- merged_df_study2[, sapply(merged_df_study2, is.numeric)]
 numeric_columns_recoded <- merged_df_study2_recoded[, sapply(merged_df_study2_recoded, is.numeric)]
 
 # Calculate the correlation matrix
+correlation_matrix <- cor(numeric_columns, use = "complete.obs")
 correlation_matrix_recoded <- cor(numeric_columns_recoded, use = "complete.obs")
 
 # Function to compute significance levels
@@ -529,23 +541,45 @@ cor.mtest <- function(mat, conf.level = 0.95) {
 }
 
 # Compute p-values
+p_values <- cor.mtest(numeric_columns)
 p_values_recoded <- cor.mtest(numeric_columns_recoded)
 
-output_folder <- "../results/qualtrics/study2"
+# Specify the folder where you want to save the file
+output_folder <- "../results/qualtrics/study2/"
 
 # Combine the folder path with the file name
-output_file <- file.path(output_folder, "Significant Correlations Plot Study 2 - RDEES Outliers Kept 3-22-25.png")
+output_file <- file.path(output_folder, "Significant Correlations Plot Study 2 (without Recoding ICC) 2-26-25.png")
+
+# Open a PNG device with the specified file path
+png(output_file, width = 800, height = 800)
+
+# Generate the corrplot
+corrplot(correlation_matrix, method = "circle", type = "upper", 
+         p.mat = p_values, sig.level = 0.05, insig = "blank",
+         tl.col = "black", tl.srt = 45, addCoef.col = NULL,
+         col = colorRampPalette(c("blue", "white", "red"))(200))
+
+title(main = "Significant Correlations Study 2 (without Recoding Granularity Scores)", col.main = "black", font.main = 4)
+
+# Close the PNG device
+dev.off()
+
+# Specify the folder where you want to save the file
+output_folder <- "../results/qualtrics/study2/"
+
+# Combine the folder path with the file name
+output_file <- file.path(output_folder, "Significant Correlations Plot Study 2 (with Recoding ICC) 2-26-25.png")
 
 # Open a PNG device with the specified file path
 png(output_file, width = 800, height = 800)
 
 # Generate the corrplot
 corrplot(correlation_matrix_recoded, method = "circle", type = "upper", 
-         p.mat = p_values_recoded, sig.level = 0.05, insig = "blank",
+         p.mat = p_values, sig.level = 0.05, insig = "blank",
          tl.col = "black", tl.srt = 45, addCoef.col = NULL,
          col = colorRampPalette(c("blue", "white", "red"))(200))
 
-title(main = "Significant Correlations Study 2 - RDEES Outliers Kept", col.main = "black", font.main = 4)
+title(main = "Significant Correlations Study 2 (WITH Recoding Granularity Scores)", col.main = "black", font.main = 4)
 
 # Close the PNG device
 dev.off()
@@ -652,6 +686,8 @@ aMEDT_followup <- aMEDT_followup %>%
                                paste0("TEAM_YA_0", substr(session.p_id, 2, nchar(session.p_id))), 
                                session.p_id)) %>%
   rename(SURVEY_CODE = session.p_id)
+
+online_aMEDT <- read.csv(file='../data/EDT/aMEDT Results - Online.csv')
 
 aMEDT_all <- bind_rows(online_aMEDT, aMEDT_inperson, aMEDT_followup)
 
@@ -832,15 +868,65 @@ create_scatter_plot(combined_BDI, "BDI_total", "negmusicICC",
 
 ```
 
-```{r}
-boxplot.stats(merged_df_study2_recoded$rdees_range)$out
-boxplot.stats(merged_df_study2_recoded$rdees_differentiation)$out
-boxplot.stats(merged_df_study2_recoded$rdees_total)$out
+#amedt corr across studies
+````{r}
+merged_study_2_recoded_with_aMEDT <- merged_study_2_recoded_with_aMEDT %>%
+  select("SURVEY_CODE", "EDT.ability":"allpicICC")
 
-merged_df_study2_recoded$rdees_range[merged_df_study2_recoded$SURVEY_CODE == "TEAM_YA_069" | merged_df_study2_recoded$SURVEY_CODE == "TEAM_YA_074" | merged_df_study2_recoded$SURVEY_CODE == "TEAM_YA_098"] <- NA
-
-merged_df_study2_recoded$rdees_differentiation[merged_df_study2_recoded$SURVEY_CODE == "TEAM_YA_069" | merged_df_study2_recoded$SURVEY_CODE == "TEAM_YA_074" | merged_df_study2_recoded$SURVEY_CODE == "TEAM_YA_098"] <- NA
-
-merged_df_study2_recoded$rdees_total[merged_df_study2_recoded$SURVEY_CODE == "TEAM_YA_069" | merged_df_study2_recoded$SURVEY_CODE == "TEAM_YA_074" | merged_df_study2_recoded$SURVEY_CODE == "TEAM_YA_098"] <- NA
-
+amedt_master <- rbind(merged_recoded_with_aMEDT,merged_study_2_recoded_with_aMEDT)
 ```
+
+##corr plot for poster
+```{r}
+# Select only the numeric columns for the correlation matrix
+numeric_columns_recoded <- merged_df_study2_recoded[, sapply(merged_df_study2_recoded, is.numeric)] %>%
+  select("Gold_musicaltraining", "BDI_total", "rdees_range", "rdees_differentiation", "rdees_total", "scaared_total", "negmusicICC":"pospicICC")
+
+# Calculate the correlation matrix
+#correlation_matrix <- cor(numeric_columns, use = "complete.obs")
+correlation_matrix_recoded <- cor(numeric_columns_recoded, use = "complete.obs")
+
+# Function to compute significance levels
+cor.mtest <- function(mat, conf.level = 0.95) {
+  mat <- as.matrix(mat)
+  n <- ncol(mat)
+  p.mat <- matrix(NA, n, n)
+  diag(p.mat) <- 0
+  for (i in 1:(n - 1)) {
+    for (j in (i + 1):n) {
+      tmp <- cor.test(mat[, i], mat[, j], conf.level = conf.level)
+      p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
+    }
+  }
+  colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
+  p.mat
+}
+
+# Compute p-values
+p_values <- cor.mtest(correlation_matrix_recoded)
+#p_values_recoded <- cor.mtest(numeric_columns_recoded)
+
+# Specify the folder where you want to save the file
+output_folder <- "../results/qualtrics/study2/"
+
+# Combine the folder path with the file name
+output_file <- file.path(output_folder, "corrplotstudy2_postertest.pdf")
+
+# Open a PNG device with the specified file path
+pdf(output_file, width=10)
+colnames(correlation_matrix_recoded) <- c('Gold-MSI: Musical Training', 'BDI Score', 'RDEES: Range Score', 'RDEES: Differentiation Score', 'Total RDEES Score', 'SCAARED Score',  "Negative Emotional Granularity Score: Music", "Positive Emotional Granularity Score: Music", 
+                           "Negative Emotional Granularity Score: Pictures","Positive Emotional Granularity Score: Pictures")
+rownames(correlation_matrix_recoded) <- c('Gold-MSI: Musical Training', 'BDI Score', 'RDEES: Range Score', 'RDEES: Differentiation Score', 'Total RDEES Score', 'SCAARED Score',  "Negative Emotional Granularity Score: Music", "Positive Emotional Granularity Score: Music", 
+                           "Negative Emotional Granularity Score: Pictures","Positive Emotional Granularity Score: Pictures")
+
+# Generate the corrplot
+corrplot(correlation_matrix_recoded, method = "circle", type = "upper", 
+         p.mat = p_values, sig.level = 0.05, insig = "blank", show.diag = FALSE,
+         tl.col = "black", tl.srt = 45, addCoef.col = NULL,tl.pos = 'n',
+         col = colorRampPalette(c("blue", "white", "red"))(200))
+
+title(main = "", col.main = "black", font.main = 4)
+
+# Close the PNG device
+dev.off()
+````

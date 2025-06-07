@@ -129,8 +129,8 @@ ggplot(data=selected_OASIS, aes(x=Arousal_mean, y=Valence_mean, label=Theme))+
   geom_point() +
   geom_vline(xintercept = 3.5, linetype="dashed", color="red") +
   geom_hline(yintercept = 3.5, linetype="dashed", color="red") +
-  geom_errorbar(alpha=0.5, aes(ymin = lower_valence, ymax = upper_valence)) +
-  geom_errorbarh(alpha=0.5, aes(xmin = lower_arousal, xmax = upper_arousal)) +
+  #geom_errorbar(alpha=0.5, aes(ymin = lower_valence, ymax = upper_valence)) +
+  #geom_errorbarh(alpha=0.5, aes(xmin = lower_arousal, xmax = upper_arousal)) +
   geom_text()
 
 selected_OASIS_pos <- subset(selected_OASIS, !(lower_valence <= 3.5))
@@ -148,21 +148,34 @@ selected_OASIS_neg <- subset(selected_OASIS, !(upper_valence >= 4.7))
 final_OASIS <- read.csv(file='../stimuli/oasis/selected_stims/oasis_stims_tracking.csv')
 selected_OASIS_final <- merge(final_OASIS, selected_OASIS, by = 'Theme')
 
-ggplot(data=selected_OASIS_final, aes(x=Arousal_mean, y=Valence_mean, label=Theme))+
-  geom_point(aes(color=quad)) +
+OASIS_selected <-
+  ggplot(data=OASIS_clean, aes(x=Valence_mean, y=Arousal_mean, label=Theme))+
+  geom_point(alpha=0.7) +
   geom_vline(xintercept = 3.5, linetype="dashed", color="red") +
   geom_hline(yintercept = 3.5, linetype="dashed", color="red") +
-  geom_errorbar(alpha=0.5, aes(ymin = lower_valence, ymax = upper_valence, color=quad)) +
-  geom_errorbarh(alpha=0.5, aes(xmin = lower_arousal, xmax = upper_arousal, color=quad)) +
-  geom_text() +
-  xlab('Arousal') + ylab('Valence')
+  #geom_errorbar(alpha=0.5, aes(ymin = lower_valence, ymax = upper_valence, color=quad)) +
+  #geom_errorbarh(alpha=0.5, aes(xmin = lower_arousal, xmax = upper_arousal, color=quad)) +
+  #geom_text() +
+  xlab('Normed Valence Rating') + ylab('Normed Arousal Rating') +
+  theme_classic() +
+  geom_point(data=selected_OASIS_final, aes(color="red"))+
+  theme(legend.position = "none") +
+  theme(
+    axis.title.y = element_text(family="Arial",size=30),
+    axis.text.x = element_text(family="Arial", size=24),
+    axis.title.x = element_text(family="Arial",size=30),
+    axis.text.y = element_text(family="Arial", size=24),
+)
+
+ggsave('OASIS_selected.png',OASIS_selected, dpi=1000, width=9)
+
 
 ggplot(data=selected_OASIS_final, aes(x=Arousal_mean, y=Valence_mean, label=Theme))+
   geom_point(aes(color=quad)) +
   geom_vline(xintercept = 3.5, linetype="dashed", color="red") +
   geom_hline(yintercept = 3.5, linetype="dashed", color="red") +
-  geom_errorbar(alpha=0.5, aes(ymin = lower_valence, ymax = upper_valence, color=quad)) +
-  geom_errorbarh(alpha=0.5, aes(xmin = lower_arousal, xmax = upper_arousal, color=quad)) +
+  #geom_errorbar(alpha=0.5, aes(ymin = lower_valence, ymax = upper_valence, color=quad)) +
+  #geom_errorbarh(alpha=0.5, aes(xmin = lower_arousal, xmax = upper_arousal, color=quad)) +
   geom_text() +
   xlab('Arousal') + ylab('Valence')
 
