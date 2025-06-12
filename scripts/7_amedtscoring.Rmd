@@ -1,0 +1,36 @@
+---
+title: "7_amedt_scoring"
+output: html_document
+date: "2025-05-29"
+---
+
+```{r}
+library(tidyverse)
+```
+
+## aMEDT
+```{r}
+## CLEANED DATA BEFOREHAND, REMOVED DEVELOPMENTAL SAMPLE AND FIXED NAMING OF IDS TO MATCH GRANULARITY TASK
+aMEDT_inperson <- read.csv("../data/EDT/aMEDT In-Person Cleaned.csv") %>%
+  select(c("session.p_id", "EDT.ability")) %>%
+  rename(SURVEY_CODE = session.p_id)
+
+## ADDING 3 WHO COMPLETED aMEDT AS FOLLOW-UP
+aMEDT_followup <- read.csv("../data/EDT/aMEDT Follow-Up.csv") %>%
+  select(c("session.p_id", "EDT.ability"))
+
+aMEDT_followup <- aMEDT_followup %>%
+  mutate(session.p_id = ifelse(grepl("^5", session.p_id), 
+                               paste0("TEAM_YA_0", substr(session.p_id, 2, nchar(session.p_id))), 
+                               session.p_id)) %>%
+  rename(SURVEY_CODE = session.p_id)
+
+online_aMEDT <- read.csv(file='../data/EDT/aMEDT Results - Online.csv')
+
+aMEDT_all <- bind_rows(online_aMEDT, aMEDT_inperson, aMEDT_followup)
+```
+
+#write
+```{r}
+write.csv(file='../data/amedt_all.csv',aMEDT_all)
+```

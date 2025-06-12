@@ -1,0 +1,125 @@
+---
+title: "8_surveyanalyses"
+output: html_document
+date: "2025-05-29"
+---
+
+```{r}
+library(lmerTest)
+library(tidyverse)
+```
+
+```{r}
+amedt <- read.csv(file='../data/amedt_all.csv')
+
+qualtrics <- read.csv(file='../data/qualtrics_surveyscores.csv')
+
+qualtrics$PUBLICID <- stringr::str_remove(qualtrics$PUBLICID,"-")
+qualtrics$PUBLICID <- stringr::str_remove(qualtrics$PUBLICID,"-")
+#qualtrics$PUBLICID <- stringr::str_remove(qualtrics$PUBLICID,"\+1")
+qualtrics$PUBLICID <- stringr::str_remove(qualtrics$PUBLICID,"\\(")
+qualtrics$PUBLICID <- stringr::str_remove(qualtrics$PUBLICID,"\\)")
+qualtrics$PUBLICID <- stringr::str_remove(qualtrics$PUBLICID,"\\+1 ")
+qualtrics$PUBLICID <- stringr::str_remove(qualtrics$PUBLICID," ")
+
+qualtrics_amedt <- amedt %>%
+  select(c("session.p_id", "EDT.ability")) %>%
+  merge(qualtrics, by.y="PUBLICID", by.x="session.p_id", all.y=TRUE)
+
+redcap <- read.csv(file='../data/redcap_scored.csv')
+
+redcap_amedt <- amedt %>%
+  select(c("SURVEY_CODE", "EDT.ability")) %>%
+  merge(redcap, by.y="SURVEY_CODE", by.x="SURVEY_CODE", all.y=TRUE)
+
+study1 <- read.csv(file='../data/study1_granularityscores.csv')
+study2 <- read.csv(file='../data/study2_granularityscores.csv')
+```
+
+```{r}
+common_cols <- intersect(names(qualtrics_amedt), names(redcap_amedt))
+
+master_survey <- rbind(qualtrics_amedt[common_cols],redcap_amedt[common_cols])
+
+master <- rbind(study1,study2) %>%
+  merge(master_survey, by.x="ID",by.y="SURVEY_CODE", all.x = TRUE)
+
+master_qual <- rbind(study1,study2) %>%
+  merge(qualtrics_amedt, by.x="ID",by.y="SURVEY_CODE", all.x = TRUE)
+
+master_red <- rbind(study1,study2) %>%
+  merge(redcap_amedt, by.x="ID",by.y="SURVEY_CODE", all.x = TRUE)
+```
+
+#cor tests
+```{r}
+cor.test(master_qual$posmusicICC, master_qual$CD.RISC_total)
+```
+
+#corr matrix
+```{r}
+master %>% 
+  rename(
+   pos_emo_granularity_music = posmusicICC,
+    neg_emo_granularity_music = negmusicICC,
+   pos_emo_granularity_pics =  pospicICC,
+    neg_emo_granularity_pic = negpicICC,
+   combined_emo_granularity_music = allmusicICC,
+   combined_emo_granularity_pic = allpicICC
+    )
+
+
+# Select only the numeric columns for the correlation matrix
+matrix_columns <- master[c(3:9,11:24,26:34)]
+
+# Calculate the correlation matrix
+correlation_matrix <- cor(matrix_columns, use = "complete.obs")
+
+# Function to compute significance levels
+cor.mtest <- function(mat, conf.level = 0.95) {
+  mat <- as.matrix(mat)
+  n <- ncol(mat)
+  p.mat <- matrix(NA, n, n)
+  diag(p.mat) <- 0
+  for (i in 1:(n - 1)) {
+    for (j in (i + 1):n) {
+      tmp <- cor.test(mat[, i], mat[, j], conf.level = conf.level)
+      p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
+    }
+  }
+  colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
+  p.mat
+}
+
+# Compute p-values
+p_values <- cor.mtest(matrix_columns)
+
+# Specify the folder where you want to save the file
+output_folder <- "../results/qualtrics/"
+
+# Combine the folder path with the file name
+output_file <- file.path(output_folder, "full_surveys_corrmatrix.png")
+
+# Open a PNG device with the specified file path
+png(output_file, width = 800, height = 800)
+
+# Generate the corrplot
+corrplot(correlation_matrix, method = "circle", type = "upper", 
+         p.mat = p_values, sig.level = 0.05, insig = "blank",
+         tl.col = "black", tl.srt = 45, addCoef.col = NULL,
+         col = colorRampPalette(c("blue", "white", "red"))(200))
+
+title(main = "", col.main = "black", font.main = 4)
+
+# Close the PNG device
+dev.off()
+```
+#scatterplots
+```{r}
+ggplot(data=master, aes(x=negmusicICC,y=BDI_total))+
+  geom_point(alpha=0.7)+
+  stat_smooth(method="lm") +
+  theme_classic() +
+  xlab("Negative Emotional Granularity - Music") +
+  ylab("BDI Score")
+```

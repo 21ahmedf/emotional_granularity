@@ -1,0 +1,425 @@
+---
+title: "5_study1surveyscoring"
+output: html_document
+date: "2025-05-29"
+---
+
+#replace "df" in script w/ dataframe name of survey.csv
+```{r}
+library(tidyverse)
+library(corrplot)
+source("reverseCode.R")
+```
+
+```{r}
+data <- read.csv("../data/qualtrics/emo-granularity_May 29, 2025_08.14.csv")
+
+#redcap_study1 <- c("TEAM_YA_077", "TEAM_YA_080", "TEAM_YA_082", "TEAM_YA_083", "TEAM_YA_084", "TEAM_YA_085")
+
+#data_redcap <- read.csv("../data/redcap/TEAMYAInPersonSurvey_DATA_2025-02-25_1539.csv") %>%
+  #filter(participant_id %in% redcap_study1)
+
+#TEAM_YA_077 is the only one that did all the surveys
+
+df <- data %>%
+  #filter(Finished == 1) %>%
+  filter(SURVEY_CODE != '') %>%
+  arrange(SURVEY_CODE, EndDate) %>%  # Ensure earliest submission is kept for duplicates
+  distinct(SURVEY_CODE, .keep_all = TRUE)
+
+# used this to find duplicates, there were 4
+# df <- data %>%
+#   filter(Finished == 1) %>%
+#   filter(SURVEY_CODE != '') %>%
+#   group_by(SURVEY_CODE) %>%
+#   filter(n() > 1) %>%
+#   ungroup()
+  
+
+#redcap_ids <- data_redcap %>%
+  #select("participant_id") %>%
+  #rename(SURVEY_CODE = participant_id)
+
+final_scores <- df %>%
+  select("SURVEY_CODE") #%>%
+  #bind_rows(redcap_ids)
+  
+```
+
+#STAI
+```{r}
+STAI <- df %>%
+  select("SURVEY_CODE", "STAI1_1":"STAI20_1")
+
+STAI[,-1] <- lapply(STAI[,-1], as.integer)
+
+cols_reverse <- c("STAI1_1","STAI3_1","STAI6_1","STAI7_1","STAI10_1","STAI13_1","STAI14_1","STAI16_1","STAI19_1")
+STAI[cols_reverse] <- lapply(STAI[cols_reverse], reverseCode, min=1, max=4)
+
+STAI$STAI_total <- apply(STAI[,-1],1,sum)
+
+final_scores <- merge(final_scores, STAI[, c(1, ncol(STAI))], by.x = "SURVEY_CODE", by.y = "SURVEY_CODE", all.x = TRUE)
+hist(final_scores$STAI_total)
+```
+
+#CD-RISC
+```{r}
+CD.RISC <- df %>%
+  select("SURVEY_CODE", "CD.RISC1_1":"CD.RISC10_1")
+
+CD.RISC[ ,-1] <- lapply(CD.RISC[,-1], as.integer)
+
+CD.RISC$CD.RISC_total <- apply(CD.RISC[,-1],1,sum)
+
+final_scores <- merge(final_scores, CD.RISC[, c(1, ncol(CD.RISC))], by.x = "SURVEY_CODE", by.y = "SURVEY_CODE", all.x = TRUE)
+
+hist(final_scores$CD.RISC_total)
+```
+
+#GoldMSI Scoring
+```{r}
+Gold <- df %>%
+  select("SURVEY_CODE", "Q1.1_1":"Q1.38")
+
+#Gold_redcap <- data_redcap %>%
+  # excluding write-in question
+  #select("participant_id", "goldmsi_1_v2":"goldmsi_37_v2", "goldmsi_39_v2") %>%
+  #rename(
+    #SURVEY_CODE = participant_id,
+    #Q1.1_1 = goldmsi_1_v2,
+    #Q1.2_1 = goldmsi_2_v2,
+    #Q1.3_1 = goldmsi_3_v2,
+    #Q1.4_1 = goldmsi_4_v2,
+    #Q1.5_1 = goldmsi_5_v2,
+    #Q1.6_1 = goldmsi_6_v2,
+    #Q1.7_1 = goldmsi_7_v2,
+    #Q1.8_1 = goldmsi_8_v2,
+    #Q1.9_1 = goldmsi_9_v2,
+    #Q1.10_1 = goldmsi_10_v2,
+    #Q1.11_1 = goldmsi_11_v2,
+    #Q1.12_1 = goldmsi_12_v2,
+    #Q1.13_1 = goldmsi_13_v2,
+    #Q1.14_1 = goldmsi_14_v2,
+    #Q1.15_1 = goldmsi_15_v2,
+    #Q1.16_1 = goldmsi_16_v2,
+    #Q1.17_1 = goldmsi_17_v2,
+    #Q1.18_1 = goldmsi_18_v2,
+    #Q1.19_1 = goldmsi_19_v2,
+    #Q1.20_1 = goldmsi_20_v2,
+    #Q1.21_1 = goldmsi_21_v2,
+    #Q1.22_1 = goldmsi_22_v2,
+    #Q1.23_1 = goldmsi_23_v2,
+    #Q1.24_1 = goldmsi_24_v2,
+    #Q1.25_1 = goldmsi_25_v2,
+    #Q1.26_1 = goldmsi_26_v2,
+    #Q1.27_1 = goldmsi_27_v2,
+    #Q1.28_1 = goldmsi_28_v2,
+    #Q1.29_1 = goldmsi_29_v2,
+    #Q1.30_1 = goldmsi_30_v2,
+    #Q1.31_1 = goldmsi_31_v2,
+    #Q1.32 = goldmsi_39_v2, # this one was left out from redcap initially, need to swap order here
+    #Q1.33 = goldmsi_32_v2,
+    #Q1.34 = goldmsi_33_v2,
+    #Q1.35 = goldmsi_34_v2,
+    #Q1.36 = goldmsi_35_v2,
+    #Q1.37 = goldmsi_36_v2,
+    #Q1.38 = goldmsi_37_v2,
+  #)
+
+#delete atttention checking question
+Gold$Qcheck <- NULL
+
+Gold[, -1] <- lapply(Gold[, -1], as.integer)
+
+#Gold_merged <- bind_rows(Gold, Gold_redcap)
+
+# GoldMSI columns to reverse code and sub-score (for these questions, the correct answer (ie the more positive answer) is a higher number. Negative questions are reverse coded.) 
+
+cols_reverse <- c("Q1.21_1" ,
+"Q1.11_1" ,
+"Q1.13_1" ,
+"Q1.23_1" ,
+"Q1.14_1" ,
+"Q1.27_1" ,
+"Q1.17_1" ,
+"Q1.25_1" ,
+"Q1.9_1")
+
+cols_activeengagement <- c("Q1.1_1" ,
+"Q1.3_1" ,
+"Q1.8_1" ,
+"Q1.15_1" ,
+"Q1.21_1" ,
+"Q1.24_1" ,
+"Q1.28_1" ,
+"Q1.34" ,
+"Q1.38")
+
+cols_perceptualabilities <- c("Q1.5_1" ,
+"Q1.6_1" ,
+"Q1.11_1" ,
+"Q1.12_1" ,
+"Q1.13_1" ,
+"Q1.18_1" ,
+"Q1.22_1" ,
+"Q1.23_1" ,
+"Q1.26_1")
+
+cols_musicaltraining <- c("Q1.14_1" , "Q1.27_1",
+"Q1.32" ,
+"Q1.33" , 
+"Q1.35" ,
+"Q1.36" ,
+"Q1.37")
+
+
+cols_singingabilities <- c("Q1.4_1" ,
+"Q1.7_1" ,
+"Q1.10_1" ,
+"Q1.17_1" ,
+"Q1.25_1" ,
+"Q1.29_1" ,
+"Q1.30_1")
+
+cols_emotion <- c("Q1.2_1" ,
+"Q1.9_1" ,
+"Q1.16_1" ,
+"Q1.19_1" ,
+"Q1.20_1" ,
+"Q1.31_1")
+
+cols_musicalsophistication <- c("Q1.1_1" ,
+           "Q1.3_1" ,
+"Q1.4_1" ,
+"Q1.7_1" ,
+"Q1.10_1" ,
+"Q1.12_1" ,
+"Q1.14_1" ,
+"Q1.15_1" ,
+"Q1.17_1" ,
+"Q1.19_1" ,
+"Q1.23_1" ,
+"Q1.24_1" ,
+"Q1.25_1" ,
+"Q1.27_1" ,
+"Q1.29_1" ,
+"Q1.32" ,
+"Q1.33")
+
+# Reverse code
+
+Gold[cols_reverse] <- lapply(Gold[cols_reverse], reverseCode, min=1, max=7)
+
+# Add sub-scores and total to main df
+
+Gold$Gold_total <- apply(Gold[, -1],1, sum)/38 # total GoldMSI score
+Gold$Gold_activeengagement <- apply(Gold[cols_activeengagement], 1,sum)/9
+Gold$Gold_perceptualabilities <- apply(Gold[cols_perceptualabilities],1, sum)/9
+Gold$Gold_musicaltraining <-apply(Gold[cols_musicaltraining],1, sum)/7
+Gold$Gold_singingabilities <- apply(Gold[cols_singingabilities],1, sum)/7
+Gold$Gold_emotion <- apply(Gold[cols_emotion],1, sum)/6
+Gold$Gold_musicalsophistication <- apply(Gold[cols_musicalsophistication],1, sum)/18
+
+final_scores <- merge(final_scores, Gold[, c(1, 40:46)], by.x = "SURVEY_CODE", by.y = "SURVEY_CODE", all.x = TRUE)
+
+hist(final_scores$Gold_total)
+```
+
+#eBMRQ
+```{r}
+bmrq <- df %>%
+  select("SURVEY_CODE", "Q2_1":"Q21_1", "Q23_1":"Q26_1")
+
+bmrq[,-1] <- lapply(bmrq[,-1], as.integer)
+
+#need to add aims_3 as Q23, aims_13 as Q24, aims_15 as Q25, aims_29 as Q26
+#bmrq_redcap <- data_redcap %>%
+ # select("participant_id", "ebmrq_1":"ebmrq_20", "aims_3", "aims_13", "aims_15", "aims_29") %>%
+  #rename(
+   # SURVEY_CODE = participant_id,
+    #Q2_1 = ebmrq_1,
+  #  Q3_1 = ebmrq_2,
+   # Q4_1 = ebmrq_3,
+  #  Q5_1 = ebmrq_4,
+  #  Q6_1 = ebmrq_5,
+  #  Q7_1 = ebmrq_6,
+   # Q8_1 = ebmrq_7,
+    #Q9_1 = ebmrq_8,
+  #  Q10_1 = ebmrq_9,
+   # Q11_1 = ebmrq_10,
+    #Q12_1 = ebmrq_11,
+  #  Q13_1 = ebmrq_12,
+   # Q14_1 = ebmrq_13,
+    #Q15_1 = ebmrq_14,
+  #  Q16_1 = ebmrq_15,
+   # Q17_1 = ebmrq_16,
+    #Q18_1 = ebmrq_17,
+  #  Q19_1 = ebmrq_18,
+   # Q20_1 = ebmrq_19,
+    #Q21_1 = ebmrq_20,
+  #  Q23_1 = aims_3,
+   # Q24_1 = aims_13,
+    #Q25_1 = aims_15,
+    #Q26_1 = aims_29
+  #)
+
+bmrq[, -1] <- lapply(bmrq[, -1], as.integer)
+
+#bmrq_merged <- bind_rows(bmrq, bmrq_redcap)
+
+# BMRQ columns to reverse code and sub-score
+cols_reverse <- c("Q3_1",
+                  "Q6_1")
+
+cols_emotion <- c("Q4_1",
+  "Q9_1",
+  "Q13_1",
+  "Q19_1")
+
+cols_sensorimotor <-c("Q6_1",
+  "Q11_1",
+  "Q16_1",
+  "Q21_1")
+                      
+cols_moodreg <- c("Q5_1",
+  "Q10_1",
+  "Q15_1",
+  "Q20_1")
+
+cols_musicseek <- c("Q3_1",
+  "Q8_1",
+  "Q12_1",
+  "Q18_1")
+
+cols_socialreward <-c("Q2_1",
+  "Q7_1",
+  "Q14_1",
+  "Q17_1")
+
+cols_absorption <- c("Q23_1", "Q24_1", "Q25_1", "Q26_1")
+
+# Reverse code
+bmrq[cols_reverse] <- lapply(bmrq[cols_reverse], reverseCode)
+
+# Add sub-scores and total to main df
+bmrq$eBMRQ_total <- apply(bmrq[,-1],1, sum) 
+bmrq$BMRQ_emotion <- apply(bmrq[cols_emotion], 1,sum)
+bmrq$BMRQ_sensorimotor <- apply(bmrq[cols_sensorimotor],1, sum)
+bmrq$BMRQ_moodreg <-apply(bmrq[cols_moodreg],1, sum)
+bmrq$BMRQ_musicseek <- apply(bmrq[cols_musicseek],1, sum)
+bmrq$BMRQ_socialreward <- apply(bmrq[cols_socialreward],1, sum)
+bmrq$BMRQ_absorption<- apply(bmrq[cols_absorption],1, sum)
+
+final_scores <- merge(final_scores, bmrq[, c(1, 26:32)], by.x = "SURVEY_CODE", by.y = "SURVEY_CODE", all.x = TRUE)
+
+hist(final_scores$eBMRQ_total)
+```
+
+#BDI
+```{r}
+BDI <- df %>%
+  select("SURVEY_CODE", "BDI_1":"BDI_20")
+
+BDI[, -1] <- lapply(BDI[, -1], as.integer)
+
+
+
+BDI$BDI_15[BDI$BDI_15 == 3] <- 2
+BDI$BDI_15[BDI$BDI_15 == 4 | BDI$BDI_15 == 5] <- 3
+BDI$BDI_15[BDI$BDI_15 == 6 | BDI$BDI_15 == 7] <- 4
+
+BDI$BDI_17[BDI$BDI_17 == 3] <- 2
+BDI$BDI_17[BDI$BDI_17 == 4 | BDI$BDI_17 == 5] <- 3
+BDI$BDI_17[BDI$BDI_17 == 6 | BDI$BDI_17 == 7] <- 4
+
+BDI[BDI == 1] <- 0
+BDI[BDI == 2] <- 1
+BDI[BDI == 3] <- 2
+BDI[BDI == 4] <- 3
+
+BDI$BDI_total <- apply(BDI[,-1],1,sum)
+
+final_scores <- merge(final_scores, BDI[, c(1, 22)], by.x = "SURVEY_CODE", by.y = "SURVEY_CODE", all.x = TRUE)
+
+hist(final_scores$BDI_total)
+```
+
+#M@H
+```{r}
+MH <- df %>%
+  select("SURVEY_CODE", "M.H_child1_1":"M.H_child20_1")
+
+MH <- MH[complete.cases(MH),]
+MH[,-1] <- lapply(MH[,-1], as.integer)
+
+cols_reverse <- c("M.H_child6_1","M.H_child7_1","M.H_child11_1","M.H_child12_1","M.H_child18_1","M.H_child19_1","M.H_child20_1")
+MH[cols_reverse] <- lapply(MH[cols_reverse], reverseCode, min=1, max=7)
+
+MH$MH_total <- apply(MH[,-1],1, sum) # total M@H scores
+
+
+
+# # started putting these together but I'm not sure what goes where
+cols_caregiverbeliefs <- c("M.H_child1_1", "M.H_child2_1", "M.H_child3_1", "M.H_child4_1")
+# 
+cols_caregiversinging <- c("M.H_child9_1","M.H_child10_1","M.H_child11_1","M.H_child13_1")
+ 
+cols_childhoodattitude <- c("M.H_child18_1","M.H_child19_1","M.H_child20_1")
+# 
+cols_socialcontexts <- c("M.H_child14_1","M.H_child15_1","M.H_child16_1","M.H_child17_1")
+# 
+cols_musicmaking <- c("M.H_child5_1", "M.H_child6_1", "M.H_child7_1","M.H_child8_1","M.H_child12_1")
+# 
+MH$MH_caregiverbeliefs <- apply(MH[cols_caregiverbeliefs], 1,sum)
+MH$MH_caregiversinging <- apply(MH[cols_caregiversinging],1, sum)
+MH$MH_childhoodattitude <-apply(MH[cols_childhoodattitude],1, sum)
+MH$MH_socialcontexts <- apply(MH[cols_socialcontexts],1, sum)
+MH$MH_musicmaking <- apply(MH[cols_musicmaking],1, sum)
+final_scores <- merge(final_scores, MH[, c(1, 22:27)], by.x = "SURVEY_CODE", by.y = "SURVEY_CODE", all.x = TRUE)
+```
+
+#RDEES
+```{r}
+rdees <- df %>%
+  select("SURVEY_CODE", "RDEES_1_1":"RDEES_14_1")
+
+rdees[,-1] <- lapply(rdees[,-1], as.integer)
+
+cols_reverse <- c("RDEES_1_1","RDEES_5_1","RDEES_9_1", "RDEES_11_1")
+
+rdees[cols_reverse] <- lapply(rdees[cols_reverse], reverseCode, min=1, max=5)
+
+cols_range <- c("RDEES_1_1","RDEES_3_1","RDEES_5_1","RDEES_7_1", "RDEES_9_1", "RDEES_11_1", "RDEES_13_1")
+cols_differentation <- c("RDEES_2_1","RDEES_4_1","RDEES_6_1","RDEES_8_1", "RDEES_10_1", "RDEES_12_1", "RDEES_14_1")
+
+rdees$rdees_range <- apply(rdees[cols_range], 1,sum)
+rdees$rdees_differentiation <- apply(rdees[cols_differentation],1, sum)
+rdees$rdees_total <- rdees$rdees_differentiation + rdees$rdees_range
+
+final_scores <- merge(final_scores, rdees[, c(1, 16:18)], by.x = "SURVEY_CODE", by.y = "SURVEY_CODE", all.x = TRUE)
+
+hist(final_scores$rdees_total)
+```
+#check everyone in study1 was scored
+```{r}
+results <- read.csv(file='../data/study1_granularityscores.csv')
+# Find SURVEY_CODE in scores that do not match any ID in results
+non_matching_in_scores <- final_scores[!final_scores$SURVEY_CODE %in% results$ID, ]
+
+# Find ID in results that do not match any SURVEY_CODE in scores
+non_matching_in_results <- results[!results$ID %in% final_scores$SURVEY_CODE, ]
+
+# Display the non-matching entries
+print("SURVEY_CODEs in scores that do not match any ID in results:")
+print(non_matching_in_scores)
+
+print("IDs in results that do not match any SURVEY_CODE in scores:")
+print(non_matching_in_results)
+```
+
+#write df
+```{r}
+#adding public id back to scored df
+final_scores$PUBLICID <- df$PUBLICID
+write.csv(file='../data/qualtrics_surveyscores.csv', final_scores)
+```

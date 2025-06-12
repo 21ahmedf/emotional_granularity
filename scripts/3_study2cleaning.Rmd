@@ -1,0 +1,216 @@
+---
+title: "3_study2cleaning"
+output: html_document
+date: "2025-05-29"
+---
+
+```{r}
+library(lmerTest)
+library(tidyverse)
+if (!(require("psych"))) install.packages("psych"); require("psych")
+if (!require("irr")) {install.packages("irr"); require("irr")} 
+```
+
+#load in data
+```{r}
+data_23 <- read.csv("../data/rating-task/v23/data_exp_169297-v23_task-6digNEWEST.csv")
+data_24 <- read.csv("../data/rating-task/v24/data_exp_169297-v24_task-6dig.csv")
+data_25 <- read.csv("../data/rating-task/v25/data_exp_169297-v25_task-6dig.csv")
+data_26 <- read.csv("../data/rating-task/v26/data_exp_169297-v26_task-6dig.csv")
+data_27 <- read.csv("../data/rating-task/v27/data_exp_169297-v27_task-6dig.csv")
+data_28 <- read.csv("../data/rating-task/v28/data_exp_169297-v28_task-6dig.csv")
+
+study1 <- read.csv('../data/study1_granularityscores.csv')
+```
+
+```{r}
+granularity_data_23 <- data_23 %>%
+  filter(Response.Type == "response") %>% 
+  select("Participant.Public.ID","Response","Object.Name", "Spreadsheet..Image", "Spreadsheet..Audio") %>%
+  mutate(Response = as.numeric(Response))
+
+granularity_data_24 <- data_24 %>%
+  filter(Response.Type == "response") %>% 
+  select("Participant.Public.ID","Response","Object.Name", "Spreadsheet..Image", "Spreadsheet..Audio") %>%
+  mutate(Response = as.numeric(Response))
+
+granularity_data_25 <- data_25 %>%
+  filter(Response.Type == "response") %>% 
+  select("Participant.Public.ID","Response","Object.Name", "Spreadsheet..Image", "Spreadsheet..Audio") %>%
+  mutate(Response = as.numeric(Response))
+
+granularity_data_26 <- data_26 %>%
+  filter(Response.Type == "response") %>% 
+  select("Participant.Public.ID","Response","Object.Name", "Spreadsheet..Image", "Spreadsheet..Audio") %>%
+  mutate(Response = as.numeric(Response))
+
+granularity_data_27 <- data_27 %>%
+  filter(Response.Type == "response") %>% 
+  select("Participant.Public.ID","Response","Object.Name", "Spreadsheet..Image", "Spreadsheet..Audio") %>%
+  mutate(Response = as.numeric(Response)) %>%
+  mutate(Participant.Public.ID = ifelse(grepl("^5", Participant.Public.ID), 
+                               paste0("TEAM_YA_0", substr(Participant.Public.ID, 2, nchar(Participant.Public.ID))), 
+                               Participant.Public.ID))
+
+granularity_data_28 <- data_28 %>%
+  filter(Response.Type == "response") %>% 
+  select("Participant.Public.ID","Response","Object.Name", "Spreadsheet..Image", "Spreadsheet..Audio") %>%
+  mutate(Response = as.numeric(Response))
+```
+
+### EXCLUDE PARTICIPANTS FROM STUDY 1
+```{r}
+study1_participants <- study1$ID
+
+granularity_data_23 <- granularity_data_23 %>%
+  filter(!(Participant.Public.ID %in% study1_participants)) %>%
+  filter(nchar(as.character(Participant.Public.ID)) != 5)
+
+granularity_data_24 <-granularity_data_24 %>%
+  filter(Participant.Public.ID == "TEAM_YA_046" | Participant.Public.ID == "TEAM_YA_056" | Participant.Public.ID == "TEAM_YA_048" | Participant.Public.ID == "TEAM_YA_054")
+
+granularity_data_25 <-granularity_data_25 %>%
+  filter(Participant.Public.ID == "TEAM_YA_065")
+
+granularity_data_26 <-granularity_data_26 %>%
+  filter(Participant.Public.ID == "TEAM_YA_069" | Participant.Public.ID == "TEAM_YA_064" | Participant.Public.ID == "TEAM_YA_062" | Participant.Public.ID == "TEAM_YA_061" | Participant.Public.ID == "TEAM_YA_081")
+
+granularity_data_27 <-granularity_data_27 %>%
+  filter(Participant.Public.ID != "TEAM_YA_077")
+
+granularity_data_28$Participant.Public.ID <- as.character(granularity_data_28$Participant.Public.ID)
+
+granularity_data <- bind_rows(granularity_data_23,
+                              granularity_data_24,
+                              granularity_data_25,
+                              granularity_data_26,
+                              granularity_data_27,
+                              granularity_data_28) %>%
+  filter(!grepl("^TEAM_DEV_\\d+", Participant.Public.ID))
+
+num_unique_ids <- granularity_data %>%
+   summarise(unique_count = n_distinct(Participant.Public.ID)) %>%
+   pull(unique_count)
+ print(num_unique_ids)
+```
+
+```{r}
+## Separating by picture vs music, removing practice stims
+granularity_pic <- granularity_data %>%
+  filter(Spreadsheet..Image != "") %>%
+  filter(Spreadsheet..Image != "Coffee 1.jpg") %>%
+  select(-c("Spreadsheet..Audio"))
+
+granularity_music <- granularity_data %>%
+  filter(Spreadsheet..Audio != "") %>%
+  filter(Spreadsheet..Audio != "8_pieceA_dreamy_calm_joyous_1.mp3") %>%
+  select(-c("Spreadsheet..Image"))
+```
+
+##-----Subsetting by valence and stimulus type--------
+```{r}
+# List of emotions
+emotions <- list(
+  neg = c("Gloomy", "Sad", "Scared", "Anxious", "Upset"),
+  pos = c("Happy", "Satisfied", "Excited", "Joyful", "Relaxed")
+)
+
+# Function to filter and rename
+filter_and_rename <- function(data, emotion, media_type, keep_id = FALSE) {
+  columns_to_select <- if (keep_id) {
+    c("Participant.Public.ID", "Response")
+  } else {
+    c("Response")
+  }
+  
+  data %>%
+    filter(Object.Name == paste(emotion, "Slider")) %>%
+    select(-c(paste0("Spreadsheet..", media_type), "Object.Name")) %>%
+    select(all_of(columns_to_select)) %>%
+    rename(!!tolower(emotion) := "Response")
+}
+
+# General function to apply filtering to both media types and emotion types
+apply_filter <- function(data, emotions, media_type) {
+  lapply(seq_along(emotions), function(i) {
+    filter_and_rename(data, emotions[i], media_type, keep_id = (i == 1))
+  }) %>% bind_cols() %>% na.omit()
+}
+
+# Apply the process for each combination of data and emotion types
+music_negative <- apply_filter(granularity_music, emotions$neg, "Audio")
+music_positive <- apply_filter(granularity_music, emotions$pos, "Audio")
+pic_negative <- apply_filter(granularity_pic, emotions$neg, "Image")
+pic_positive <- apply_filter(granularity_pic, emotions$pos, "Image")
+```
+
+##----Scoring ICC------
+```{r}
+# ICC with Fisher transformation and recoding of negative correlations
+compute_icc_fisher_recode <- function(data_list) {
+  sapply(data_list, function(data) {
+    icc_result <- data %>%
+      select(-Participant.Public.ID) %>%
+      icc(model = "twoway", type = "consistency", unit = "average")
+    
+    # Recode correlations less than 0 as 0
+    icc_value <- ifelse(icc_result$value < 0, 0, icc_result$value)
+    
+    # Fisher transformation and reverse scoring
+    -1 * fisherz(icc_value)
+  })
+}
+
+# Create lists of data frames split by Participant.Public.ID
+music_negative_list <- split(music_negative, music_negative$Participant.Public.ID)
+music_positive_list <- split(music_positive, music_positive$Participant.Public.ID)
+pic_negative_list <- split(pic_negative, pic_negative$Participant.Public.ID)
+pic_positive_list <- split(pic_positive, pic_positive$Participant.Public.ID)
+
+###
+results_recode <- data.frame(ID = names(music_negative_list))
+results_recode$negmusicICC <- compute_icc_fisher_recode(music_negative_list)
+results_recode$posmusicICC <- compute_icc_fisher_recode(music_positive_list)
+results_recode$negpicICC <- compute_icc_fisher_recode(pic_negative_list)
+results_recode$pospicICC <- compute_icc_fisher_recode(pic_positive_list)
+results_recode$allmusicICC <- rowMeans(results_recode[, c("negmusicICC", "posmusicICC")], na.rm = TRUE)
+results_recode$allpicICC <- rowMeans(results_recode[, c("negpicICC", "pospicICC")], na.rm = TRUE)
+```
+
+#adding labels for stims to rating df
+```{r}
+granularity_music_labels <- 
+  granularity_music %>%
+  distinct(Participant.Public.ID,Spreadsheet..Audio)
+
+granularity_pic_labels <- 
+  granularity_pic %>%
+  distinct(Participant.Public.ID,Spreadsheet..Image)
+
+
+music_negative <- cbind(music_negative,granularity_music_labels[2])
+names(music_negative)[7] <- "stim"
+music_negative$condition <- "music"
+music_positive <- cbind(music_positive,granularity_music_labels[2])
+music_positive$condition <- "music"
+names(music_positive)[7] <- "stim"
+
+pic_negative <- cbind(pic_negative,granularity_pic_labels[2])
+names(pic_negative)[7] <- "stim"
+pic_negative$condition <- "pic"
+pic_positive <- cbind(pic_positive,granularity_pic_labels[2])
+names(pic_positive)[7] <- "stim"
+pic_positive$condition <- "pic"
+
+negative_ratings <- rbind(pic_negative,music_negative)
+positive_ratings <- rbind(pic_positive,music_positive)
+```
+
+
+#write dfs
+```{r}
+write.csv(file = '../data/study2_negativeratings.csv',negative_ratings)
+write.csv(file = '../data/study2_positiveratings.csv',positive_ratings)
+
+write.csv(file = '../data/study2_granularityscores.csv',results_recode)
+```
