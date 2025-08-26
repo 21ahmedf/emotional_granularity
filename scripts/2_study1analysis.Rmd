@@ -77,20 +77,29 @@ pos_averages <- rbind(pos_pic_data,pos_music_data)
 
 pos_averages$Emotion <- factor(pos_averages$Emotion, levels = c("sad", "scared", "gloomy", "anxious", "upset", "happy", "relaxed", "satisfied", "excited", "joyful"))
 
-pos_averages %>%
-  mutate(condition = recode(condition, music = "Positive Valence Music", pic = "Positive Valence Images")) %>%
-  ggplot(aes(x = Emotion, y = stim, fill = `Average Rating`)) +
+averages_total <- rbind(pos_averages, neg_averages)
+
+averages_total_plot <-
+ggplot(averages_total, aes(x = Emotion, y = stim, fill = `Average Rating`)) +
     geom_tile() +
     #ggtitle(paste("Average Responses by Emotion and Stimulus for", group_name)) +
     xlab("Emotion") +
     ylab("Stimulus") +
     scale_fill_gradient(low = "blue", high = "red") +  # Adjust color scheme as needed
     theme_minimal() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1, color = "black"), axis.text.y = element_text(color = "black"), plot.background = element_rect(fill = "white", color = NA),  # Set plot background to white
-        panel.background = element_rect(fill = "white", color = NA),legend.title = element_text(size = 9), 
-               legend.text = element_text(size = 8)) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, color = "black", size = 12), 
+          axis.text.y = element_text(color = "black", size=10),
+          strip.text = element_text(color = "black", size=14),
+          axis.title = element_text(color = "black", size=14),
+          plot.background = element_rect(fill = "white", color = NA),  # Set plot background to white
+        panel.background = element_rect(fill = "white", color = NA),
+        legend.title = element_text(size = 12), 
+            legend.text = element_text(size = 12)
+        ) +
   facet_wrap(~condition, scales = "free") +
   geom_vline(xintercept=5.5, color="black", linetype="solid", size=1)
+
+ggsave('../heatmap_averagestudy1.png',averages_total_plot, dpi=1000, width=9)
 ```
 
 #corr matrix of emotion ratings
