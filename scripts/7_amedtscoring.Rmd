@@ -15,6 +15,10 @@ aMEDT_inperson <- read.csv("../data/EDT/aMEDT In-Person Cleaned.csv") %>%
   select(c("session.p_id", "EDT.ability")) %>%
   rename(SURVEY_CODE = session.p_id)
 
+aMEDT_laptop <- read.csv("../data/EDT/aMEDT Nick's Laptop.csv") %>%
+  select(c("session.p_id", "EDT.ability")) %>%
+  rename(SURVEY_CODE = session.p_id)
+
 ## ADDING 3 WHO COMPLETED aMEDT AS FOLLOW-UP
 aMEDT_followup <- read.csv("../data/EDT/aMEDT Follow-Up.csv") %>%
   select(c("session.p_id", "EDT.ability"))
@@ -27,7 +31,7 @@ aMEDT_followup <- aMEDT_followup %>%
 
 online_aMEDT <- read.csv(file='../data/EDT/aMEDT Results - Online.csv')
 
-aMEDT_all <- bind_rows(online_aMEDT, aMEDT_inperson, aMEDT_followup)
+aMEDT_all <- bind_rows(online_aMEDT, aMEDT_inperson, aMEDT_followup,aMEDT_laptop)
 ```
 
 #write

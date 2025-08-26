@@ -44,6 +44,7 @@ master_survey <- rbind(qualtrics_amedt[common_cols],redcap_amedt[common_cols])
 master <- rbind(study1,study2) %>%
   merge(master_survey, by.x="ID",by.y="SURVEY_CODE", all.x = TRUE)
 
+
 master_qual <- rbind(study1,study2) %>%
   merge(qualtrics_amedt, by.x="ID",by.y="SURVEY_CODE", all.x = TRUE)
 
@@ -53,7 +54,8 @@ master_red <- rbind(study1,study2) %>%
 
 #cor tests
 ```{r}
-cor.test(master_qual$posmusicICC, master_qual$CD.RISC_total)
+cor.test(master$posmusicICC, master$EDT.ability)
+cor.test(master$negmusicICC, master$EDT.ability)
 ```
 
 #corr matrix

@@ -24,20 +24,20 @@ data_27 <- read.csv("../data/rating-task/v27/data_exp_169297-v27_task-6dig.csv")
 
 ### EXCLUDE IN-PERSON (Study 2) PARTICIPANTS 
 ```{r}
-granularity_data_23 <- granularity_data_23 %>%
+granularity_data_23 <- data_23 %>%
   filter(Participant.Public.ID != "TEAM_YA_028") %>%
   filter(Participant.Public.ID != "TEAM_YA_045") %>%
   filter(Participant.Public.ID != "32578")
 
 ## 32578 is missing response data for 6_5.mp3 for some reason
 
-granularity_data_25 <-granularity_data_25 %>%
+granularity_data_25 <-data_25 %>%
   filter(Participant.Public.ID == "TEAM_YA_080")
 
-granularity_data_26 <-granularity_data_26 %>%
+granularity_data_26 <-data_26 %>%
   filter(Participant.Public.ID == "TEAM_YA_082" | Participant.Public.ID == "TEAM_YA_083" | Participant.Public.ID == "TEAM_YA_084" | Participant.Public.ID == "TEAM_YA_085")
 
-granularity_data_27 <-granularity_data_27 %>%
+granularity_data_27 <-data_27 %>%
   filter(Participant.Public.ID == "TEAM_YA_077")
 
 granularity_data <- bind_rows(granularity_data_23, granularity_data_25, granularity_data_26, granularity_data_27)

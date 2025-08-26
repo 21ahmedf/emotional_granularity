@@ -63,9 +63,10 @@ neg_averages <- rbind(neg_pic_data,neg_music_data)
 
 neg_averages$Emotion <- factor(neg_averages$Emotion, levels = c("sad", "scared", "gloomy", "anxious", "upset", "happy", "relaxed", "satisfied", "excited", "joyful"))
 
-neg_averages %>%
-  mutate(condition = recode(condition, music = "Negative Valence Music", pic = "Negative Valence Pictures")) %>%
-  ggplot(aes(x = Emotion, y = stim, fill = `Average Rating`)) +
+neg_averages <- neg_averages %>%
+  mutate(condition = recode(condition, music = "Negative Valence Music", pic = "Negative Valence Pictures")) 
+
+ggplot(neg_averages,aes(x = Emotion, y = stim, fill = `Average Rating`)) +
     geom_tile() +
     #ggtitle(paste("Average Responses by Emotion and Stimulus for", group_name)) +
     xlab("Emotion") +
@@ -82,9 +83,10 @@ pos_averages <- rbind(pos_pic_data,pos_music_data)
 
 pos_averages$Emotion <- factor(pos_averages$Emotion, levels = c("sad", "scared", "gloomy", "anxious", "upset", "happy", "relaxed", "satisfied", "excited", "joyful"))
 
-pos_averages %>%
-  mutate(condition = recode(condition, music = "Positive Valence Music", pic = "Positive Valence Pictures")) %>%
-  ggplot(aes(x = Emotion, y = stim, fill = `Average Rating`)) +
+pos_averages <- pos_averages %>%
+  mutate(condition = recode(condition, music = "Positive Valence Music", pic = "Positive Valence Pictures"))
+
+ggplot(pos_averages, aes(x = Emotion, y = stim, fill = `Average Rating`)) +
     geom_tile() +
     #ggtitle(paste("Average Responses by Emotion and Stimulus for", group_name)) +
     xlab("Emotion") +
@@ -96,6 +98,30 @@ pos_averages %>%
                legend.text = element_text(size = 8)) +
   facet_wrap(~condition, scales = "free") +
   geom_vline(xintercept=5.5, color="black", linetype="solid", size=1)
+
+averages_total <- rbind(pos_averages, neg_averages)
+
+averages_total_plot <-
+ggplot(averages_total, aes(x = Emotion, y = stim, fill = `Average Rating`)) +
+    geom_tile() +
+    #ggtitle(paste("Average Responses by Emotion and Stimulus for", group_name)) +
+    xlab("Emotion") +
+    ylab("Stimulus") +
+    scale_fill_gradient(low = "blue", high = "red") +  # Adjust color scheme as needed
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, color = "black", size = 12), 
+          axis.text.y = element_text(color = "black", size=10),
+          strip.text = element_text(color = "black", size=14),
+          axis.title = element_text(color = "black", size=14),
+          plot.background = element_rect(fill = "white", color = NA),  # Set plot background to white
+        panel.background = element_rect(fill = "white", color = NA),
+        legend.title = element_text(size = 12), 
+            legend.text = element_text(size = 12)
+        ) +
+  facet_wrap(~condition, scales = "free") +
+  geom_vline(xintercept=5.5, color="black", linetype="solid", size=1)
+
+ggsave('../heatmap_averagestudy2.png',averages_total_plot, dpi=1000, width=9)
 ```
 
 #corr matrix of emotion ratings
