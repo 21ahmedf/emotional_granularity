@@ -3,12 +3,6 @@ title: "4_study2analysis"
 output: html_document
 date: "2025-05-29"
 ---
----
-title: "2_study1analysis"
-output: html_document
-date: "2025-05-28"
----
-
 ```{r}
 library(lmerTest)
 library(tidyverse)
@@ -380,43 +374,70 @@ averages <- rbind(neg_averages, pos_averages)
 
 #recreate plots from thesis sub
 ```{r}
-#correlation between ICCs
+pos_granularity_plot <- 
 ggplot(data=granularity_scores, aes(x=posmusicICC, y=pospicICC)) +
   theme_classic()+
   theme(legend.position = "none")+
   geom_point(alpha=0.7) +
   geom_smooth(method="lm") +
-  xlab("Positive Emotional Granulartiy - Music") +
-  ylab("Positive Emotional Granularity - Pictures")
+  xlab("Positive Emotional Granulartiy Score - Music") +
+  ylab("Positive Emotional Granularity Score - Images") +
+  theme(
+    axis.title.x = element_text(family="Arial", size=20),
+    axis.title.y = element_text(family="Arial",size=20),
+    axis.text.x = element_text(family="Arial", size=14),
+    axis.text.y = element_text(family="Arial",size=14))
 
+ggsave('../figures/study2_posgrancor.png',dpi=1000, pos_granularity_plot)
+
+neg_granularity_plot <-
 ggplot(data=granularity_scores, aes(x=negmusicICC, y=negpicICC)) +
   theme_classic()+
   theme(legend.position = "none")+
   geom_point(alpha=0.7) +
   geom_smooth(method="lm") +
-  xlab("Negative Emotional Granulartiy - Music") +
-  ylab("Negative Emotional Granularity - Pictures")
+  xlab("Negative Emotional Granulartiy Score - Music") +
+  ylab("Negative Emotional Granularity Score - Images")+
+  theme(
+    axis.title.x = element_text(family="Arial", size=20),
+    axis.title.y = element_text(family="Arial",size=20),
+    axis.text.x = element_text(family="Arial", size=14),
+    axis.text.y = element_text(family="Arial",size=14))
 
-#magnitude differences in ICCs
+ggsave('../figures/study2_neggrancor.png',dpi=1000, neg_granularity_plot)
+
+
+#Ices differences in ICCs
 granularity_scores_long <-
   granularity_scores %>%
   pivot_longer(negmusicICC:allpicICC) 
   
 granularity_scores_long$valence <- ifelse(grepl("^neg",granularity_scores_long$name), "Negative", "Positive")
 granularity_scores_long$valence <- ifelse(grepl("^all",granularity_scores_long$name), "Combined", granularity_scores_long$valence)
-granularity_scores_long$condition <- ifelse(grepl("pic",granularity_scores_long$name), "Picture", "Music")
+granularity_scores_long$condition <- ifelse(grepl("pic",granularity_scores_long$name), "Images", "Music")
 
-
-ggplot(data=granularity_scores_long, aes(x=condition, y=value)) +
-  stat_summary(fun.data = 'mean_cl_normal', geom = 'errorbar', width = 0.05, alpha=0.7,position = position_nudge(x = .2, y = 0),color="red") +
-  stat_summary(fun.data = 'mean_cl_normal', geom = 'pointrange', alpha=0.7,position = position_nudge(x = .2, y = 0),color="red")+
+mag_difference <-
+granularity_scores_long %>%
+  subset(valence!="Combined") %>%
+  ggplot(aes(x=condition, y=value)) +
+  stat_summary(fun.data = 'mean_cl_normal', geom = 'errorbar', width = 0.05, alpha=0.7,position = position_nudge(x = .2, y = 0), color="red") +
+  stat_summary(fun.data = 'mean_cl_normal', geom = 'pointrange', alpha=0.7,position = position_nudge(x = .2, y = 0), color="red")+
   theme_classic()+
   theme(legend.position = "none") +
   facet_wrap(~valence,scales = "free_x") +
   geom_jitter(alpha=0.7, width=0.05) +
   #geom_violinhalf(position = position_nudge(x = .2, y = 0))
   xlab("Condition") +
-  ylab("Granularity Score")
+  ylab("Granularity Score") +
+  theme(
+    axis.title.x = element_text(family="Arial", size=20),
+    axis.title.y = element_text(family="Arial",size=20),
+    axis.text.x = element_text(family="Arial", size=14),
+    axis.text.y = element_text(family="Arial",size=14),
+    strip.text = element_text(family="Arial",size=16))
+
+ggsave('../figures/study2_magdifference.png',dpi=1000, mag_difference)
+
 
 #magnitude differences in raw ratings (not ICC)
 ggplot(data=averages, aes(x=valence, y=mean, color=condition)) +
@@ -776,16 +797,26 @@ master_posneg <- rbind(master,master_neg)
 
 #plot
 ```{r}
+arousal_differentiation <-
 master_posneg %>%
-  mutate(arousal_dif = recode(arousal_dif, "different" = "High - Low\nArousal Emotions", "same" = "High - High or Low - \nLow Arousal Emotions")) %>%
+  mutate(arousal_dif = recode(arousal_dif, "different" = "Different", "same" = "Similar")) %>%
   ggplot(aes(x=arousal_dif, y=cor, color=condition)) +
-   stat_summary(fun.data = 'mean_se', geom = 'errorbar', width = 0.05, alpha=0.7) +
-  stat_summary(fun.data = 'mean_se', geom = 'pointrange', alpha=0.7)+
+   stat_summary(fun.data = 'mean_se', geom = 'errorbar', width = 0.05, alpha=0.7, size=0.75) +
+  stat_summary(fun.data = 'mean_se', geom = 'pointrange', alpha=0.7, size=0.75)+
   theme_classic() +
   theme(legend.position = "none") +
-  facet_grid(~valence)+
-  xlab("") +
-  ylab("Correlation")  +
+  facet_wrap(~valence)+
+  xlab("Arousal Level") +
+  ylab("Correlation Among Emotion Ratings")  +    
+  theme(
+    axis.title.x = element_text(family="Arial", size=22),
+    axis.title.y = element_text(family="Arial",size=22),
+    axis.text.x = element_text(family="Arial", size=16),
+    axis.text.y = element_text(family="Arial",size=16),
+    strip.text = element_text(family="Arial",size=18))+
   scale_color_manual(values=c("#0072B2", "#D55E00" )) +
-  scale_fill_manual(values=c("#0072B2","#D55E00"))
+  scale_fill_manual(values=c("#0072B2","#D55E00")) 
+
+
+ggsave('../figures/study2_arousal_differentiation.png',dpi=1000, arousal_differentiation, width=7)
 ```

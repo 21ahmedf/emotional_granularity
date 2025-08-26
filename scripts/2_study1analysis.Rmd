@@ -58,10 +58,9 @@ neg_averages <- rbind(neg_pic_data,neg_music_data)
 
 neg_averages$Emotion <- factor(neg_averages$Emotion, levels = c("sad", "scared", "gloomy", "anxious", "upset", "happy", "relaxed", "satisfied", "excited", "joyful"))
 
-neg_averages <- neg_averages %>%
-  mutate(condition = recode(condition, music = "Negative Valence Music", pic = "Negative Valence Pictures")) 
-
-ggplot(neg_averages,aes(x = Emotion, y = stim, fill = `Average Rating`)) +
+neg_averages %>%
+  mutate(condition = recode(condition, music = "Negative Valence Music", pic = "Negative Valence Images")) %>%
+  ggplot(aes(x = Emotion, y = stim, fill = `Average Rating`)) +
     geom_tile() +
     #ggtitle(paste("Average Responses by Emotion and Stimulus for", group_name)) +
     xlab("Emotion") +
@@ -78,10 +77,9 @@ pos_averages <- rbind(pos_pic_data,pos_music_data)
 
 pos_averages$Emotion <- factor(pos_averages$Emotion, levels = c("sad", "scared", "gloomy", "anxious", "upset", "happy", "relaxed", "satisfied", "excited", "joyful"))
 
-pos_averages <- pos_averages %>%
-  mutate(condition = recode(condition, music = "Positive Valence Music", pic = "Positive Valence Pictures"))
-
-ggplot(pos_averages, aes(x = Emotion, y = stim, fill = `Average Rating`)) +
+pos_averages %>%
+  mutate(condition = recode(condition, music = "Positive Valence Music", pic = "Positive Valence Images")) %>%
+  ggplot(aes(x = Emotion, y = stim, fill = `Average Rating`)) +
     geom_tile() +
     #ggtitle(paste("Average Responses by Emotion and Stimulus for", group_name)) +
     xlab("Emotion") +
@@ -93,30 +91,6 @@ ggplot(pos_averages, aes(x = Emotion, y = stim, fill = `Average Rating`)) +
                legend.text = element_text(size = 8)) +
   facet_wrap(~condition, scales = "free") +
   geom_vline(xintercept=5.5, color="black", linetype="solid", size=1)
-
-averages_total <- rbind(pos_averages, neg_averages)
-
-averages_total_plot <-
-ggplot(averages_total, aes(x = Emotion, y = stim, fill = `Average Rating`)) +
-    geom_tile() +
-    #ggtitle(paste("Average Responses by Emotion and Stimulus for", group_name)) +
-    xlab("Emotion") +
-    ylab("Stimulus") +
-    scale_fill_gradient(low = "blue", high = "red") +  # Adjust color scheme as needed
-    theme_minimal() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1, color = "black", size = 12), 
-          axis.text.y = element_text(color = "black", size=10),
-          strip.text = element_text(color = "black", size=14),
-          axis.title = element_text(color = "black", size=14),
-          plot.background = element_rect(fill = "white", color = NA),  # Set plot background to white
-        panel.background = element_rect(fill = "white", color = NA),
-        legend.title = element_text(size = 12), 
-            legend.text = element_text(size = 12)
-        ) +
-  facet_wrap(~condition, scales = "free") +
-  geom_vline(xintercept=5.5, color="black", linetype="solid", size=1)
-
-ggsave('../heatmap_averagestudy1.png',averages_total_plot, dpi=1000, width=9)
 ```
 
 #corr matrix of emotion ratings
@@ -378,21 +352,38 @@ averages <- rbind(neg_averages, pos_averages)
 #recreate plots from thesis sub
 ```{r}
 #correlation between ICCs
+pos_granularity_plot <- 
 ggplot(data=granularity_scores, aes(x=posmusicICC, y=pospicICC)) +
   theme_classic()+
   theme(legend.position = "none")+
   geom_point(alpha=0.7) +
   geom_smooth(method="lm") +
-  xlab("Positive Emotional Granulartiy - Music") +
-  ylab("Positive Emotional Granularity - Pictures")
+  xlab("Positive Emotional Granulartiy Score - Music") +
+  ylab("Positive Emotional Granularity Score - Images") +
+  theme(
+    axis.title.x = element_text(family="Arial", size=20),
+    axis.title.y = element_text(family="Arial",size=20),
+    axis.text.x = element_text(family="Arial", size=14),
+    axis.text.y = element_text(family="Arial",size=14))
 
+ggsave('../figures/study1_posgrancor.png',dpi=1000, pos_granularity_plot)
+
+neg_granularity_plot <-
 ggplot(data=granularity_scores, aes(x=negmusicICC, y=negpicICC)) +
   theme_classic()+
   theme(legend.position = "none")+
   geom_point(alpha=0.7) +
   geom_smooth(method="lm") +
-  xlab("Negative Emotional Granulartiy - Music") +
-  ylab("Negative Emotional Granularity - Pictures")
+  xlab("Negative Emotional Granulartiy Score - Music") +
+  ylab("Negative Emotional Granularity Score - Images")+
+  theme(
+    axis.title.x = element_text(family="Arial", size=20),
+    axis.title.y = element_text(family="Arial",size=20),
+    axis.text.x = element_text(family="Arial", size=14),
+    axis.text.y = element_text(family="Arial",size=14))
+
+ggsave('../figures/study1_neggrancor.png',dpi=1000, neg_granularity_plot)
+
 
 #Ices differences in ICCs
 granularity_scores_long <-
@@ -401,10 +392,12 @@ granularity_scores_long <-
   
 granularity_scores_long$valence <- ifelse(grepl("^neg",granularity_scores_long$name), "Negative", "Positive")
 granularity_scores_long$valence <- ifelse(grepl("^all",granularity_scores_long$name), "Combined", granularity_scores_long$valence)
-granularity_scores_long$condition <- ifelse(grepl("pic",granularity_scores_long$name), "Picture", "Music")
+granularity_scores_long$condition <- ifelse(grepl("pic",granularity_scores_long$name), "Images", "Music")
 
-
-ggplot(data=granularity_scores_long, aes(x=condition, y=value)) +
+mag_difference <-
+granularity_scores_long %>%
+  subset(valence!="Combined") %>%
+  ggplot(aes(x=condition, y=value)) +
   stat_summary(fun.data = 'mean_cl_normal', geom = 'errorbar', width = 0.05, alpha=0.7,position = position_nudge(x = .2, y = 0), color="red") +
   stat_summary(fun.data = 'mean_cl_normal', geom = 'pointrange', alpha=0.7,position = position_nudge(x = .2, y = 0), color="red")+
   theme_classic()+
@@ -413,7 +406,16 @@ ggplot(data=granularity_scores_long, aes(x=condition, y=value)) +
   geom_jitter(alpha=0.7, width=0.05) +
   #geom_violinhalf(position = position_nudge(x = .2, y = 0))
   xlab("Condition") +
-  ylab("Granularity Score")
+  ylab("Granularity Score") +
+  theme(
+    axis.title.x = element_text(family="Arial", size=20),
+    axis.title.y = element_text(family="Arial",size=20),
+    axis.text.x = element_text(family="Arial", size=14),
+    axis.text.y = element_text(family="Arial",size=14),
+    strip.text = element_text(family="Arial",size=16))
+
+ggsave('../figures/study1_magdifference.png',dpi=1000, mag_difference)
+
 
 #magnitude differences in raw ratings (not ICC)
 ggplot(data=averages, aes(x=valence, y=mean, color=condition)) +
@@ -774,16 +776,27 @@ master_posneg <- rbind(master,master_neg)
 
 #plot
 ```{r}
+arousal_differentiation <-
 master_posneg %>%
-  mutate(arousal_dif = recode(arousal_dif, "different" = "High - Low\nArousal Emotions", "same" = "High - High or Low - \nLow Arousal Emotions")) %>%
+  mutate(arousal_dif = recode(arousal_dif, "different" = "Different", "same" = "Similar")) %>%
   ggplot(aes(x=arousal_dif, y=cor, color=condition)) +
-   stat_summary(fun.data = 'mean_se', geom = 'errorbar', width = 0.05, alpha=0.7) +
-  stat_summary(fun.data = 'mean_se', geom = 'pointrange', alpha=0.7)+
+   stat_summary(fun.data = 'mean_se', geom = 'errorbar', width = 0.05, alpha=0.7, size=0.75) +
+  stat_summary(fun.data = 'mean_se', geom = 'pointrange', alpha=0.7, size=0.75)+
   theme_classic() +
   theme(legend.position = "none") +
-  facet_grid(~valence)+
-  xlab("") +
-  ylab("Correlation")  +
+  facet_wrap(~valence)+
+  xlab("Arousal Level") +
+  ylab("Correlation Among Emotion Ratings")  +    
+  theme(
+    axis.title.x = element_text(family="Arial", size=22),
+    axis.title.y = element_text(family="Arial",size=22),
+    axis.text.x = element_text(family="Arial", size=16),
+    axis.text.y = element_text(family="Arial",size=16),
+    strip.text = element_text(family="Arial",size=18))+
   scale_color_manual(values=c("#0072B2", "#D55E00" )) +
-  scale_fill_manual(values=c("#0072B2","#D55E00"))
+  scale_fill_manual(values=c("#0072B2","#D55E00")) 
+
+
+
+ggsave('../figures/study1_arousal_differentiation.png',dpi=1000, arousal_differentiation, width=7)
 ```
