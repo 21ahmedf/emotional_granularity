@@ -552,6 +552,7 @@ cat("t-statistic:", t_stat[1,1], "\n")
 cat("Degrees of freedom:", df[1,1], "\n")
 cat("p-value:", p_value, "\n")
 
+
 ```
 
 ```{r}
@@ -630,6 +631,7 @@ compute_icc <- function(data_list, result_column) {
   })
 }
 
+<<<<<<< Updated upstream
 # FOR RECODED VERSION
 compute_icc <- function(data_list, result_column) {
   sapply(seq_along(data_list), function(i) {
@@ -644,6 +646,13 @@ compute_icc <- function(data_list, result_column) {
     1 - fisherz(icc_value)
   })
 }
+=======
+
+results$negmusicICC <- ifelse(results$negmusicICC>1, 1, results$negmusicICC)
+results$posmusicICC <- ifelse(results$posmusicICC>1, 1, results$posmusicICC)
+results$negpicICC <- ifelse(results$negpicICC>1, 1, results$negpicICC)
+results$pospicICC <- ifelse(results$pospicICC>1, 1, results$pospicICC)
+>>>>>>> Stashed changes
 ```
 
 # after removing outliers

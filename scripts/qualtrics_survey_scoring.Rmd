@@ -309,6 +309,7 @@ sMEDT$I18_sMEDT_resposne <- ifelse(sMEDT$I18_sMEDT_resposne == 1, 1, 0)
 df$sMEDT <- apply(sMEDT,1, sum)/18
 
 hist(df$sMEDT)
+<<<<<<< Updated upstream
 ```
 
 ```{r}
@@ -391,4 +392,10 @@ corrplot(correlation_matrix, method = "circle", type = "upper",
 # Close the PNG device
 dev.off()
 
+=======
+
+ggplot(data=test, aes(x=posmusicICC, y=BMRQ_emotion)) +
+  geom_point() +
+  geom_smooth(method="lm")
+>>>>>>> Stashed changes
 ```

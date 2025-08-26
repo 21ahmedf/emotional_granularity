@@ -1,0 +1,3 @@
+session.p_id,session.pilot,session.complete,session.time_started,session.current_time,session.num_restarts,session.language,session.user_info,EDT.q1,EDT.q2,EDT.q3,EDT.q4,EDT.q5,EDT.q6,EDT.q7,EDT.q8,EDT.q9,EDT.q10,EDT.q11,EDT.q12,EDT.q13,EDT.q14,EDT.q15,EDT.q16,EDT.q17,EDT.q18,EDT.ability,EDT.ability_sem,EDT.num_items
+9733826212,FALSE,TRUE,52:24.6,57:10.2,0,en,NA,2,2,1,1,2,2,2,2,1,1,1,1,1,2,2,1,2,1,1.777689621,0.387476165,18
+8562366366,FALSE,TRUE,59:47.7,03:17.8,0,en,NA,1,1,1,2,1,2,2,1,1,2,1,2,2,2,2,1,2,1,1.876397804,0.62939965,18
