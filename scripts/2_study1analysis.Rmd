@@ -8,6 +8,7 @@ date: "2025-05-28"
 library(lmerTest)
 library(tidyverse)
 library(corrplot)
+library(emmeans)
 ```
 
 ```{r}
@@ -18,22 +19,21 @@ pos_ratings <- read.csv(file='../data/study1_positiveratings.csv')
 neg_ratings <- read.csv(file='../data/study1_negativeratings.csv')
 ```
 
-#heat map
+#manipulation check
 ```{r}
-averages_pos <- pos_ratings %>%
-  pivot_longer(happy:relaxed, names_to = "Emotion", values_to = "Response") %>%
-  group_by(stim, condition, Emotion) %>%
-  summarise(
-     `Average Rating` = mean(Response, na.rm = TRUE)
-    )
+#test interaction between stimulus type (music/picture), emotion rating valence (pos/negative), and stimulus valence
+neg_ratingsperemotion <- neg_ratings %>%
+  pivot_longer(gloomy:upset) 
 
-averages_neg <- neg_ratings %>%
-  pivot_longer(gloomy:upset, names_to = "Emotion", values_to = "Response") %>%
-  group_by(stim, condition,Emotion) %>%
-  summarise(
-    `Average Rating` = mean(Response, na.rm = TRUE)
-    )
+pos_ratingsperemotion <- pos_ratings %>%
+  pivot_longer(happy:relaxed)
 
+pos_ratingsperemotion$rating_valence <- "positive"
+neg_ratingsperemotion$rating_valence <- "negative"
+
+master_ratingsperemotion <- rbind(pos_ratingsperemotion, neg_ratingsperemotion)
+
+#assigning stimulus valence
 # Positive and Negative picture and music lists
 pos_pic <- c("Beach 1.jpg", "Fireworks 6.jpg", "Lake 12.jpg", "Rainbow 2.jpg", "Clean 1.jpg", "Heart 3.jpg", "Rocks 1.jpg", "Snow 1.jpg")
 neg_pic <- c("Dirt 1.jpg", "Ferret 1.jpg", "Fire 10.jpg", "Flood 1.jpg", "Destruction 2.jpg", "Garbage dump 1.jpg", "Prison 2.jpg", "Toilet 4.jpg")
@@ -47,6 +47,47 @@ filter_by_type <- function(data, type_list, column_name) {
   data %>%
     filter(!!sym(column_name) %in% type_list)
 }
+
+pos_pic_data <- filter_by_type(master_ratingsperemotion, pos_pic, "stim")
+pos_pic_data$stimulus_valence <- "positive"
+neg_pic_data <- filter_by_type(master_ratingsperemotion, neg_pic, "stim")
+neg_pic_data$stimulus_valence <- "negative"
+
+pos_music_data <- filter_by_type(master_ratingsperemotion, pos_music, "stim")
+pos_music_data$stimulus_valence <- "positive"
+neg_music_data <- filter_by_type(master_ratingsperemotion, neg_music, "stim")
+neg_music_data$stimulus_valence <- "negative"
+
+master_ratingsperemotion <- rbind(pos_pic_data,neg_pic_data,pos_music_data,neg_music_data)
+
+m1 <- lmer(data=master_ratingsperemotion, (value) ~ condition*rating_valence*stimulus_valence + (condition*stimulus_valence*rating_valence|Participant.Public.ID) + (1|stim),control=lmerControl(optimizer="bobyqa"))
+anova(m1)
+
+#simple test of means (i.e., seeing pos rated pos, neg rated neg)
+test(emmeans(m1, ~ condition*rating_valence*stimulus_valence,lmerTest.limit = 23040, lmer.df = "satterthwaite"))
+
+emmeans::test(emmeans(m1, pairwise ~ condition*rating_valence*stimulus_valence,lmerTest.limit = 23040,lmer.df = "satterthwaite"))
+
+#plots
+```
+
+
+#heat map
+```{r}
+averages_pos <- pos_ratings %>%
+  pivot_longer(happy:relaxed, names_to = "Emotion", values_to = "Response") %>%
+  group_by(stim, condition, Emotion) %>%
+  summarise(
+     `Average\nRating` = mean(Response, na.rm = TRUE)
+    )
+
+averages_neg <- neg_ratings %>%
+  pivot_longer(gloomy:upset, names_to = "Emotion", values_to = "Response") %>%
+  group_by(stim, condition,Emotion) %>%
+  summarise(
+    `Average\nRating` = mean(Response, na.rm = TRUE)
+    )
+
 averages_master <- rbind(averages_pos,averages_neg)
 pos_pic_data <- filter_by_type(averages_master, pos_pic, "stim")
 neg_pic_data <- filter_by_type(averages_master, neg_pic, "stim")
@@ -59,8 +100,8 @@ neg_averages <- rbind(neg_pic_data,neg_music_data)
 neg_averages$Emotion <- factor(neg_averages$Emotion, levels = c("sad", "scared", "gloomy", "anxious", "upset", "happy", "relaxed", "satisfied", "excited", "joyful"))
 
 neg_averages %>%
-  mutate(condition = recode(condition, music = "Negative Valence Music", pic = "Negative Valence Images")) %>%
-  ggplot(aes(x = Emotion, y = stim, fill = `Average Rating`)) +
+  mutate(condition = recode(condition, music = "Negatively-Valencely Music", pic = "Negatively-Valenced Images")) %>%
+  ggplot(aes(x = Emotion, y = stim, fill = `Average\nRating`)) +
     geom_tile() +
     #ggtitle(paste("Average Responses by Emotion and Stimulus for", group_name)) +
     xlab("Emotion") +
@@ -68,8 +109,8 @@ neg_averages %>%
     scale_fill_gradient(low = "blue", high = "red") +  # Adjust color scheme as needed
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1, color = "black"), axis.text.y = element_text(color = "black"), plot.background = element_rect(fill = "white", color = NA),  # Set plot background to white
-        panel.background = element_rect(fill = "white", color = NA),legend.title = element_text(size = 9), 
-               legend.text = element_text(size = 8)) +
+        panel.background = element_rect(fill = "white", color = NA),legend.title = element_text(size = 11), 
+               legend.text = element_text(size = 10)) +
   facet_wrap(~condition, scales = "free") +
   geom_vline(xintercept=5.5, color="black", linetype="solid", size=1)
 
@@ -77,29 +118,38 @@ pos_averages <- rbind(pos_pic_data,pos_music_data)
 
 pos_averages$Emotion <- factor(pos_averages$Emotion, levels = c("sad", "scared", "gloomy", "anxious", "upset", "happy", "relaxed", "satisfied", "excited", "joyful"))
 
+pos_averages <- pos_averages %>%
+  mutate(condition = recode(condition, music = "Positively-Valenced Music", pic = "Positively-Valenced Images"))
+
+neg_averages <- neg_averages %>%
+  mutate(condition = recode(condition, music = "Negatively-Valenced Music", pic = "Negatively-Valenced Images")) 
+
 averages_total <- rbind(pos_averages, neg_averages)
 
+averages_total$stim <- gsub(".jpg", "", averages_total$stim)
+averages_total$stim <- gsub(".mp3", "", averages_total$stim)
+
 averages_total_plot <-
-ggplot(averages_total, aes(x = Emotion, y = stim, fill = `Average Rating`)) +
+ggplot(averages_total, aes(x = Emotion, y = stim, fill = `Average\nRating`)) +
     geom_tile() +
     #ggtitle(paste("Average Responses by Emotion and Stimulus for", group_name)) +
     xlab("Emotion") +
     ylab("Stimulus") +
     scale_fill_gradient(low = "blue", high = "red") +  # Adjust color scheme as needed
     theme_minimal() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1, color = "black", size = 12), 
-          axis.text.y = element_text(color = "black", size=10),
-          strip.text = element_text(color = "black", size=14),
-          axis.title = element_text(color = "black", size=14),
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, color = "black", size = 30), 
+          axis.text.y = element_text(color = "black", size=30),
+          strip.text = element_text(color = "black", size=30),
+          axis.title = element_text(color = "black", size=36),
           plot.background = element_rect(fill = "white", color = NA),  # Set plot background to white
         panel.background = element_rect(fill = "white", color = NA),
-        legend.title = element_text(size = 12), 
-            legend.text = element_text(size = 12)
+        legend.title = element_text(size = 28), 
+            legend.text = element_text(size = 30)
         ) +
   facet_wrap(~condition, scales = "free") +
-  geom_vline(xintercept=5.5, color="black", linetype="solid", size=1)
+  geom_vline(xintercept=5.5, color="black", linetype="solid", size=3)
 
-ggsave('../heatmap_averagestudy1.png',averages_total_plot, dpi=1000, width=9)
+ggsave('../heatmap_averagestudy1.png',averages_total_plot, dpi=1000, width=18, height=10.5)
 ```
 
 #corr matrix of emotion ratings
@@ -367,15 +417,15 @@ ggplot(data=granularity_scores, aes(x=posmusicICC, y=pospicICC)) +
   theme(legend.position = "none")+
   geom_point(alpha=0.7) +
   geom_smooth(method="lm") +
-  xlab("Positive Emotional Granulartiy Score - Music") +
-  ylab("Positive Emotional Granularity Score - Images") +
+  xlab("Positive Emotional\nGranulartiy Score - Music") +
+  ylab("Positive Emotional\n Granularity Score - Images") +
   theme(
-    axis.title.x = element_text(family="Arial", size=20),
-    axis.title.y = element_text(family="Arial",size=20),
-    axis.text.x = element_text(family="Arial", size=14),
-    axis.text.y = element_text(family="Arial",size=14))
+    axis.title.x = element_text(family="Arial", size=30),
+    axis.title.y = element_text(family="Arial",size=30),
+    axis.text.x = element_text(family="Arial", size=26),
+    axis.text.y = element_text(family="Arial",size=26))
 
-ggsave('../figures/study1_posgrancor.png',dpi=1000, pos_granularity_plot)
+ggsave('../figures/study1_posgrancor.png',dpi=1000, pos_granularity_plot, height=8)
 
 neg_granularity_plot <-
 ggplot(data=granularity_scores, aes(x=negmusicICC, y=negpicICC)) +
@@ -383,15 +433,15 @@ ggplot(data=granularity_scores, aes(x=negmusicICC, y=negpicICC)) +
   theme(legend.position = "none")+
   geom_point(alpha=0.7) +
   geom_smooth(method="lm") +
-  xlab("Negative Emotional Granulartiy Score - Music") +
-  ylab("Negative Emotional Granularity Score - Images")+
+  xlab("Negative Emotional\nGranulartiy Score - Music") +
+  ylab("Negative Emotional\n Granularity Score - Images") +
   theme(
-    axis.title.x = element_text(family="Arial", size=20),
-    axis.title.y = element_text(family="Arial",size=20),
-    axis.text.x = element_text(family="Arial", size=14),
-    axis.text.y = element_text(family="Arial",size=14))
+    axis.title.x = element_text(family="Arial", size=30),
+    axis.title.y = element_text(family="Arial",size=30),
+    axis.text.x = element_text(family="Arial", size=26),
+    axis.text.y = element_text(family="Arial",size=26))
 
-ggsave('../figures/study1_neggrancor.png',dpi=1000, neg_granularity_plot)
+ggsave('../figures/study1_neggrancor.png',dpi=1000, neg_granularity_plot, height=8)
 
 
 #Ices differences in ICCs
@@ -403,27 +453,30 @@ granularity_scores_long$valence <- ifelse(grepl("^neg",granularity_scores_long$n
 granularity_scores_long$valence <- ifelse(grepl("^all",granularity_scores_long$name), "Combined", granularity_scores_long$valence)
 granularity_scores_long$condition <- ifelse(grepl("pic",granularity_scores_long$name), "Images", "Music")
 
+
 mag_difference <-
 granularity_scores_long %>%
   subset(valence!="Combined") %>%
   ggplot(aes(x=condition, y=value)) +
-  stat_summary(fun.data = 'mean_cl_normal', geom = 'errorbar', width = 0.05, alpha=0.7,position = position_nudge(x = .2, y = 0), color="red") +
-  stat_summary(fun.data = 'mean_cl_normal', geom = 'pointrange', alpha=0.7,position = position_nudge(x = .2, y = 0), color="red")+
+  stat_summary(fun.data = 'mean_cl_normal', geom = 'errorbar', size=1.25, width = 0.1, alpha=0.7,position = position_nudge(x = .3, y = 0), color="red") +
+  stat_summary(fun.data = 'mean_cl_normal', geom = 'pointrange',size=1.25, alpha=0.7,position = position_nudge(x = .3, y = 0), color="red")+
   theme_classic()+
   theme(legend.position = "none") +
   facet_wrap(~valence,scales = "free_x") +
-  geom_jitter(alpha=0.7, width=0.05) +
+  geom_jitter(alpha=0.7, width=0.075,size=3) +
   #geom_violinhalf(position = position_nudge(x = .2, y = 0))
   xlab("Condition") +
   ylab("Granularity Score") +
   theme(
-    axis.title.x = element_text(family="Arial", size=20),
-    axis.title.y = element_text(family="Arial",size=20),
-    axis.text.x = element_text(family="Arial", size=14),
-    axis.text.y = element_text(family="Arial",size=14),
-    strip.text = element_text(family="Arial",size=16))
+    axis.title.x = element_text(family="Arial", size=50),
+    axis.title.y = element_text(family="Arial",size=50),
+    axis.text.x = element_text(family="Arial", size=44),
+    axis.text.y = element_text(family="Arial",size=44),
+    strip.text = element_text(family="Arial",size=46))
 
-ggsave('../figures/study1_magdifference.png',dpi=1000, mag_difference)
+
+
+ggsave('../figures/study1_magdifference.png',dpi=1000, mag_difference, width=14, height=12)
 
 
 #magnitude differences in raw ratings (not ICC)
@@ -785,27 +838,117 @@ master_posneg <- rbind(master,master_neg)
 
 #plot
 ```{r}
+average_corr <-
+master_posneg %>%
+  group_by(condition, valence, Participant.Public.ID,arousal_dif) %>%
+    summarise(
+     `cor` = mean(cor, na.rm = TRUE)
+    )  %>%
+  mutate(arousal_dif = recode(arousal_dif, "different" = "Different", "same" = "Similar"))
+
 arousal_differentiation <-
 master_posneg %>%
   mutate(arousal_dif = recode(arousal_dif, "different" = "Different", "same" = "Similar")) %>%
   ggplot(aes(x=arousal_dif, y=cor, color=condition)) +
-   stat_summary(fun.data = 'mean_se', geom = 'errorbar', width = 0.05, alpha=0.7, size=0.75) +
-  stat_summary(fun.data = 'mean_se', geom = 'pointrange', alpha=0.7, size=0.75)+
+   stat_summary(fun.data = 'mean_se', geom = 'errorbar',alpha=0.7, width = 0.075, size=1.4,position = position_nudge(x = .3, y = 0)) +
+  stat_summary(fun.data = 'mean_se', geom = 'pointrange', alpha=0.7,size=0.9,position = position_nudge(x = .3, y = 0))+
   theme_classic() +
   theme(legend.position = "none") +
   facet_wrap(~valence)+
   xlab("Arousal Level") +
   ylab("Correlation Among Emotion Ratings")  +    
   theme(
-    axis.title.x = element_text(family="Arial", size=22),
-    axis.title.y = element_text(family="Arial",size=22),
-    axis.text.x = element_text(family="Arial", size=16),
-    axis.text.y = element_text(family="Arial",size=16),
-    strip.text = element_text(family="Arial",size=18))+
+    axis.title.x = element_text(family="Arial", size=50),
+    axis.title.y = element_text(family="Arial",size=50),
+    axis.text.x = element_text(family="Arial", size=44),
+    axis.text.y = element_text(family="Arial",size=44),
+    strip.text = element_text(family="Arial",size=44))+
   scale_color_manual(values=c("#0072B2", "#D55E00" )) +
-  scale_fill_manual(values=c("#0072B2","#D55E00")) 
+  scale_fill_manual(values=c("#0072B2","#D55E00")) +
+  geom_jitter(alpha=0.5, width=0.1, data=average_corr,size=3.5)
 
 
 
-ggsave('../figures/study1_arousal_differentiation.png',dpi=1000, arousal_differentiation, width=7)
+ggsave('../figures/study1_arousal_differentiation.png',dpi=1000, arousal_differentiation, width=14, height=12)
+```
+
+##check to make sure removing online participants don't change pattern of results
+```{r}
+#granularity across pics + music
+##positive
+granuliarty_scores_online <- granularity_scores  %>% 
+  filter(!startsWith((ID), 'TEAM'))
+
+cor.test(granuliarty_scores_online$posmusicICC, granuliarty_scores_online$pospicICC)
+
+##negative
+cor.test(granuliarty_scores_online$negmusicICC, granuliarty_scores_online$negpicICC)
+
+##combined
+cor.test(granuliarty_scores_online$allmusicICC, granuliarty_scores_online$allpicICC)
+
+#average differences
+neg_averages_online <- neg_averages  %>% 
+  filter(!startsWith((Participant.Public.ID), 'TEAM'))
+
+m1 <- lmer(data=neg_averages_online, mean ~ condition + (1|Participant.Public.ID))
+summary(m1)
+
+pos_averages_online <- pos_averages  %>% 
+  filter(!startsWith((Participant.Public.ID), 'TEAM'))
+
+m1 <- lmer(data=pos_averages_online, mean ~ condition + (1|Participant.Public.ID))
+summary(m1)
+
+#arousal diff.
+master_online <- master  %>% 
+  filter(!startsWith((Participant.Public.ID), 'TEAM'))
+test <- lmer(data=master_online, scale(cor) ~ condition*arousal_dif + (condition*arousal_dif|Participant.Public.ID))
+summary(test)
+
+master_neg_online <- master %>%
+  filter(!startsWith((Participant.Public.ID), 'TEAM'))
+
+test <- lmer(data=master_neg_online, scale(cor) ~ condition*arousal_dif + (condition*arousal_dif|Participant.Public.ID))
+summary(test)
+
+
+#checking patterns of in-person data
+#granularity across pics + music
+##positive
+granuliarty_scores_inperson <- granularity_scores  %>% 
+  filter(startsWith((ID), 'TEAM'))
+
+cor.test(granuliarty_scores_inperson$posmusicICC, granuliarty_scores_inperson$pospicICC)
+
+##negative
+cor.test(granuliarty_scores_inperson$negmusicICC, granuliarty_scores_inperson$negpicICC)
+
+##combined
+cor.test(granuliarty_scores_inperson$allmusicICC, granuliarty_scores_inperson$allpicICC)
+
+#average differences
+neg_averages_inperson <- neg_averages  %>% 
+  filter(startsWith((Participant.Public.ID), 'TEAM'))
+
+m1 <- lmer(data=neg_averages_inperson, mean ~ condition + (1|Participant.Public.ID))
+summary(m1)
+
+pos_averages_inperson <- pos_averages  %>% 
+  filter(startsWith((Participant.Public.ID), 'TEAM'))
+
+m1 <- lmer(data=pos_averages_inperson, mean ~ condition + (1|Participant.Public.ID))
+summary(m1)
+
+#arousal diff.
+master_inperson <- master  %>% 
+  filter(startsWith((Participant.Public.ID), 'TEAM'))
+test <- lmer(data=master_inperson, scale(cor) ~ condition*arousal_dif + (condition*arousal_dif|Participant.Public.ID))
+summary(test)
+
+master_neg_inperson <- master %>%
+  filter(startsWith((Participant.Public.ID), 'TEAM'))
+
+test <- lmer(data=master_neg_inperson, scale(cor) ~ condition*arousal_dif + (condition*arousal_dif|Participant.Public.ID))
+summary(test)
 ```

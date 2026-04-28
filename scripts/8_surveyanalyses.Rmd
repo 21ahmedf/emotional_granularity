@@ -7,6 +7,7 @@ date: "2025-05-29"
 ```{r}
 library(lmerTest)
 library(tidyverse)
+library(pwr)
 ```
 
 ```{r}
@@ -34,6 +35,9 @@ redcap_amedt <- amedt %>%
 
 study1 <- read.csv(file='../data/study1_granularityscores.csv')
 study2 <- read.csv(file='../data/study2_granularityscores.csv')
+
+study1$study <- "study1"
+study2$study <- "study2"
 ```
 
 ```{r}
@@ -52,10 +56,57 @@ master_red <- rbind(study1,study2) %>%
   merge(redcap_amedt, by.x="ID",by.y="SURVEY_CODE", all.x = TRUE)
 ```
 
-#cor tests
+#study demos
 ```{r}
-cor.test(master$posmusicICC, master$EDT.ability)
+study1 <- master %>%
+  subset(study=="study1") %>%
+  distinct()
+
+study1$age <- as.numeric(study1$age)
+
+mean(study1$age, na.rm=TRUE)
+range(study1$age, na.rm=TRUE)
+
+study2 <- master %>%
+  subset(study=="study2") %>%
+  distinct()
+
+study2$age <- as.numeric(study2$age)
+
+mean(study2$age, na.rm=TRUE)
+range(study2$age, na.rm=TRUE)
+sd(study2$age, na.rm=TRUE)
+```
+
+#cor tests - across sample studies
+```{r}
+cor.test(master$negmusicICC, master$BDI_total)
+pwr::pwr.r.test(r = -0.1, sig.level = 0.05, power = 0.8)
+cor.test(master$negpicICC, master$BDI_total)
+
+cor.test(master$negmusicICC, master$BDI_total)
+pwr::pwr.r.test(r = -0.06, sig.level = 0.05, power = 0.8)
+cor.test(master$negpicICC, master$BDI_total)
+
 cor.test(master$negmusicICC, master$EDT.ability)
+cor.test(master$negpicICC, master$EDT.ability)
+
+#study 2 anxiety & cd risc?
+cor.test(master_red$negmusicICC, master_red$scaared_total)
+pwr::pwr.r.test(r = -0.1969932, sig.level = 0.05, power = 0.8)
+cor.test(master_red$negpicICC, master_red$scaared_total)
+
+cor.test(master_red$negmusicICC, master_red$BDI_average)
+cor.test(master_red$negpicICC, master_red$BDI_average)
+
+cor.test(master_qual$negmusicICC, master_qual$BDI_average)
+cor.test(master_qual$negpicICC, master_qual$BDI_average)
+
+cor.test(master_qual$negmusicICC, master_qual$STAI_total)
+cor.test(master_qual$negpicICC, master_qual$STAI_total)
+
+cor.test(master_qual$posmusicICC, master_qual$CD.RISC_total)
+cor.test(master_qual$pospicICC, master_qual$CD.RISC_total)
 ```
 
 #corr matrix
@@ -118,10 +169,11 @@ dev.off()
 ```
 #scatterplots
 ```{r}
-ggplot(data=master, aes(x=negmusicICC,y=BDI_total))+
+ggplot(data=master_red, aes(x=negmusicICC,y=scaared_total))+
   geom_point(alpha=0.7)+
   stat_smooth(method="lm") +
   theme_classic() +
   xlab("Negative Emotional Granularity - Music") +
   ylab("BDI Score")
+
 ```

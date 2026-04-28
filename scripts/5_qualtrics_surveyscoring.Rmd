@@ -338,6 +338,8 @@ BDI[BDI == 3] <- 2
 BDI[BDI == 4] <- 3
 
 BDI$BDI_total <- apply(BDI[,-1],1,sum)
+BDI$BDI_average <- rowMeans(BDI[,-1], na.rm = TRUE)
+
 
 final_scores <- merge(final_scores, BDI[, c(1, 22)], by.x = "SURVEY_CODE", by.y = "SURVEY_CODE", all.x = TRUE)
 
@@ -415,6 +417,20 @@ print(non_matching_in_scores)
 
 print("IDs in results that do not match any SURVEY_CODE in scores:")
 print(non_matching_in_results)
+```
+#get age
+```{r}
+age <- df %>%
+  select("SURVEY_CODE", "Q3")
+
+names(age) <- c("SURVEY_CODE", "age")
+
+age <- lapply(age, as.integer)
+
+final_scores <- merge(final_scores, age, by.x = "SURVEY_CODE", by.y = "SURVEY_CODE", all.x = TRUE)
+
+mean(final_scores$Q3.y, na.rm=TRUE)
+range(final_scores$Q3.y, na.rm=TRUE)
 ```
 
 #write df

@@ -1,0 +1,484 @@
+---
+title: "adult_online_surveyscoring"
+output: html_document
+date: "2025-12-19"
+---
+
+```{r}
+library(tidyverse)
+source("reverseCode.R")
+```
+
+```{r}
+survey <- read.csv('../data/adult_online/emo_granularity_adultonline_December 29, 2025_16.35.csv')
+
+IDs <- read.csv('../data/adult_online/qual_task_link.csv')
+
+survey <- merge(survey,IDs,by="ResponseId")
+```
+
+#CDRISC
+```{r}
+CD.RISC <- survey %>%
+  dplyr::select("CD.RISC1_1":"CD.RISC10_1")
+
+CD.RISC <- as.data.frame(lapply(CD.RISC[,], as.integer)) %>%
+  drop_na()
+
+survey$CD.RISC_total <- apply(CD.RISC,1,sum)
+hist(survey$CD.RISC_total)
+```
+
+#STAI-T
+```{r}
+STAI_T <- survey %>%
+  dplyr::select("STAI1_1":"STAI20_1")
+
+STAI_T <- as.data.frame(lapply(STAI_T[,], as.integer)) %>%
+  drop_na()
+
+cols_reverse <- c("STAI1_1","STAI3_1","STAI6_1","STAI7_1","STAI10_1","STAI13_1","STAI14_1","STAI16_1","STAI19_1")
+STAI_T[cols_reverse] <- lapply(STAI_T[cols_reverse], reverseCode, min=1, max=4)
+
+survey$STAI_total <- apply(STAI_T,1,sum)
+```
+
+#STAI-S
+```{r}
+STAI_S <- survey %>%
+  dplyr::select("STAI.S_1_1":"STAI.S_20_1")
+
+STAI_S <- as.data.frame(lapply(STAI_S[,], as.integer)) %>%
+  drop_na()
+
+cols_reverse <- c("STAI.S_1_1","STAI.S_2_1","STAI.S_5_1","STAI.S_8_1","STAI.S_10_1","STAI.S_11_1","STAI.S_15_1","STAI.S_16_1","STAI.S_19_1","STAI.S_20_1")
+STAI_S[cols_reverse] <- lapply(STAI_S[cols_reverse], reverseCode, min=1, max=4)
+
+survey$STAI_S_total <- apply(STAI_S,1,sum)
+```
+
+#BDI
+```{r}
+BDI <- survey %>%
+  dplyr::select("BDI_1":"BDI_20")
+
+BDI$BDI_15[BDI$BDI_15 == 3] <- 2
+BDI$BDI_15[BDI$BDI_15 == 4 | BDI$BDI_15 == 5] <- 3
+BDI$BDI_15[BDI$BDI_15 == 6 | BDI$BDI_15 == 7] <- 4
+
+BDI$BDI_17[BDI$BDI_17 == 3] <- 2
+BDI$BDI_17[BDI$BDI_17 == 4 | BDI$BDI_17 == 5] <- 3
+BDI$BDI_17[BDI$BDI_17 == 6 | BDI$BDI_17 == 7] <- 4
+
+BDI[BDI == 1] <- 0
+BDI[BDI == 2] <- 1
+BDI[BDI == 3] <- 2
+BDI[BDI == 4] <- 3
+
+BDI <- as.data.frame(lapply(BDI[,], as.integer))
+
+survey$BDI_total <- apply(BDI,1,sum)
+hist(survey$BDI_total)
+```
+
+#SCAARED
+```{r}
+scaared <- survey %>%
+  dplyr::select("SCAARED1_1":"SCAARED44_1") 
+
+scaared <- as.data.frame(lapply(scaared[,], as.integer)) %>%
+  drop_na() #get subscales
+
+survey$SCAARED_total <- apply(scaared,1,sum)
+```
+
+#PMERQ
+```{r}
+PMERQ <- survey %>%
+  dplyr::select("PMERQ_1_1":"PMERQ_45_1")
+
+PMERQ <- as.data.frame(lapply(PMERQ[,], as.integer)) %>%
+  drop_na()
+
+cols_conf_unpl_sit <- c("PMERQ_9_1" ,
+"PMERQ_11_1" ,
+"PMERQ_15_1" ,
+"PMERQ_28_1")
+
+cols_av_unpl_sit <- c("PMERQ_4_1" ,
+"PMERQ_5_1" ,
+"PMERQ_12_1" ,
+"PMERQ_18_1",
+"PMERQ_42_1" ,
+"PMERQ_44_1" )
+
+cols_res_conf <- c("PMERQ_6_1" ,
+"PMERQ_17_1" ,
+"PMERQ_19_1" ,
+"PMERQ_26_1",
+"PMERQ_36_1" ,
+"PMERQ_39_1" )
+
+cols_av_conf <- c("PMERQ_3_1" ,
+"PMERQ_10_1" ,
+"PMERQ_14_1" ,
+"PMERQ_37_1",
+"PMERQ_43_1")
+
+cols_foc_ew <- c("PMERQ_2_1" ,
+"PMERQ_22_1" ,
+"PMERQ_23_1" ,
+"PMERQ_31_1")
+
+cols_cog_dis <- c("PMERQ_13_1" ,
+"PMERQ_27_1" ,
+"PMERQ_29_1" ,
+"PMERQ_33_1",
+"PMERQ_35_1")
+
+cols_cons_bf <- c("PMERQ_7_1" ,
+"PMERQ_20_1" ,
+"PMERQ_21_1" ,
+"PMERQ_24_1",
+"PMERQ_40_1",
+"PMERQ_45_1")
+
+cols_red_ip <- c("PMERQ_25_1" ,
+"PMERQ_38_1" ,
+"PMERQ_41_1")
+
+cols_emo_share <- c("PMERQ_8_1" ,
+"PMERQ_30_1" ,
+"PMERQ_32_1")
+
+cols_exp_sup <- c("PMERQ_1_1" ,
+"PMERQ_16_1" ,
+"PMERQ_34_1")
+
+survey$PMERQ_conf_unpl_sit <- apply(PMERQ[cols_conf_unpl_sit], 1,sum)
+survey$PMERQ_av_unpl_sit <- apply(PMERQ[cols_av_unpl_sit],1, sum)
+survey$PMERQ_foc_ew <-apply(PMERQ[cols_foc_ew],1, sum)
+survey$PMERQ_cog_dis <- apply(PMERQ[cols_cog_dis],1, sum)
+survey$PMERQ_cons_bf<- apply(PMERQ[cols_cons_bf],1, sum)
+survey$PMERQ_red_ip <- apply(PMERQ[cols_red_ip],1, sum)
+survey$PMERQ_emo_share <- apply(PMERQ[cols_emo_share],1, sum)
+survey$PMERQ_exp_sup <- apply(PMERQ[cols_exp_sup],1, sum)
+survey$PMERQ_res_conf <- apply(PMERQ[cols_res_conf],1, sum)
+survey$PMERQ_av_conf<- apply(PMERQ[cols_av_conf],1, sum)
+```
+
+#DERS
+```{r}
+DERS <- survey %>%
+  dplyr::select("DERS_1_1":"DERS_41_1")
+
+DERS <- as.data.frame(lapply(DERS[,], as.integer)) %>%
+  drop_na()
+
+cols_reverse <- c("DERS_24_1" ,
+"DERS_28_1",
+"DERS_7_1",
+"DERS_3_1",
+"DERS_12_1",
+"DERS_21_1",
+"DERS_9_1",
+"DERS_39_1",
+"DERS_26_1",
+"DERS_8_1",
+"DERS_1_1")
+
+cols_non_ac <- c("DERS_29_1" ,
+"DERS_25_1" ,
+"DERS_15_1" ,
+"DERS_14_1",
+"DERS_33_1" ,
+"DERS_27_1" )
+
+cols_dif_gd <- c("DERS_30_1" ,
+"DERS_22_1" ,
+"DERS_16_1" ,
+"DERS_38_1",
+"DERS_24_1")
+
+cols_imp_con <- c("DERS_37_1" ,
+"DERS_31_1" ,
+"DERS_17_1" ,
+"DERS_23_1",
+"DERS_4_1" ,
+"DERS_28_1" )
+
+cols_lack_ea <- c("DERS_7_1" ,
+"DERS_3_1" ,
+"DERS_12_1" ,
+"DERS_21_1",
+"DERS_9_1" ,
+"DERS_39_1" )
+
+cols_lim_ers <- c("DERS_20_1" ,
+"DERS_19_1" ,
+"DERS_25_1" ,
+"DERS_40_1",
+"DERS_32_1" ,
+"DERS_26_1",
+"DERS_41_1" ,
+"DERS_34_1" )
+
+cols_lack_ec <- c("DERS_6_1" ,
+"DERS_5_1" ,
+"DERS_10_1" ,
+"DERS_8_1",
+"DERS_1_1" )
+
+DERS[cols_reverse] <- lapply(DERS[cols_reverse], reverseCode, min=1, max=5)
+
+survey$DERS_non_ac <- apply(DERS[cols_non_ac], 1,sum)
+survey$DERS_dif_gd <- apply(DERS[cols_dif_gd],1, sum)
+survey$DERS_imp_con <-apply(DERS[cols_imp_con],1, sum)
+survey$DERS_lack_ea <- apply(DERS[cols_lack_ea],1, sum)
+survey$DERS_lim_ers<- apply(DERS[cols_lim_ers],1, sum)
+survey$DERS_lack_ec <- apply(DERS[cols_lack_ec],1, sum)
+```
+
+#test
+```{r}
+gran_scores <- read.csv(file='../data/study3_granularityscores.csv')
+
+final <- merge(gran_scores, survey,by.x="ID",by.y="Participant.Public.ID.y")%>%
+  subset(self.reportattention==1)
+
+cor.test(final$negmusicICC, final$negpicICC)
+t.test(final$negmusicICC, final$negpicICC,paired=TRUE)
+cor.test(final$posmusicICC, final$pospicICC)
+t.test(final$posmusicICC, final$pospicICC,paired=TRUE)
+
+ggplot(data=final,aes(x=negpicICC, y=negmusicICC)) +
+  geom_point()+
+  geom_smooth(method="lm")
+
+ggplot(data=final,aes(x=pospicICC, y=posmusicICC)) +
+  geom_point()+
+  geom_smooth(method="lm")
+
+hist(final$posmusicICC)
+```
+
+#associations
+```{r}
+cor.test(final$negicICC, final$DERS_non_ac)
+cor.test(final$negpicICC, final$STAI_total)
+cor.test(final$negmusicICC, final$STAI_total)
+
+m1 <- lm(data=final,STAI_total ~ negpicICC + negmusicICC)
+summary(m1)
+
+# Fit model
+m1 <- lm(data=final,STAI_total ~  negmusicICC)
+# Compute studentized residuals
+stud_res <- rstudent(m1)
+# Identify potential outliers (> 3 in absolute value)
+outliers <- which(abs(stud_res) > 3)
+print(outliers)
+# Visualize
+plot(stud_res, ylab="Studentized Residuals", main="Outlier Detection")
+abline(h = c(-3, 3), col = "red", lty = 2)
+
+
+cor.test(final$negICC, final$STAI_S_total)
+cor.test(final$negpicICC, final$STAI_S_total)
+cor.test(final$negmusicICC, final$STAI_S_total)
+
+m1 <- lm(data=final,STAI_S_total ~ negpicICC + negmusicICC)
+summary(m1)
+
+# Fit model
+m1 <- lm(data=final,STAI_S_total ~  negmusicICC)
+# Compute studentized residuals
+stud_res <- rstudent(m1)
+# Identify potential outliers (> 3 in absolute value)
+outliers <- which(abs(stud_res) > 3)
+print(outliers)
+# Visualize
+plot(stud_res, ylab="Studentized Residuals", main="Outlier Detection")
+abline(h = c(-3, 3), col = "red", lty = 2)
+
+cor.test(final$negICC, final$SCAARED_total)
+cor.test(final$negpicICC, final$SCAARED_total)
+cor.test(final$negmusicICC, final$SCAARED_total)
+
+m1 <- lm(data=final,SCAARED_total ~ negpicICC + negmusicICC)
+summary(m1)
+
+m1 <- lm(data=final,SCAARED_total ~  negmusicICC)
+# Compute studentized residuals
+stud_res <- rstudent(m1)
+# Identify potential outliers (> 3 in absolute value)
+outliers <- which(abs(stud_res) > 3)
+print(outliers)
+# Visualize
+plot(stud_res, ylab="Studentized Residuals", main="Outlier Detection")
+abline(h = c(-3, 3), col = "red", lty = 2)
+
+cor.test(final$negICC, final$BDI_total)
+cor.test(final$negpicICC, final$BDI_total)
+cor.test(final$negmusicICC, final$BDI_total)
+
+m1 <- lm(data=final,BDI_total ~ negpicICC + negmusicICC)
+summary(m1)
+
+cor.test(final$posICC, final$CD.RISC_total)
+cor.test(final$posmusicICC, final$CD.RISC_total)
+cor.test(final$pospicICC, final$CD.RISC_total)
+
+m1 <- lm(data=final,CD.RISC_total ~ pospicICC + posmusicICC)
+summary(m1)
+
+m1 <- lm(data=final,PMERQ_conf_unpl_sit ~ negpicICC + pospicICC + posmusicICC + negmusicICC)
+summary(m1)
+
+m1 <- lm(data=final,PMERQ_av_unpl_sit ~ negpicICC + pospicICC + posmusicICC + negmusicICC)
+summary(m1)
+
+m1 <- lm(data=final,PMERQ_foc_ew ~ negpicICC + pospicICC + posmusicICC + negmusicICC)
+summary(m1) #here
+
+m1 <- lm(data=final,PMERQ_cog_dis ~ negpicICC + pospicICC + posmusicICC + negmusicICC)
+summary(m1)
+
+m1 <- lm(data=final,PMERQ_cons_bf ~ negpicICC + pospicICC + posmusicICC + negmusicICC)
+summary(m1) #here for images
+
+m1 <- lm(data=final,PMERQ_red_ip ~ negpicICC + pospicICC + posmusicICC + negmusicICC)
+summary(m1)
+
+m1 <- lm(data=final,PMERQ_emo_share ~ negpicICC + pospicICC + posmusicICC + negmusicICC)
+summary(m1)
+
+m1 <- lm(data=final,PMERQ_exp_sup ~ negpicICC + pospicICC + posmusicICC + negmusicICC)
+summary(m1) #here for images
+
+m1 <- lm(data=final,PMERQ_res_conf ~ negpicICC + pospicICC + posmusicICC + negmusicICC)
+summary(m1)
+
+m1 <- lm(data=final,PMERQ_av_conf ~ negpicICC + pospicICC + posmusicICC + negmusicICC)
+summary(m1)
+
+m1 <- lm(data=final,DERS_non_ac ~ negpicICC + pospicICC + posmusicICC + negmusicICC)
+summary(m1)
+
+m1 <- lm(data=final,DERS_dif_gd ~ negpicICC + pospicICC + posmusicICC + negmusicICC)
+summary(m1) #here for images
+
+m1 <- lm(data=final,DERS_imp_con ~ negpicICC + pospicICC + posmusicICC + negmusicICC)
+summary(m1)
+
+m1 <- lm(data=final,DERS_lack_ea ~ negpicICC + pospicICC + posmusicICC + negmusicICC)
+summary(m1)
+
+m1 <- lm(data=final,DERS_lim_ers ~ negpicICC + pospicICC + posmusicICC + negmusicICC)
+summary(m1)
+
+m1 <- lm(data=final,DERS_lack_ec ~ negpicICC + pospicICC + posmusicICC + negmusicICC)
+summary(m1)
+```
+
+
+```{r}
+library(corrplot)
+
+survey_measures <- final %>%
+  select(
+    CD.RISC_total,
+    STAI_total,
+    STAI_S_total,
+    BDI_total,
+    SCAARED_total,
+    PMERQ_conf_unpl_sit,
+    PMERQ_av_unpl_sit,
+    PMERQ_foc_ew,
+    PMERQ_cog_dis,
+    PMERQ_cons_bf,
+    PMERQ_red_ip,
+    PMERQ_emo_share,
+    PMERQ_exp_sup,
+    PMERQ_res_conf,
+    PMERQ_av_conf,
+    DERS_non_ac,
+    DERS_dif_gd,
+    DERS_imp_con,
+    DERS_lack_ea,
+    DERS_lim_ers,
+    DERS_lack_ec,
+    negmusicICC,
+    posmusicICC,
+    negpicICC,
+    pospicICC,
+    #negICC,
+    #posICC
+  )
+
+numeric_columns <- survey_measures[, sapply(survey_measures, is.numeric)]
+
+# Calculate the correlation matrix
+correlation_matrix<- cor(numeric_columns, use = "complete.obs")
+
+# Compute p-values
+p_values1 <- cor.mtest(numeric_columns)
+
+p_values <- p_values1[["p"]]
+
+# Specify the folder where you want to save the file
+output_folder <- "../results/"
+
+# Combine the folder path with the file name
+output_file <- file.path(output_folder, "online_adul_corr.png")
+
+# Open a PNG device with the specified file path
+png(output_file, width = 800, height = 800)
+
+# Generate the corrplot
+corrplot(correlation_matrix, method = "circle", type = "upper", 
+         p.mat = p_values, sig.level = 0.05, insig = "blank",
+         tl.col = "black", tl.srt = 45, addCoef.col = NULL,
+         col = colorRampPalette(c("blue", "white", "red"))(200))
+
+# Close the PNG device
+dev.off()
+
+# Specify the folder where you want to save the file
+output_folder <- "../results/structural/"
+
+# Combine the folder path with the file name
+output_file <- file.path(output_folder, "Structural Correlations Right Hemisphere 2-26-25.png")
+
+# Open a PNG device with the specified file path
+png(output_file, width = 800, height = 800)
+
+# Generate the corrplot
+corrplot(correlation_matrix_right, method = "circle", type = "upper", 
+         p.mat = p_values_right, sig.level = 0.05, insig = "blank",
+         tl.col = "black", tl.srt = 45, addCoef.col = NULL,
+         col = colorRampPalette(c("blue", "white", "red"))(200))
+
+title(main = "Structural Correlations Right Hemisphere Study 2", col.main = "black", font.main = 4)
+
+# Close the PNG device
+dev.off()
+
+```
+
+#outlier tests
+```{r}
+final$negmusicICC <- ifelse(final$negmusicICC<=-1.92613, NA, final$negmusicICC) #ID outliers
+
+final$negpicICC <- ifelse(final$negpicICC<=-2.9838, NA, final$negpicICC) #ID outliers
+
+final$pospicICC <- ifelse(final$pospicICC<= -3.3999, NA, final$pospicICC) #ID outliers
+
+final$pospicICC <- ifelse(final$pospicICC >= -0.2571843, NA, final$pospicICC) #ID outliers
+
+final$posmusicICC <- ifelse(final$posmusicICC <= -3.067888, NA, final$posmusicICC) #ID outliers
+
+boxplot(final$posmusicICC)
+
+boxplot.stats(final$posmusicICC)$out
+```
