@@ -7,14 +7,17 @@ date: "2025-05-29"
 library(lmerTest)
 library(tidyverse)
 library(corrplot)
+
+remove.packages(c("lme4", "Matrix")) 
+install.packages(c("Matrix", "lme4"), type = "binary")
 ```
 
 ```{r}
-granularity_scores <- read.csv(file='../data/study2_granularityscores.csv')
+granularity_scores <- read.csv(file='../data/study1final_granularityscores.csv')
 
-pos_ratings <- read.csv(file='../data/study2_positiveratings.csv')
+pos_ratings <- read.csv(file='../data/study1final_positiveratings.csv')
 
-neg_ratings <- read.csv(file='../data/study2_negativeratings.csv')
+neg_ratings <- read.csv(file='../data/study1final_negativeratings.csv')
 ```
 
 #manipulation check

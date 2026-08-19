@@ -20,12 +20,12 @@ data_26 <- read.csv("../data/rating-task/v26/data_exp_169297-v26_task-6dig.csv")
 data_27 <- read.csv("../data/rating-task/v27/data_exp_169297-v27_task-6dig.csv")
 data_28 <- read.csv("../data/rating-task/v28/data_exp_169297-v28_task-6dig.csv")
 
-study1 <- read.csv('../data/study1_granularityscores.csv')
 ```
 
 ```{r}
 granularity_data_23 <- data_23 %>%
   filter(Response.Type == "response") %>% 
+    filter(Participant.Public.ID != "32578") %>% 
   select("Participant.Public.ID","Response","Object.Name", "Spreadsheet..Image", "Spreadsheet..Audio") %>%
   mutate(Response = as.numeric(Response))
 
@@ -58,25 +58,23 @@ granularity_data_28 <- data_28 %>%
   mutate(Response = as.numeric(Response))
 ```
 
-### EXCLUDE PARTICIPANTS FROM STUDY 1
+### EXCLUDE PARTICIPANTS FROM STUDY 1 - No longer doing that (8/13/26)
 ```{r}
-study1_participants <- study1$ID
+granularity_data_23 <- granularity_data_23 #%>%
+  #filter(!(Participant.Public.ID %in% study1_participants)) %>%
+  #filter(nchar(as.character(Participant.Public.ID)) != 5)
 
-granularity_data_23 <- granularity_data_23 %>%
-  filter(!(Participant.Public.ID %in% study1_participants)) %>%
-  filter(nchar(as.character(Participant.Public.ID)) != 5)
+granularity_data_24 <-granularity_data_24 #%>%
+  #filter(Participant.Public.ID == "TEAM_YA_046" | Participant.Public.ID == "TEAM_YA_056" | Participant.Public.ID == "TEAM_YA_048" | Participant.Public.ID == "TEAM_YA_054")
 
-granularity_data_24 <-granularity_data_24 %>%
-  filter(Participant.Public.ID == "TEAM_YA_046" | Participant.Public.ID == "TEAM_YA_056" | Participant.Public.ID == "TEAM_YA_048" | Participant.Public.ID == "TEAM_YA_054")
+granularity_data_25 <-granularity_data_25 # %>%
+ # filter(Participant.Public.ID == "TEAM_YA_065")
 
-granularity_data_25 <-granularity_data_25 %>%
-  filter(Participant.Public.ID == "TEAM_YA_065")
+granularity_data_26 <-granularity_data_26 # %>%
+  #filter(Participant.Public.ID == "TEAM_YA_069" | Participant.Public.ID == "TEAM_YA_064" | Participant.Public.ID == "TEAM_YA_062" | Participant.Public.ID == "TEAM_YA_061" | Participant.Public.ID == "TEAM_YA_081")
 
-granularity_data_26 <-granularity_data_26 %>%
-  filter(Participant.Public.ID == "TEAM_YA_069" | Participant.Public.ID == "TEAM_YA_064" | Participant.Public.ID == "TEAM_YA_062" | Participant.Public.ID == "TEAM_YA_061" | Participant.Public.ID == "TEAM_YA_081")
-
-granularity_data_27 <-granularity_data_27 %>%
-  filter(Participant.Public.ID != "TEAM_YA_077")
+granularity_data_27 <-granularity_data_27 #%>%
+ # filter(Participant.Public.ID != "TEAM_YA_077")
 
 granularity_data_28$Participant.Public.ID <- as.character(granularity_data_28$Participant.Public.ID)
 
@@ -96,6 +94,7 @@ num_unique_ids <- granularity_data %>%
 
 ```{r}
 ## Separating by picture vs music, removing practice stims
+
 granularity_pic <- granularity_data %>%
   filter(Spreadsheet..Image != "") %>%
   filter(Spreadsheet..Image != "Coffee 1.jpg") %>%
@@ -209,8 +208,8 @@ positive_ratings <- rbind(pic_positive,music_positive)
 
 #write dfs
 ```{r}
-write.csv(file = '../data/study2_negativeratings.csv',negative_ratings)
-write.csv(file = '../data/study2_positiveratings.csv',positive_ratings)
+write.csv(file = '../data/study1final_negativeratings.csv',negative_ratings)
+write.csv(file = '../data/study1final_positiveratings.csv',positive_ratings)
 
-write.csv(file = '../data/study2_granularityscores.csv',results_recode)
+write.csv(file = '../data/study1final_granularityscores.csv',results_recode)
 ```

@@ -13,7 +13,7 @@ library(pwr)
 ```{r}
 amedt <- read.csv(file='../data/amedt_all.csv')
 
-qualtrics <- read.csv(file='../data/qualtrics_surveyscores.csv')
+qualtrics <- read.csv(file='../data/qualtrics/qualtrics_surveyscores.csv')
 
 qualtrics$PUBLICID <- stringr::str_remove(qualtrics$PUBLICID,"-")
 qualtrics$PUBLICID <- stringr::str_remove(qualtrics$PUBLICID,"-")
@@ -27,14 +27,14 @@ qualtrics_amedt <- amedt %>%
   select(c("session.p_id", "EDT.ability")) %>%
   merge(qualtrics, by.y="PUBLICID", by.x="session.p_id", all.y=TRUE)
 
-redcap <- read.csv(file='../data/redcap_scored.csv')
+redcap <- read.csv(file='../data/redcap/redcap_scored.csv')
 
 redcap_amedt <- amedt %>%
   select(c("SURVEY_CODE", "EDT.ability")) %>%
   merge(redcap, by.y="SURVEY_CODE", by.x="SURVEY_CODE", all.y=TRUE)
 
-study1 <- read.csv(file='../data/study1_granularityscores.csv')
-study2 <- read.csv(file='../data/study2_granularityscores.csv')
+study1 <- read.csv(file='../data/Study 1 Scores/study1_granularityscores.csv')
+study2 <- read.csv(file='../data/Study 1 Scores/study2_granularityscores.csv')
 
 study1$study <- "study1"
 study2$study <- "study2"
@@ -99,8 +99,9 @@ cor.test(master_red$negpicICC, master_red$scaared_total)
 cor.test(master_red$negmusicICC, master_red$BDI_average)
 cor.test(master_red$negpicICC, master_red$BDI_average)
 
-cor.test(master_qual$negmusicICC, master_qual$BDI_average)
-cor.test(master_qual$negpicICC, master_qual$BDI_average)
+#changed from BDI avg to total 8/5/26
+cor.test(master_qual$negmusicICC, master_qual$BDI_total)
+cor.test(master_qual$negpicICC, master_qual$BDI_total)
 
 cor.test(master_qual$negmusicICC, master_qual$STAI_total)
 cor.test(master_qual$negpicICC, master_qual$STAI_total)
@@ -124,6 +125,9 @@ master %>%
 
 # Select only the numeric columns for the correlation matrix
 matrix_columns <- master[c(3:9,11:24,26:34)]
+matrix_columns <- matrix_columns[, !(names(matrix_columns) %in% "study")]
+
+correlation_matrix <- cor(matrix_columns, use = "complete.obs")
 
 # Calculate the correlation matrix
 correlation_matrix <- cor(matrix_columns, use = "complete.obs")
@@ -175,5 +179,76 @@ ggplot(data=master_red, aes(x=negmusicICC,y=scaared_total))+
   theme_classic() +
   xlab("Negative Emotional Granularity - Music") +
   ylab("BDI Score")
+
+#AMEDT SCATTERPLOT 8/5/26
+
+library(ggplot2)
+
+amedt_var <- "EDT.ability"
+icc_vars <- c("negmusicICC", "posmusicICC", "allmusicICC")
+
+setdiff(c(amedt_var, icc_vars), names(master_red))
+sapply(master_red[, c(amedt_var, icc_vars)], class)
+
+dir.create("plots", showWarnings = FALSE)
+
+results <- data.frame(
+  icc = character(),
+  survey = character(),
+  r = numeric(),
+  r_squared = numeric(),
+  p_value = numeric(),
+  n = integer(),
+  stringsAsFactors = FALSE
+)
+
+for (icc in icc_vars) {
+  
+  complete_data <- master_red[!is.na(master_red[[icc]]) & !is.na(master_red[[amedt_var]]), ]
+  n_obs <- nrow(complete_data)
+  
+  r <- cor.test(complete_data[[icc]], complete_data[[amedt_var]])
+  r_val <- round(as.numeric(r$estimate), 3)
+  r_squared <- round(as.numeric(r$estimate)^2, 3)
+  p_val <- r$p.value
+  
+  cat("\n---", icc, "vs", amedt_var, "---\n")
+  cat("r =", r_val, "\n")
+  cat("R\u00b2 =", r_squared, "\n")
+  cat("p =", round(p_val, 4), "\n")
+  cat("n =", n_obs, "\n")
+  
+  results <- rbind(results, data.frame(
+    icc = icc,
+    survey = amedt_var,
+    r = r_val,
+    r_squared = r_squared,
+    p_value = round(p_val, 4),
+    n = n_obs
+  ))
+  
+  p_label <- if (p_val < 0.001) "< .001" else paste0("= ", round(p_val, 3))
+  
+  p <- ggplot(complete_data, aes(x = .data[[icc]], y = .data[[amedt_var]])) +
+    geom_point(color = "black", size = 2, alpha = 0.7) +
+    geom_smooth(method = "lm", se = TRUE, color = "steelblue", fill = "lightblue") +
+    labs(
+      x = icc,
+      y = amedt_var,
+      title = paste(icc, "vs", amedt_var),
+      subtitle = paste0("R\u00b2 = ", r_squared, "  |  p ", p_label, "  |  n = ", n_obs)
+    ) +
+    theme_minimal(base_size = 13)
+  
+  ggsave(file.path("plots", paste0("plot_", icc, "_", amedt_var, ".png")), 
+         plot = p, width = 6, height = 5, dpi = 300)
+  
+  print(p)
+}
+
+cat("\n=== Summary Table ===\n")
+results <- results[order(-abs(results$r)), ]
+rownames(results) <- NULL
+print(results)
 
 ```

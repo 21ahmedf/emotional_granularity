@@ -1,20 +1,28 @@
 ---
 title: "adult_online_surveyscoring"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 date: "2025-12-19"
 ---
 
 ```{r}
+install.packages("corrplot")
 library(tidyverse)
 source("reverseCode.R")
 ```
 
 ```{r}
+demo <- read.csv("~/Desktop/prolific_demographic_export_694574e84a79b38d198a03cb (3).csv") %>%
+  subset(Status == "APPROVED")
+
 survey <- read.csv('../data/adult_online/emo_granularity_adultonline_December 29, 2025_16.35.csv')
 
 IDs <- read.csv('../data/adult_online/qual_task_link.csv')
+IDs <- IDs[rowSums(IDs == "" | is.na(IDs)) != ncol(IDs), ]
 
-survey <- merge(survey,IDs,by="ResponseId")
+survey <- merge(survey,IDs,by="ResponseId",all.y = TRUE)
+
 ```
 
 #CDRISC
@@ -243,8 +251,10 @@ survey$DERS_lack_ec <- apply(DERS[cols_lack_ec],1, sum)
 ```{r}
 gran_scores <- read.csv(file='../data/study3_granularityscores.csv')
 
-final <- merge(gran_scores, survey,by.x="ID",by.y="Participant.Public.ID.y")%>%
+survey_filtered <- survey  %>%
   subset(self.reportattention==1)
+
+final <- merge(gran_scores, survey_filtered,by.x="ID",by.y="Participant.Public.ID.y")
 
 cor.test(final$negmusicICC, final$negpicICC)
 t.test(final$negmusicICC, final$negpicICC,paired=TRUE)
@@ -264,7 +274,7 @@ hist(final$posmusicICC)
 
 #associations
 ```{r}
-cor.test(final$negicICC, final$DERS_non_ac)
+#cor.test(final$negicICC, final$DERS_non_ac) still not working
 cor.test(final$negpicICC, final$STAI_total)
 cor.test(final$negmusicICC, final$STAI_total)
 
@@ -281,7 +291,6 @@ print(outliers)
 # Visualize
 plot(stud_res, ylab="Studentized Residuals", main="Outlier Detection")
 abline(h = c(-3, 3), col = "red", lty = 2)
-
 
 cor.test(final$negICC, final$STAI_S_total)
 cor.test(final$negpicICC, final$STAI_S_total)
@@ -321,6 +330,9 @@ abline(h = c(-3, 3), col = "red", lty = 2)
 cor.test(final$negICC, final$BDI_total)
 cor.test(final$negpicICC, final$BDI_total)
 cor.test(final$negmusicICC, final$BDI_total)
+cor.test(final$negICC, final$CD.RISC_total)
+cor.test(final$negpicICC, final$CD.RISC_total)
+cor.test(final$negmusicICC, final$CD.RISC_total)
 
 m1 <- lm(data=final,BDI_total ~ negpicICC + negmusicICC)
 summary(m1)
@@ -328,6 +340,8 @@ summary(m1)
 cor.test(final$posICC, final$CD.RISC_total)
 cor.test(final$posmusicICC, final$CD.RISC_total)
 cor.test(final$pospicICC, final$CD.RISC_total)
+
+#########################
 
 m1 <- lm(data=final,CD.RISC_total ~ pospicICC + posmusicICC)
 summary(m1)
@@ -412,8 +426,9 @@ survey_measures <- final %>%
     posmusicICC,
     negpicICC,
     pospicICC,
-    #negICC,
-    #posICC
+    #commented back in 7/31/26
+    negICC,
+    posICC
   )
 
 numeric_columns <- survey_measures[, sapply(survey_measures, is.numeric)]
@@ -466,19 +481,274 @@ dev.off()
 
 ```
 
-#outlier tests
+#all correlation plots
 ```{r}
-final$negmusicICC <- ifelse(final$negmusicICC<=-1.92613, NA, final$negmusicICC) #ID outliers
 
-final$negpicICC <- ifelse(final$negpicICC<=-2.9838, NA, final$negpicICC) #ID outliers
+##ALL POS CORR PLOTS
+icc_vars <- c("posICC", "pospicICC", "posmusicICC")
+survey_vars <- c("BDI_total", "STAI_S_total", "STAI_total", "CD.RISC_total", "SCAARED_total", "DERS_non_ac", "DERS_dif_gd", "DERS_imp_con", "DERS_lack_ea", "DERS_lim_ers", "DERS_lack_ec", "PMERQ_conf_unpl_sit", "PMERQ_av_unpl_sit", "PMERQ_foc_ew", "PMERQ_cog_dis", "PMERQ_cons_bf", "PMERQ_red_ip", "PMERQ_emo_share", "PMERQ_exp_sup", "PMERQ_res_conf", "PMERQ_av_conf")
 
-final$pospicICC <- ifelse(final$pospicICC<= -3.3999, NA, final$pospicICC) #ID outliers
+results <- data.frame(
+  icc = character(),
+  survey = character(),
+  r = numeric(),
+  r_squared = numeric(),
+  p_value = numeric(),
+  n = integer(),
+  stringsAsFactors = FALSE
+)
 
-final$pospicICC <- ifelse(final$pospicICC >= -0.2571843, NA, final$pospicICC) #ID outliers
+for (icc in icc_vars) {
+  for (survey in survey_vars) {
+    
+    complete_data <- final[!is.na(final[[icc]]) & !is.na(final[[survey]]), ]
+    n_obs <- nrow(complete_data)
+    
+    r <- cor.test(complete_data[[icc]], complete_data[[survey]])
+    r_val <- round(as.numeric(r$estimate), 3)
+    r_squared <- round(as.numeric(r$estimate)^2, 3)
+    p_val <- r$p.value
+    
+    # Print to console
+    cat("\n---", icc, "vs", survey, "---\n")
+    cat("r =", r_val, "\n")
+    cat("R\u00b2 =", r_squared, "\n")
+    cat("p =", round(p_val, 4), "\n")
+    cat("n =", n_obs, "\n")
+    
+    results <- rbind(results, data.frame(
+      icc = icc,
+      survey = survey,
+      r = r_val,
+      r_squared = r_squared,
+      p_value = round(p_val, 4),
+      n = n_obs
+    ))
+    
+    p_label <- if (p_val < 0.001) "< .001" else paste0("= ", round(p_val, 3))
+    
+    p <- ggplot(complete_data, aes(x = .data[[icc]], y = .data[[survey]])) +
+      geom_point() +
+      geom_smooth(method = "lm", se = TRUE, color = "blue") +
+      labs(
+        x = icc,
+        y = survey,
+        title = paste(icc, "vs", survey),
+        subtitle = paste0("R\u00b2 = ", r_squared, "  |  p ", p_label, "  |  n = ", n_obs)
+      ) +
+      theme_minimal()
+    
+    ggsave(file.path("plots", paste0("plot_", icc, "_", survey, ".png")), 
+           plot = p, width = 6, height = 5, dpi = 300)
+    
+    print(p)
+  }
+}
 
-final$posmusicICC <- ifelse(final$posmusicICC <= -3.067888, NA, final$posmusicICC) #ID outliers
+cat("\n=== Summary Table (sorted by strength of association) ===\n")
+results <- results[order(-abs(results$r)), ]
+rownames(results) <- NULL
+print(results)
 
-boxplot(final$posmusicICC)
+##ALL NEG CORR PLOTS
 
-boxplot.stats(final$posmusicICC)$out
+library(ggplot2)
+
+icc_vars <- c("negICC", "negpicICC", "negmusicICC")
+survey_vars <- c("BDI_total", "STAI_S_total", "STAI_total", "CD.RISC_total", "SCAARED_total", "DERS_non_ac", "DERS_dif_gd", "DERS_imp_con", "DERS_lack_ea", "DERS_lim_ers", "DERS_lack_ec", "PMERQ_conf_unpl_sit", "PMERQ_av_unpl_sit", "PMERQ_foc_ew", "PMERQ_cog_dis", "PMERQ_cons_bf", "PMERQ_red_ip", "PMERQ_emo_share", "PMERQ_exp_sup", "PMERQ_res_conf", "PMERQ_av_conf")
+
+results <- data.frame(
+  icc = character(),
+  survey = character(),
+  r = numeric(),
+  r_squared = numeric(),
+  p_value = numeric(),
+  n = integer(),
+  stringsAsFactors = FALSE
+)
+
+for (icc in icc_vars) {
+  for (survey in survey_vars) {
+    
+    complete_data <- final[!is.na(final[[icc]]) & !is.na(final[[survey]]), ]
+    n_obs <- nrow(complete_data)
+    
+    r <- cor.test(complete_data[[icc]], complete_data[[survey]])
+    r_val <- round(as.numeric(r$estimate), 3)
+    r_squared <- round(as.numeric(r$estimate)^2, 3)
+    p_val <- r$p.value
+    
+    # Print to console
+    cat("\n---", icc, "vs", survey, "---\n")
+    cat("r =", r_val, "\n")
+    cat("R\u00b2 =", r_squared, "\n")
+    cat("p =", round(p_val, 4), "\n")
+    cat("n =", n_obs, "\n")
+    
+    results <- rbind(results, data.frame(
+      icc = icc,
+      survey = survey,
+      r = r_val,
+      r_squared = r_squared,
+      p_value = round(p_val, 4),
+      n = n_obs
+    ))
+    
+    p_label <- if (p_val < 0.001) "< .001" else paste0("= ", round(p_val, 3))
+    
+    p <- ggplot(complete_data, aes(x = .data[[icc]], y = .data[[survey]])) +
+      geom_point() +
+      geom_smooth(method = "lm", se = TRUE, color = "blue") +
+      labs(
+        x = icc,
+        y = survey,
+        title = paste(icc, "vs", survey),
+        subtitle = paste0("R\u00b2 = ", r_squared, "  |  p ", p_label, "  |  n = ", n_obs)
+      ) +
+      theme_minimal()
+    
+    ggsave(file.path("plots", paste0("plot_", icc, "_", survey, ".png")), 
+           plot = p, width = 6, height = 5, dpi = 300)
+    
+    print(p)
+  }
+}
+
+cat("\n=== Summary Table (sorted by strength of association) ===\n")
+results <- results[order(-abs(results$r)), ]
+rownames(results) <- NULL
+print(results)
+
+
+#PLOT FOR SLIDE 28 replication 8/5/26
+library(ggplot2)
+
+x_var <- "posmusicICC"
+y_var <- "pospicICC"
+
+# Remove missing data for this pair
+plot_data <- final[!is.na(final[[x_var]]) & !is.na(final[[y_var]]), ]
+
+# Calculate correlation
+r <- cor.test(plot_data[[x_var]], plot_data[[y_var]])
+r_val <- round(as.numeric(r$estimate), 2)
+
+# Build plot
+p <- ggplot(plot_data, aes(x = .data[[x_var]], y = .data[[y_var]])) +
+  geom_point(color = "black", size = 2, alpha = 0.7) +
+  geom_smooth(method = "lm", se = TRUE, color = "steelblue", fill = "lightblue") +
+  annotate(
+    "text",
+    x = max(plot_data[[x_var]], na.rm = TRUE),
+    y = min(plot_data[[y_var]], na.rm = TRUE),
+    label = paste0("r = ", r_val),
+    hjust = 1, vjust = 0,
+    size = 5
+  ) +
+  labs(
+    x = "Positive Emotion Granularity Score - Music",
+    y = "Positive Emotion Granularity Score - Pictures"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    panel.grid.minor = element_blank(),
+    axis.title = element_text(face = "bold")
+  )
+
+print(p)
+
+#NEG VERSION of above
+x_var <- "negmusicICC"
+y_var <- "negpicICC"
+
+# Remove missing data for this pair
+plot_data <- final[!is.na(final[[x_var]]) & !is.na(final[[y_var]]), ]
+
+# Calculate correlation
+r <- cor.test(plot_data[[x_var]], plot_data[[y_var]])
+r_val <- round(as.numeric(r$estimate), 2)
+
+# Build plot
+p <- ggplot(plot_data, aes(x = .data[[x_var]], y = .data[[y_var]])) +
+  geom_point(color = "black", size = 2, alpha = 0.7) +
+  geom_smooth(method = "lm", se = TRUE, color = "steelblue", fill = "lightblue") +
+  annotate(
+    "text",
+    x = max(plot_data[[x_var]], na.rm = TRUE),
+    y = min(plot_data[[y_var]], na.rm = TRUE),
+    label = paste0("r = ", r_val),
+    hjust = 1, vjust = 0,
+    size = 5
+  ) +
+  labs(
+    x = "Negative Emotion Granularity Score - Music",
+    y = "Negative Emotion Granularity Score - Pictures"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    panel.grid.minor = element_blank(),
+    axis.title = element_text(face = "bold")
+  )
+
+print(p)
+
 ```
+#HEATMAP of ICCs vs. Surveys
+```{r}
+library(ggplot2)
+library(reshape2)
+
+icc_vars <- c("negICC", "negpicICC", "negmusicICC", "posICC", "pospicICC", "posmusicICC")
+survey_vars <- c("BDI_total", "STAI_S_total", "STAI_T_total", "CD.RISC_total", "SCAARED_total")
+
+# Build a correlation matrix (rows = ICC vars, cols = survey vars)
+cor_matrix <- matrix(NA, nrow = length(icc_vars), ncol = length(survey_vars),
+                      dimnames = list(icc_vars, survey_vars))
+p_matrix <- cor_matrix  # store p-values too, for optional significance marking
+
+for (icc in icc_vars) {
+  for (survey in survey_vars) {
+    complete_data <- final[!is.na(final[[icc]]) & !is.na(final[[survey]]), ]
+    test <- cor.test(complete_data[[icc]], complete_data[[survey]])
+    cor_matrix[icc, survey] <- test$estimate
+    p_matrix[icc, survey] <- test$p.value
+  }
+}
+
+# Reshape into long format for ggplot
+cor_long <- melt(cor_matrix, varnames = c("icc", "survey"), value.name = "r")
+p_long <- melt(p_matrix, varnames = c("icc", "survey"), value.name = "p")
+heat_data <- merge(cor_long, p_long, by = c("icc", "survey"))
+
+# Add significance stars
+heat_data$sig <- ifelse(heat_data$p < 0.001, "***",
+                  ifelse(heat_data$p < 0.01, "**",
+                  ifelse(heat_data$p < 0.05, "*", "")))
+
+# Build heatmap
+p <- ggplot(heat_data, aes(x = survey, y = icc, fill = r)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = paste0(round(r, 2), sig)), size = 4) +
+  scale_fill_gradient2(
+    low = "steelblue", mid = "white", high = "firebrick",
+    midpoint = 0, limits = c(-1, 1), name = "r"
+  ) +
+  labs(
+    x = "Survey Measure",
+    y = "ICC Variable",
+    title = "Correlation Heatmap: ICC Variables vs Survey Measures",
+    caption = "* p < .05   ** p < .01   *** p < .001"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid = element_blank()
+  )
+
+print(p)
+
+ggsave("ICCSurvey_correlation_heatmap.png", plot = p, width = 8, height = 6, dpi = 300)
+
+```
+
+

@@ -13,10 +13,11 @@ library(emmeans)
 
 ```{r}
 granularity_scores <- read.csv(file='../data/study1_granularityscores.csv')
+granularity_scores_2 <- read.csv(file='../data/study2_granularityscores.csv')
 
-pos_ratings <- read.csv(file='../data/study1_positiveratings.csv')
+pos_ratings <- read.csv(file='../data/study1final_positiveratings.csv')
 
-neg_ratings <- read.csv(file='../data/study1_negativeratings.csv')
+neg_ratings <- read.csv(file='../data/study1final_negativeratings.csv')
 ```
 
 #manipulation check

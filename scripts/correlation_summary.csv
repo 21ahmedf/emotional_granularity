@@ -1,0 +1,13 @@
+"icc","survey","r","r_squared","p_value","n"
+"negICC","CD.RISC_total",-0.18,0.033,0.0106,200
+"negICC","STAI_S_total",0.151,0.023,0.0327,200
+"negpicICC","CD.RISC_total",-0.145,0.021,0.0411,199
+"negpicICC","STAI_S_total",0.126,0.016,0.0752,199
+"negICC","BDI_total",0.114,0.013,0.1068,200
+"negmusicICC","SCAARED_total",-0.105,0.011,0.1459,194
+"negpicICC","BDI_total",0.081,0.006,0.2578,199
+"negmusicICC","STAI_S_total",-0.062,0.004,0.3902,194
+"negICC","SCAARED_total",0.055,0.003,0.439,200
+"negpicICC","SCAARED_total",0.054,0.003,0.4508,199
+"negmusicICC","BDI_total",-0.038,0.001,0.5996,194
+"negmusicICC","CD.RISC_total",0.013,0,0.8551,194
