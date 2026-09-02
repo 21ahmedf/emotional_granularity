@@ -1,15 +1,16 @@
 ---
 title: "4_study2analysis"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 date: "2025-05-29"
 ---
 ```{r}
 library(lmerTest)
 library(tidyverse)
 library(corrplot)
+library(emmeans)
 
-remove.packages(c("lme4", "Matrix")) 
-install.packages(c("Matrix", "lme4"), type = "binary")
 ```
 
 ```{r}
@@ -61,13 +62,16 @@ neg_music_data$stimulus_valence <- "negative"
 
 master_ratingsperemotion <- rbind(pos_pic_data,neg_pic_data,pos_music_data,neg_music_data)
 
-m1 <- lmer(data=master_ratingsperemotion, (value) ~ condition*rating_valence*stimulus_valence + (condition:stimulus_valence:rating_valence + condition*rating_valence|Participant.Public.ID),control=lmerControl(optimizer="bobyqa")) #removed stim intercept to assist in model convergence and main random effect of stimulus_valence (explained least amt of variance)
-anova(m1)
+#Commented out for knitting 9/2/26
+
+#m1 <- lmer(data=master_ratingsperemotion, (value) ~ condition*rating_valence*stimulus_valence + (condition:stimulus_valence:rating_valence + rating_valence|Participant.Public.ID),control=lmerControl(optimizer="bobyqa")) #removed stim intercept to assist in model convergence and main random effect of stimulus_valence (explained least amt of variance), 8/13/26 -- and the main effect of condition and interaction between rating valence and condition
+#anova(m1)
+#summary(m1)
 
 #simple test of means (i.e., seeing pos rated pos, neg rated neg)
-test(emmeans(m1, ~ condition*rating_valence*stimulus_valence,lmerTest.limit = 23040, lmer.df = "satterthwaite"))
+#test(emmeans(m1, ~ condition*rating_valence*stimulus_valence,lmerTest.limit = 23040, lmer.df = "satterthwaite"))
 
-emmeans::test(emmeans(m1, pairwise ~ condition*rating_valence*stimulus_valence,lmerTest.limit = 23040,lmer.df = "satterthwaite"))
+#emmeans::test(emmeans(m1, pairwise ~ condition*rating_valence*stimulus_valence,lmerTest.limit = 23040,lmer.df = "satterthwaite"))
 
 #plots
 ```
