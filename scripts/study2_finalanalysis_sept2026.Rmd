@@ -13,12 +13,12 @@ source("reverseCode.R")
 ```
 
 ```{r}
-demo <- read.csv("~/Desktop/prolific_demographic_export_694574e84a79b38d198a03cb (3).csv") %>%
-  subset(Status == "APPROVED")
+#demo <- read.csv("~/Desktop/prolific_demographic_export_694574e84a79b38d198a03cb (3).csv") %>%
+#  subset(Status == "APPROVED")
 
-survey <- read.csv('../data/adult_online/emo_granularity_adultonline_December 29, 2025_16.35.csv')
+survey <- read.csv('~/Documents/GitHub/emotional_granularity/data/adult_online_study2/emo_granularity_adultonline_December 29, 2025_16.35.csv')
 
-IDs <- read.csv('../data/adult_online/qual_task_link.csv')
+IDs <- read.csv('~/Documents/GitHub/emotional_granularity/data/adult_online_study2/qual_task_link.csv')
 IDs <- IDs[rowSums(IDs == "" | is.na(IDs)) != ncol(IDs), ]
 
 survey <- merge(survey,IDs,by="ResponseId",all.y = TRUE)
@@ -249,7 +249,7 @@ survey$DERS_lack_ec <- apply(DERS[cols_lack_ec],1, sum)
 
 #test
 ```{r}
-gran_scores <- read.csv(file='../data/study3_granularityscores.csv')
+gran_scores <- read.csv(file='~/Documents/GitHub/emotional_granularity/data/Study 1 Scores/study3_granularityscores.csv')
 
 survey_filtered <- survey  %>%
   subset(self.reportattention==1)
@@ -427,19 +427,19 @@ survey_measures <- final %>%
     negpicICC,
     pospicICC,
     #commented back in 7/31/26
-    negICC,
-    posICC
+  #  negICC,
+  #  posICC
   )
 
 numeric_columns <- survey_measures[, sapply(survey_measures, is.numeric)]
 
 # Calculate the correlation matrix
-correlation_matrix<- cor(numeric_columns, use = "complete.obs")
+correlation_matrix <- cor(numeric_columns, use = "complete.obs")
 
 # Compute p-values
 p_values1 <- cor.mtest(numeric_columns)
 
-p_values <- p_values1[["p"]]
+p_values <- p_values1[]
 
 # Specify the folder where you want to save the file
 output_folder <- "../results/"
@@ -469,8 +469,8 @@ output_file <- file.path(output_folder, "Structural Correlations Right Hemispher
 png(output_file, width = 800, height = 800)
 
 # Generate the corrplot
-corrplot(correlation_matrix_right, method = "circle", type = "upper", 
-         p.mat = p_values_right, sig.level = 0.05, insig = "blank",
+corrplot(correlation_matrix, method = "circle", type = "upper", 
+         p.mat = p_values, sig.level = 0.05, insig = "blank",
          tl.col = "black", tl.srt = 45, addCoef.col = NULL,
          col = colorRampPalette(c("blue", "white", "red"))(200))
 
@@ -699,7 +699,7 @@ library(ggplot2)
 library(reshape2)
 
 icc_vars <- c("negICC", "negpicICC", "negmusicICC", "posICC", "pospicICC", "posmusicICC")
-survey_vars <- c("BDI_total", "STAI_S_total", "STAI_T_total", "CD.RISC_total", "SCAARED_total")
+survey_vars <- c("BDI_total", "STAI_S_total", "STAI_total", "CD.RISC_total", "SCAARED_total")
 
 # Build a correlation matrix (rows = ICC vars, cols = survey vars)
 cor_matrix <- matrix(NA, nrow = length(icc_vars), ncol = length(survey_vars),
