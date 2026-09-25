@@ -21,6 +21,38 @@ pos_ratings <- read.csv(file='../data/study1final_positiveratings.csv')
 neg_ratings <- read.csv(file='../data/study1final_negativeratings.csv')
 ```
 
+```{r}
+#test for outliers 9/2/26
+
+ggplot(granularity_scores, aes(y = negmusicICC)) +
+  geom_boxplot()
+
+ggplot(granularity_scores, aes(y = posmusicICC)) +
+  geom_boxplot()
+
+# Function to replace IQR outliers with NA
+remove_outliers_iqr <- function(df,col_name) {
+  x = df[[col_name]]
+  Q1 <- quantile(x, 0.25, na.rm = TRUE)
+  Q3 <- quantile(x, 0.75, na.rm = TRUE)
+  IQR_val <- Q3 - Q1
+
+  lower_bound <- Q1 - 1.5 * IQR_val
+  upper_bound <- Q3 + 1.5 * IQR_val
+
+  # Replace outliers with NA
+  df[[col_name]][x < lower_bound | x > upper_bound] <- NA
+  df=df
+}
+
+granularity_scores <- remove_outliers_iqr(granularity_scores, "negmusicICC")
+granularity_scores <- remove_outliers_iqr(granularity_scores, "negpicICC")
+granularity_scores <- remove_outliers_iqr(granularity_scores, "posmusicICC")
+granularity_scores <- remove_outliers_iqr(granularity_scores, "pospicICC")
+
+
+```
+
 #manipulation check
 ```{r}
 #test interaction between stimulus type (music/picture), emotion rating valence (pos/negative), and stimulus valence
@@ -62,16 +94,16 @@ neg_music_data$stimulus_valence <- "negative"
 
 master_ratingsperemotion <- rbind(pos_pic_data,neg_pic_data,pos_music_data,neg_music_data)
 
-#Commented out for knitting 9/2/26
+#m1 <- lmer(data=master_ratingsperemotion, (value) ~ condition*rating_valence*stimulus_valence +  (rating_valence|Participant.Public.ID),control=lmerControl(optimizer="bobyqa")) #removed stim intercept to assist in model convergence and main random effect of stimulus_valence (explained least amt of variance), 8/13/26 -- and the main effect of condition and interaction between rating valence and condition
 
-#m1 <- lmer(data=master_ratingsperemotion, (value) ~ condition*rating_valence*stimulus_valence + (condition:stimulus_valence:rating_valence + rating_valence|Participant.Public.ID),control=lmerControl(optimizer="bobyqa")) #removed stim intercept to assist in model convergence and main random effect of stimulus_valence (explained least amt of variance), 8/13/26 -- and the main effect of condition and interaction between rating valence and condition
-#anova(m1)
-#summary(m1)
+m1 <- lmer(data=master_ratingsperemotion, (value) ~ condition*rating_valence*stimulus_valence + (rating_valence|Participant.Public.ID),control=lmerControl(optimizer="bobyqa"))
+anova(m1)
+summary(m1)
 
 #simple test of means (i.e., seeing pos rated pos, neg rated neg)
-#test(emmeans(m1, ~ condition*rating_valence*stimulus_valence,lmerTest.limit = 23040, lmer.df = "satterthwaite"))
+test(emmeans(m1, ~ condition*rating_valence*stimulus_valence, lmerTest.limit = 43840, lmer.df = "satterthwaite"))
 
-#emmeans::test(emmeans(m1, pairwise ~ condition*rating_valence*stimulus_valence,lmerTest.limit = 23040,lmer.df = "satterthwaite"))
+emmeans::test(emmeans(m1, pairwise ~ condition*rating_valence*stimulus_valence,lmerTest.limit = 43840,lmer.df = "satterthwaite"))
 
 #plots
 ```
@@ -377,6 +409,7 @@ title(main = "", col.main = "black", font.main = 4)
 
 # Close the PNG device
 dev.off()
+
 ```
 #correlations
 ```{r}
@@ -442,7 +475,7 @@ ggplot(data=granularity_scores, aes(x=posmusicICC, y=pospicICC)) +
   theme(legend.position = "none")+
   geom_point(alpha=0.7) +
   geom_smooth(method="lm") +
-  xlab("Positive Emotional\nGranulartiy Score - Music") +
+  xlab("Positive Emotional\nGranularity Score - Music") +
   ylab("Positive Emotional\nGranularity Score - Images") +
   theme(
     axis.title.x = element_text(family="Arial", size=20),
@@ -463,7 +496,7 @@ ggplot(data=granularity_scores, aes(x=negmusicICC, y=negpicICC)) +
   theme(legend.position = "none")+
   geom_point(alpha=0.7) +
   geom_smooth(method="lm") +
-  xlab("Negative Emotional\nGranulartiy Score - Music") +
+  xlab("Negative Emotional\nGranularity Score - Music") +
   ylab("Negative Emotional\nGranularity Score - Images")+
   theme(
     axis.title.x = element_text(family="Arial", size=30),
