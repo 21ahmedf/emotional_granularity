@@ -20,6 +20,8 @@ data_26 <- read.csv("../data/rating-task/v26/data_exp_169297-v26_task-6dig.csv")
 data_27 <- read.csv("../data/rating-task/v27/data_exp_169297-v27_task-6dig.csv")
 data_28 <- read.csv("../data/rating-task/v28/data_exp_169297-v28_task-6dig.csv")
 
+#amedt scores
+amedt <- read.csv(file='../data/amedt_all.csv')
 ```
 
 ```{r}
@@ -210,6 +212,29 @@ positive_ratings <- rbind(pic_positive,music_positive)
 ```{r}
 write.csv(file = '../data/study1final_negativeratings.csv',negative_ratings)
 write.csv(file = '../data/study1final_positiveratings.csv',positive_ratings)
+qualtrics <- read.csv(file='../data/youngadult_qualtrics_study1/qualtrics_surveyscores.csv') %>%
+  select("SURVEY_CODE","PUBLICID")
 
-write.csv(file = '../data/study1final_granularityscores.csv',results_recode)
+qualtrics$PUBLICID <- stringr::str_remove(qualtrics$PUBLICID,"-")
+qualtrics$PUBLICID <- stringr::str_remove(qualtrics$PUBLICID,"-")
+qualtrics$PUBLICID <- stringr::str_remove(qualtrics$PUBLICID,"\\(")
+qualtrics$PUBLICID <- stringr::str_remove(qualtrics$PUBLICID,"\\)")
+qualtrics$PUBLICID <- stringr::str_remove(qualtrics$PUBLICID,"\\+1 ")
+qualtrics$PUBLICID <- stringr::str_remove(qualtrics$PUBLICID," ")
+
+amedt_noqual <- amedt %>%
+  drop_na("SURVEY_CODE") %>%
+  select("SURVEY_CODE", "EDT.ability")
+
+qualtrics_amedt <- amedt %>%
+  select(c("session.p_id", "EDT.ability")) %>%
+  merge(qualtrics, by.y="PUBLICID", by.x="session.p_id") %>%
+  select("SURVEY_CODE", "EDT.ability")
+
+amedtfinal <- rbind(amedt_noqual,qualtrics_amedt)
+
+results_recode1 <- merge(amedtfinal, results_recode, by.x="SURVEY_CODE", by.y="ID", all.y=TRUE) %>%
+  distinct()
+
+write.csv(file = '../data/study1final_granularityscores.csv',results_recode1)
 ```

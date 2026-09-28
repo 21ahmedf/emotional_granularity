@@ -10,7 +10,6 @@ library(lmerTest)
 library(tidyverse)
 library(corrplot)
 library(emmeans)
-
 ```
 
 ```{r}
@@ -21,9 +20,8 @@ pos_ratings <- read.csv(file='../data/study1final_positiveratings.csv')
 neg_ratings <- read.csv(file='../data/study1final_negativeratings.csv')
 ```
 
+#outlier detection
 ```{r}
-#test for outliers 9/2/26
-
 ggplot(granularity_scores, aes(y = negmusicICC)) +
   geom_boxplot()
 
@@ -49,8 +47,6 @@ granularity_scores <- remove_outliers_iqr(granularity_scores, "negmusicICC")
 granularity_scores <- remove_outliers_iqr(granularity_scores, "negpicICC")
 granularity_scores <- remove_outliers_iqr(granularity_scores, "posmusicICC")
 granularity_scores <- remove_outliers_iqr(granularity_scores, "pospicICC")
-
-
 ```
 
 #manipulation check
@@ -209,208 +205,9 @@ ggplot(averages_total, aes(x = Emotion, y = stim, fill = `Average\nRating`)) +
   facet_wrap(~condition, scales = "free") +
   geom_vline(xintercept=5.5, color="black", linetype="solid", size=3)
 
-ggsave('../heatmap_averagestudy2.png',averages_total_plot, dpi=1000,width=18, height=10.5)
+ggsave('../heatmap_averagestudy1.png',averages_total_plot, dpi=1000,width=18, height=10.5)
 ```
 
-#corr matrix of emotion ratings
-```{r}
-#pos - music
-pos_ratings_music <- pos_ratings %>%
-  subset(condition=="music")
-
-# Select only the numeric columns for the correlation matrix
-matrix_columns <- pos_ratings_music[c(3:7)]
-
-# Calculate the correlation matrix
-correlation_matrix <- cor(matrix_columns, use = "complete.obs")
-
-# Function to compute significance levels
-cor.mtest <- function(mat, conf.level = 0.95) {
-  mat <- as.matrix(mat)
-  n <- ncol(mat)
-  p.mat <- matrix(NA, n, n)
-  diag(p.mat) <- 0
-  for (i in 1:(n - 1)) {
-    for (j in (i + 1):n) {
-      tmp <- cor.test(mat[, i], mat[, j], conf.level = conf.level)
-      p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
-    }
-  }
-  colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
-  p.mat
-}
-
-# Compute p-values
-p_values <- cor.mtest(matrix_columns)
-
-# Specify the folder where you want to save the file
-output_folder <- "../results/qualtrics/"
-
-# Combine the folder path with the file name
-output_file <- file.path(output_folder, "full_surveys_corrmatrix.png")
-
-# Open a PNG device with the specified file path
-png(output_file, width = 800, height = 800)
-
-# Generate the corrplot
-corrplot(correlation_matrix, method = "circle", type = "upper", 
-         p.mat = p_values, sig.level = 0.05, insig = "blank",
-         tl.col = "black", tl.srt = 45, addCoef.col = NULL,
-         col = colorRampPalette(c("blue", "white", "red"))(200))
-
-title(main = "", col.main = "black", font.main = 4)
-
-# Close the PNG device
-dev.off()
-
-#pos-pics
-pos_ratings_pic <- pos_ratings %>%
-  subset(condition=="pic")
-
-# Select only the numeric columns for the correlation matrix
-matrix_columns <- pos_ratings_pic[c(3:7)]
-
-# Calculate the correlation matrix
-correlation_matrix <- cor(matrix_columns, use = "complete.obs")
-
-# Function to compute significance levels
-cor.mtest <- function(mat, conf.level = 0.95) {
-  mat <- as.matrix(mat)
-  n <- ncol(mat)
-  p.mat <- matrix(NA, n, n)
-  diag(p.mat) <- 0
-  for (i in 1:(n - 1)) {
-    for (j in (i + 1):n) {
-      tmp <- cor.test(mat[, i], mat[, j], conf.level = conf.level)
-      p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
-    }
-  }
-  colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
-  p.mat
-}
-
-# Compute p-values
-p_values <- cor.mtest(matrix_columns)
-
-# Specify the folder where you want to save the file
-output_folder <- "../results/qualtrics/"
-
-# Combine the folder path with the file name
-output_file <- file.path(output_folder, "full_surveys_corrmatrix.png")
-
-# Open a PNG device with the specified file path
-png(output_file, width = 800, height = 800)
-
-# Generate the corrplot
-corrplot(correlation_matrix, method = "circle", type = "upper", 
-         p.mat = p_values, sig.level = 0.05, insig = "blank",
-         tl.col = "black", tl.srt = 45, addCoef.col = NULL,
-         col = colorRampPalette(c("blue", "white", "red"))(200))
-
-title(main = "", col.main = "black", font.main = 4)
-
-# Close the PNG device
-dev.off()
-
-#neg - music
-neg_ratings_pic <- neg_ratings %>%
-  subset(condition=="pic")
-
-# Select only the numeric columns for the correlation matrix
-matrix_columns <- neg_ratings_pic[c(3:7)]
-
-# Calculate the correlation matrix
-correlation_matrix <- cor(matrix_columns, use = "complete.obs")
-
-# Function to compute significance levels
-cor.mtest <- function(mat, conf.level = 0.95) {
-  mat <- as.matrix(mat)
-  n <- ncol(mat)
-  p.mat <- matrix(NA, n, n)
-  diag(p.mat) <- 0
-  for (i in 1:(n - 1)) {
-    for (j in (i + 1):n) {
-      tmp <- cor.test(mat[, i], mat[, j], conf.level = conf.level)
-      p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
-    }
-  }
-  colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
-  p.mat
-}
-
-# Compute p-values
-p_values <- cor.mtest(matrix_columns)
-
-# Specify the folder where you want to save the file
-output_folder <- "../results/qualtrics/"
-
-# Combine the folder path with the file name
-output_file <- file.path(output_folder, "full_surveys_corrmatrix.png")
-
-# Open a PNG device with the specified file path
-png(output_file, width = 800, height = 800)
-
-# Generate the corrplot
-corrplot(correlation_matrix, method = "circle", type = "upper", 
-         p.mat = p_values, sig.level = 0.05, insig = "blank",
-         tl.col = "black", tl.srt = 45, addCoef.col = NULL,
-         col = colorRampPalette(c("blue", "white", "red"))(200))
-
-title(main = "", col.main = "black", font.main = 4)
-
-# Close the PNG device
-dev.off()
-
-#pos-pics
-pos_ratings_pic <- pos_ratings %>%
-  subset(condition=="pic")
-
-# Select only the numeric columns for the correlation matrix
-matrix_columns <- pos_ratings_pic[c(3:7)]
-
-# Calculate the correlation matrix
-correlation_matrix <- cor(matrix_columns, use = "complete.obs")
-
-# Function to compute significance levels
-cor.mtest <- function(mat, conf.level = 0.95) {
-  mat <- as.matrix(mat)
-  n <- ncol(mat)
-  p.mat <- matrix(NA, n, n)
-  diag(p.mat) <- 0
-  for (i in 1:(n - 1)) {
-    for (j in (i + 1):n) {
-      tmp <- cor.test(mat[, i], mat[, j], conf.level = conf.level)
-      p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
-    }
-  }
-  colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
-  p.mat
-}
-
-# Compute p-values
-p_values <- cor.mtest(matrix_columns)
-
-# Specify the folder where you want to save the file
-output_folder <- "../results/qualtrics/"
-
-# Combine the folder path with the file name
-output_file <- file.path(output_folder, "full_surveys_corrmatrix.png")
-
-# Open a PNG device with the specified file path
-png(output_file, width = 800, height = 800)
-
-# Generate the corrplot
-corrplot(correlation_matrix, method = "circle", type = "upper", 
-         p.mat = p_values, sig.level = 0.05, insig = "blank",
-         tl.col = "black", tl.srt = 45, addCoef.col = NULL,
-         col = colorRampPalette(c("blue", "white", "red"))(200))
-
-title(main = "", col.main = "black", font.main = 4)
-
-# Close the PNG device
-dev.off()
-
-```
 #correlations
 ```{r}
 #granularity across pics + music
@@ -436,7 +233,8 @@ t.test(granularity_scores$negmusicICC, granularity_scores$negpicICC, paired=TRUE
 ##combined
 t.test(granularity_scores$allmusicICC, granularity_scores$allpicICC, paired=TRUE)
 ```
-#magnitude differences
+
+#averages for plot
 ```{r}
 #gloomy sad scared anxious upset
 neg_ratings$average <- (neg_ratings$gloomy + neg_ratings$sad + neg_ratings$scared + neg_ratings$anxious + neg_ratings$gloomy)/5
@@ -448,9 +246,6 @@ neg_averages <-
 
 neg_averages$valence <- "Negative"
 
-m1 <- lmer(data=neg_averages, mean ~ condition + (1|Participant.Public.ID))
-summary(m1)
-
 #relaxed, excited, satisfied, happy, joyful
 pos_ratings$average <- (pos_ratings$relaxed + pos_ratings$excited + pos_ratings$satisfied + pos_ratings$happy + pos_ratings$joyful)/5
 
@@ -460,9 +255,6 @@ pos_averages <-
   dplyr::summarize(mean = mean(average))
 
 pos_averages$valence <- "Positive"
-
-m1 <- lmer(data=pos_averages, mean ~ condition + (1|Participant.Public.ID))
-summary(m1)
 
 averages <- rbind(neg_averages, pos_averages)
 ```
@@ -488,7 +280,7 @@ ggplot(data=granularity_scores, aes(x=posmusicICC, y=pospicICC)) +
     axis.text.x = element_text(family="Arial", size=26),
     axis.text.y = element_text(family="Arial",size=26))
 
-ggsave('../figures/study2_posgrancor.png',dpi=1000, pos_granularity_plot, height=8)
+ggsave('../figures/study1_posgrancor.png',dpi=1000, pos_granularity_plot, height=8)
 
 neg_granularity_plot <-
 ggplot(data=granularity_scores, aes(x=negmusicICC, y=negpicICC)) +
@@ -504,10 +296,10 @@ ggplot(data=granularity_scores, aes(x=negmusicICC, y=negpicICC)) +
     axis.text.x = element_text(family="Arial", size=26),
     axis.text.y = element_text(family="Arial",size=26))
 
-ggsave('../figures/study2_neggrancor.png',dpi=1000, neg_granularity_plot, height=8)
+ggsave('../figures/study1_neggrancor.png',dpi=1000, neg_granularity_plot, height=8)
 
 
-#Ices differences in ICCs
+#differences in ICCs
 granularity_scores_long <-
   granularity_scores %>%
   pivot_longer(negmusicICC:allpicICC) 
@@ -516,7 +308,7 @@ granularity_scores_long$valence <- ifelse(grepl("^neg",granularity_scores_long$n
 granularity_scores_long$valence <- ifelse(grepl("^all",granularity_scores_long$name), "Combined", granularity_scores_long$valence)
 granularity_scores_long$condition <- ifelse(grepl("pic",granularity_scores_long$name), "Images", "Music")
 
-mag_difference <-
+#mag_difference <-
 granularity_scores_long %>%
   subset(valence!="Combined") %>%
   ggplot(aes(x=condition, y=value)) +
@@ -536,7 +328,7 @@ granularity_scores_long %>%
     axis.text.y = element_text(family="Arial",size=44),
     strip.text = element_text(family="Arial",size=46))
 
-ggsave('../figures/study2_magdifference.png',dpi=1000, mag_difference, width=14, height=12)
+ggsave('../figures/study1_magdifference.png',dpi=1000, mag_difference, width=14, height=12)
 
 
 #magnitude differences in raw ratings (not ICC)
@@ -568,8 +360,6 @@ relaxed_excited_cor_pics <- relaxed_excited_cor %>%
 relaxed_excited_cor_music <- relaxed_excited_cor %>%
   subset(condition == "music")
 
-t.test(relaxed_excited_cor_music$cor, relaxed_excited_cor_pics$cor, paired=TRUE)
-
 #relaxed - satisfied
 relaxed_satisfied_cor <-
   pos_ratings %>%
@@ -581,8 +371,6 @@ relaxed_satisfied_cor_pics <- relaxed_satisfied_cor %>%
 
 relaxed_satisfied_cor_music <- relaxed_satisfied_cor %>%
   subset(condition == "music")
-
-t.test(relaxed_satisfied_cor_music$cor, relaxed_satisfied_cor_pics$cor, paired=TRUE)
 
 #relaxed - happy
 relaxed_happy_cor <-
@@ -596,8 +384,6 @@ relaxed_happy_cor_pics <- relaxed_happy_cor %>%
 relaxed_happy_cor_music <- relaxed_happy_cor %>%
   subset(condition == "music")
 
-t.test(relaxed_happy_cor_music$cor, relaxed_happy_cor_pics$cor, paired=TRUE)
-
 #relaxed - joyful
 relaxed_joyful_cor <-
   pos_ratings %>%
@@ -609,8 +395,6 @@ relaxed_joyful_cor_pics <- relaxed_joyful_cor %>%
 
 relaxed_joyful_cor_music <- relaxed_joyful_cor %>%
   subset(condition == "music")
-
-t.test(relaxed_joyful_cor_music$cor, relaxed_joyful_cor_pics$cor, paired=TRUE)
 
 #excited - satisfied
 excited_satisfied_cor <-
@@ -624,8 +408,6 @@ excited_satisfied_cor_pics <- excited_satisfied_cor %>%
 excited_satisfied_cor_music <- excited_satisfied_cor %>%
   subset(condition == "music")
 
-t.test(excited_satisfied_cor_music$cor, excited_satisfied_cor_pics$cor, paired=TRUE)
-
 #excited - happy
 excited_happy_cor <-
   pos_ratings %>%
@@ -637,8 +419,6 @@ excited_happy_cor_pics <- excited_happy_cor %>%
 
 excited_happy_cor_music <- excited_happy_cor %>%
   subset(condition == "music")
-
-t.test(excited_happy_cor_music$cor, excited_happy_cor_pics$cor, paired=TRUE)
 
 #excited - joyful
 excited_joyful_cor <-
@@ -652,8 +432,6 @@ excited_joyful_cor_pics <- excited_joyful_cor %>%
 excited_joyful_cor_music <- excited_joyful_cor %>%
   subset(condition == "music")
 
-t.test(excited_joyful_cor_music$cor, excited_joyful_cor_pics$cor, paired=TRUE)
-
 #satisfied - happy
 satisfied_happy_cor <-
   pos_ratings %>%
@@ -665,8 +443,6 @@ satisfied_happy_cor_pics <- satisfied_happy_cor %>%
 
 satisfied_happy_cor_music <- satisfied_happy_cor %>%
   subset(condition == "music")
-
-t.test(satisfied_happy_cor_music$cor, satisfied_happy_cor_pics$cor, paired=TRUE)
 
 #satisfied - joyful
 satisfied_joyful_cor <-
@@ -680,8 +456,6 @@ satisfied_joyful_cor_pics <- satisfied_joyful_cor %>%
 satisfied_joyful_cor_music <- satisfied_joyful_cor %>%
   subset(condition == "music")
 
-t.test(satisfied_joyful_cor_music$cor, satisfied_joyful_cor_pics$cor, paired=TRUE)
-
 #joyful - happy
 joyful_happy_cor <-
   pos_ratings %>%
@@ -693,8 +467,6 @@ joyful_happy_cor_pics <- joyful_happy_cor %>%
 
 joyful_happy_cor_music <- joyful_happy_cor %>%
   subset(condition == "music")
-
-t.test(joyful_happy_cor_music$cor, joyful_happy_cor_pics$cor, paired=TRUE)
 
 #neg emotions
 #gloomy sad scared anxious upset
@@ -710,8 +482,6 @@ gloomy_sad_cor_pics <- gloomy_sad_cor %>%
 gloomy_sad_cor_music <- gloomy_sad_cor %>%
   subset(condition == "music")
 
-t.test(gloomy_sad_cor_music$cor, gloomy_sad_cor_pics$cor, paired=TRUE)
-
 #gloomy - scared
 gloomy_scared_cor <-
   neg_ratings %>%
@@ -723,8 +493,6 @@ gloomy_scared_cor_pics <- gloomy_scared_cor %>%
 
 gloomy_scared_cor_music <- gloomy_scared_cor %>%
   subset(condition == "music")
-
-t.test(gloomy_scared_cor_music$cor, gloomy_scared_cor_pics$cor, paired=TRUE)
 
 #gloomy - anxious
 gloomy_anxious_cor <-
@@ -738,8 +506,6 @@ gloomy_anxious_cor_pics <- gloomy_anxious_cor %>%
 gloomy_anxious_cor_music <- gloomy_anxious_cor %>%
   subset(condition == "music")
 
-t.test(gloomy_anxious_cor_music$cor, gloomy_anxious_cor_pics$cor, paired=TRUE)
-
 #gloomy - upset
 gloomy_upset_cor <-
   neg_ratings %>%
@@ -751,8 +517,6 @@ gloomy_upset_cor_pics <- gloomy_upset_cor %>%
 
 gloomy_upset_cor_music <- gloomy_upset_cor %>%
   subset(condition == "music")
-
-t.test(gloomy_upset_cor_music$cor, gloomy_upset_cor_pics$cor, paired=TRUE)
 
 #sad - scared
 sad_scared_cor <-
@@ -766,8 +530,6 @@ sad_scared_cor_pics <- sad_scared_cor %>%
 sad_scared_cor_music <- sad_scared_cor %>%
   subset(condition == "music")
 
-t.test(sad_scared_cor_music$cor, sad_scared_cor_pics$cor, paired=TRUE)
-
 #sad - anxious
 sad_anxious_cor <-
   neg_ratings %>%
@@ -779,8 +541,6 @@ sad_anxious_cor_pics <- sad_anxious_cor %>%
 
 sad_anxious_cor_music <- sad_anxious_cor %>%
   subset(condition == "music")
-
-t.test(sad_anxious_cor_music$cor, sad_anxious_cor_pics$cor, paired=TRUE)
 
 #sad - upset
 sad_upset_cor <-
@@ -794,8 +554,6 @@ sad_upset_cor_pics <- sad_upset_cor %>%
 sad_upset_cor_music <- sad_upset_cor %>%
   subset(condition == "music")
 
-t.test(sad_upset_cor_music$cor, sad_upset_cor_pics$cor, paired=TRUE)
-
 #scared - anxious
 scared_anxious_cor <-
   neg_ratings %>%
@@ -807,8 +565,6 @@ scared_anxious_cor_pics <- scared_anxious_cor %>%
 
 scared_anxious_cor_music <- scared_anxious_cor %>%
   subset(condition == "music")
-
-t.test(scared_anxious_cor_music$cor, scared_anxious_cor_pics$cor, paired=TRUE)
 
 #scared - upset
 scared_upset_cor <-
@@ -822,8 +578,6 @@ scared_upset_cor_pics <- scared_upset_cor %>%
 scared_upset_cor_music <- scared_upset_cor %>%
   subset(condition == "music")
 
-t.test(scared_upset_cor_music$cor, scared_upset_cor_pics$cor, paired=TRUE)
-
 #upset - anxious
 upset_anxious_cor <-
   neg_ratings %>%
@@ -835,8 +589,6 @@ upset_anxious_cor_pics <- upset_anxious_cor %>%
 
 upset_anxious_cor_music <- upset_anxious_cor %>%
   subset(condition == "music")
-
-t.test(upset_anxious_cor_music$cor, upset_anxious_cor_pics$cor, paired=TRUE)
 ```
 
 ```{r}
@@ -906,14 +658,14 @@ master_posneg %>%
   mutate(arousal_dif = recode(arousal_dif, "different" = "Different", "same" = "Similar"))
 
 arousal_differentiation <-
-master_posneg %>%
+average_corr %>%
   mutate(arousal_dif = recode(arousal_dif, "different" = "Different", "same" = "Similar")) %>%
   ggplot(aes(x=arousal_dif, y=cor, color=condition)) +
-   stat_summary(fun.data = 'mean_se', geom = 'errorbar',alpha=0.7, width = 0.075, size=1.4,position = position_nudge(x = .3, y = 0)) +
-  stat_summary(fun.data = 'mean_se', geom = 'pointrange', alpha=0.7,size=0.9,position = position_nudge(x = .3, y = 0))+
+   stat_summary(fun.data = 'mean_se', geom = 'errorbar',alpha=0.7, width = 0.03,size=0.75,position = position_nudge(x = .3, y = 0)) +
+  stat_summary(fun.data = 'mean_se', geom = 'pointrange', alpha=0.7,size=0.4,position = position_nudge(x = .3, y = 0))+
   theme_classic() +
   theme(legend.position = "none") +
-  facet_wrap(~valence)+
+ facet_wrap(~valence)+
   xlab("Arousal Level") +
   ylab("Correlation Among Emotion Ratings")  +    
   theme(
@@ -924,8 +676,14 @@ master_posneg %>%
     strip.text = element_text(family="Arial",size=44))+
   scale_color_manual(values=c("#0072B2", "#D55E00" )) +
   scale_fill_manual(values=c("#0072B2","#D55E00")) +
-  geom_jitter(alpha=0.5, width=0.1, data=average_corr,size=3.5)
+  geom_jitter(alpha=0.5, width=0.1,size=2)
 
 
-ggsave('../figures/study2_arousal_differentiation.png',dpi=1000, arousal_differentiation, width=14, height=12)
+ggsave('../figures/study1_arousal_differentiation.png',dpi=1000, arousal_differentiation, width=14, height=12)
+```
+
+#check correlation w/ EDT
+```{r}
+cor.test(granularity_scores$posmusicICC, granularity_scores$EDT.ability, paired=TRUE)
+cor.test(granularity_scores$negmusicICC, granularity_scores$EDT.ability, paired=TRUE)
 ```
