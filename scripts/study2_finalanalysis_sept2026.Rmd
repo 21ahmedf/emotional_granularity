@@ -1,16 +1,15 @@
 ---
-title: "Study 2 final analysis"
+title: "adult_online_surveyscoring"
 output:
-  html_document: default
   pdf_document: default
-date: "2026-09-30"
+  html_document: default
+date: "2025-12-19"
 ---
 
 ```{r}
 library(tidyverse)
 library(emmeans)
 library(corrplot)
-library(lme4)
 ```
 
 #read in data
@@ -102,6 +101,75 @@ summary(m1)
 test(emmeans(m1, ~ condition*rating_valence*stimulus_valence, lmerTest.limit = 64000, lmer.df = "satterthwaite"))
 
 emmeans::test(emmeans(m1, pairwise ~ condition*rating_valence*stimulus_valence,lmerTest.limit = 64000,lmer.df = "satterthwaite"))
+```
+
+#endorsement analysis
+```{r}
+master_ratingsperemotion$endorse <- ifelse(master_ratingsperemotion$value >0,1,0)
+
+model <- glmer(endorse ~ condition*name + (condition| Participant.Public.ID) + (1 | stim), 
+               data = master_ratingsperemotion, 
+               family = binomial(link = "logit"))
+
+car::Anova(model, type="II")
+
+sjPlot::plot_model(model, type="pred", terms = c("name", "condition"))
+
+emm_endorse <- emmeans(model, ~ condition | name, type = "response")
+
+pairs(emm_endorse,adjust = "holm") #holm or bonferroni?
+
+
+gran_long <- final %>%
+  rename(Participant.Public.ID = ID) %>%
+  pivot_longer(cols = matches("^(neg|pos)(music|pic)ICC$"),
+               names_to = c("valence", "condition"),
+               names_pattern = "^(neg|pos)(music|pic)ICC$",
+               values_to = "granularity") %>%
+  mutate(valence     = recode(valence, neg = "negative", pos = "positive"),) %>%
+  select(Participant.Public.ID,valence:granularity)
+
+covs <- master_ratingsperemotion %>%
+  group_by(Participant.Public.ID, condition, valence = rating_valence) %>% 
+  summarise(endorse_rate = mean(endorse, na.rm = TRUE),
+            mean_int     = mean(value, na.rm = TRUE), .groups = "drop") %>%
+  group_by(Participant.Public.ID) %>%
+  mutate(across(c(endorse_rate, mean_int),
+                ~ .x - mean(.x), .names = "{.col}_c")) %>%
+  ungroup()
+
+gran_dat <- left_join(gran_long, covs,
+                      by = c("Participant.Public.ID", "condition", "valence"))
+
+# effects of gran, controlled for endorsement rate + mean response
+m3 <- lmer(granularity ~ condition * valence +
+             endorse_rate_c*condition + mean_int_c*condition +
+             (1 | Participant.Public.ID), data = gran_dat)
+
+car::Anova(m3, type="II")
+emtrends(m3, ~ condition, var = "endorse_rate_c")
+emtrends(m3, ~ condition, var = "mean_int_c") #talk 
+
+pe <- ggemmeans(m3, terms = c("endorse_rate_c [all]", "condition"))
+pm <- ggemmeans(m3, terms = c("mean_int_c [all]", "condition"))
+
+plot_fx <- function(pred, raw_x, xlab) {
+  ggplot(pred, aes(x, predicted, color = group, fill = group)) +
+    geom_point(data = gran_dat,
+               aes(x = .data[[raw_x]], y = granularity, color = condition),
+               inherit.aes = FALSE, alpha = 0.15, size = 1) +
+    geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2, color = NA) +
+    geom_line(linewidth = 1) +
+    scale_color_manual(values = c(music = "#0072B2", pic = "#D55E00"),
+                       labels = c("Music", "Images"), aesthetics = c("color", "fill")) +
+    labs(x = xlab, y = "Emotional granularity", color = NULL, fill = NULL) +
+    theme_classic(base_size = 12)
+}
+
+plot_fx(pe, "endorse_rate_c", "Endorsement rate\n(Within-participant mean-centered)") +
+  plot_fx(pm, "mean_int_c", "Mean rating intensity\n(Within-participant mean-centered)") +
+  plot_layout(guides = "collect") &
+  theme(legend.position = "top")
 ```
 
 #heat map
@@ -260,7 +328,7 @@ averages <- rbind(neg_averages, pos_averages)
 
 #recreate plots from thesis sub
 ```{r}
-pos_granularity_plot <- 
+#pos_granularity_plot <- 
 ggplot(data=final, aes(x=posmusicICC, y=pospicICC)) +
   theme_classic()+
   theme(legend.position = "none")+
@@ -281,7 +349,7 @@ ggplot(data=final, aes(x=posmusicICC, y=pospicICC)) +
 
 ggsave('../figures/study_posgrancor.png',dpi=1000, pos_granularity_plot, height=8)
 
-neg_granularity_plot <-
+#neg_granularity_plot <-
 ggplot(data=final, aes(x=negmusicICC, y=negpicICC)) +
   theme_classic()+
   theme(legend.position = "none")+
@@ -307,7 +375,7 @@ granularity_scores_long$valence <- ifelse(grepl("^neg",granularity_scores_long$n
 granularity_scores_long$valence <- ifelse(grepl("^all",granularity_scores_long$name), "Combined", granularity_scores_long$valence)
 granularity_scores_long$condition <- ifelse(grepl("pic",granularity_scores_long$name), "Images", "Music")
 
-mag_difference <-
+#mag_difference <-
 granularity_scores_long %>%
   subset(valence!="Combined") %>%
   ggplot(aes(x=condition, y=value)) +
@@ -656,7 +724,7 @@ master_posneg %>%
     )  %>%
   mutate(arousal_dif = recode(arousal_dif, "different" = "Different", "same" = "Similar"))
 
-arousal_differentiation <-
+#arousal_differentiation <-
 average_corr %>%
   mutate(arousal_dif = recode(arousal_dif, "different" = "Different", "same" = "Similar")) %>%
   ggplot(aes(x=arousal_dif, y=cor, color=condition)) +
@@ -678,7 +746,7 @@ average_corr %>%
   geom_jitter(alpha=0.5, width=0.1,size=2)
 
 
-ggsave('../figures/study2_arousal_differentiation.png',dpi=1000, arousal_differentiation, width=14, height=12)
+ggsave('../figures/study1_arousal_differentiation.png',dpi=1000, arousal_differentiation, width=14, height=12)
 ```
 
 #associations
@@ -722,7 +790,8 @@ correlation_matrix <- cor(numeric_columns, use = "complete.obs")
 
 # Compute p-values
 p_values1 <- cor.mtest(numeric_columns)
-p_values <- p_values1$p
+
+p_values <- p_values1[]
 
 # Specify the folder where you want to save the file
 output_folder <- "../results/"
@@ -735,7 +804,7 @@ png(output_file, width = 800, height = 800)
 
 # Generate the corrplot
 corrplot(correlation_matrix, method = "circle", type = "upper", 
-         p.mat = p_values, sig.level = 0.05, insig = "blank",
+         p.mat = p_values[["p"]], sig.level = 0.05, insig = "blank",
          tl.col = "black", tl.srt = 45, addCoef.col = NULL,
          col = colorRampPalette(c("blue", "white", "red"))(200))
 
@@ -746,7 +815,7 @@ dev.off()
 output_folder <- "../results/structural/"
 
 # Combine the folder path with the file name
-output_file <- file.path(output_folder, "Structural Correlations Right Hemisphere 9-30-26.png")
+output_file <- file.path(output_folder, "Structural Correlations Right Hemisphere 2-26-25.png")
 
 # Open a PNG device with the specified file path
 png(output_file, width = 800, height = 800)
@@ -763,8 +832,6 @@ title(main = "Structural Correlations Right Hemisphere Study 2", col.main = "bla
 dev.off()
 
 cor.test(final$negpicICC, final$STAI_total)
-
-sapply(numeric_columns, class)
 ```
 
 #all correlation plots
