@@ -1,8 +1,8 @@
 ---
 title: "adult_online_surveyscoring"
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 date: "2025-12-19"
 ---
 
@@ -10,6 +10,7 @@ date: "2025-12-19"
 library(tidyverse)
 library(emmeans)
 library(corrplot)
+library(lme4)
 ```
 
 #read in data
@@ -259,7 +260,7 @@ averages <- rbind(neg_averages, pos_averages)
 
 #recreate plots from thesis sub
 ```{r}
-#pos_granularity_plot <- 
+pos_granularity_plot <- 
 ggplot(data=final, aes(x=posmusicICC, y=pospicICC)) +
   theme_classic()+
   theme(legend.position = "none")+
@@ -280,7 +281,7 @@ ggplot(data=final, aes(x=posmusicICC, y=pospicICC)) +
 
 ggsave('../figures/study_posgrancor.png',dpi=1000, pos_granularity_plot, height=8)
 
-#neg_granularity_plot <-
+neg_granularity_plot <-
 ggplot(data=final, aes(x=negmusicICC, y=negpicICC)) +
   theme_classic()+
   theme(legend.position = "none")+
@@ -306,7 +307,7 @@ granularity_scores_long$valence <- ifelse(grepl("^neg",granularity_scores_long$n
 granularity_scores_long$valence <- ifelse(grepl("^all",granularity_scores_long$name), "Combined", granularity_scores_long$valence)
 granularity_scores_long$condition <- ifelse(grepl("pic",granularity_scores_long$name), "Images", "Music")
 
-#mag_difference <-
+mag_difference <-
 granularity_scores_long %>%
   subset(valence!="Combined") %>%
   ggplot(aes(x=condition, y=value)) +
@@ -655,7 +656,7 @@ master_posneg %>%
     )  %>%
   mutate(arousal_dif = recode(arousal_dif, "different" = "Different", "same" = "Similar"))
 
-#arousal_differentiation <-
+arousal_differentiation <-
 average_corr %>%
   mutate(arousal_dif = recode(arousal_dif, "different" = "Different", "same" = "Similar")) %>%
   ggplot(aes(x=arousal_dif, y=cor, color=condition)) +
@@ -677,7 +678,7 @@ average_corr %>%
   geom_jitter(alpha=0.5, width=0.1,size=2)
 
 
-ggsave('../figures/study1_arousal_differentiation.png',dpi=1000, arousal_differentiation, width=14, height=12)
+ggsave('../figures/study2_arousal_differentiation.png',dpi=1000, arousal_differentiation, width=14, height=12)
 ```
 
 #associations
@@ -721,8 +722,7 @@ correlation_matrix <- cor(numeric_columns, use = "complete.obs")
 
 # Compute p-values
 p_values1 <- cor.mtest(numeric_columns)
-
-p_values <- p_values1[]
+p_values <- p_values1$p
 
 # Specify the folder where you want to save the file
 output_folder <- "../results/"
@@ -735,7 +735,7 @@ png(output_file, width = 800, height = 800)
 
 # Generate the corrplot
 corrplot(correlation_matrix, method = "circle", type = "upper", 
-         p.mat = p_values[["p"]], sig.level = 0.05, insig = "blank",
+         p.mat = p_values, sig.level = 0.05, insig = "blank",
          tl.col = "black", tl.srt = 45, addCoef.col = NULL,
          col = colorRampPalette(c("blue", "white", "red"))(200))
 
@@ -746,7 +746,7 @@ dev.off()
 output_folder <- "../results/structural/"
 
 # Combine the folder path with the file name
-output_file <- file.path(output_folder, "Structural Correlations Right Hemisphere 2-26-25.png")
+output_file <- file.path(output_folder, "Structural Correlations Right Hemisphere 9-30-26.png")
 
 # Open a PNG device with the specified file path
 png(output_file, width = 800, height = 800)
@@ -763,6 +763,8 @@ title(main = "Structural Correlations Right Hemisphere Study 2", col.main = "bla
 dev.off()
 
 cor.test(final$negpicICC, final$STAI_total)
+
+sapply(numeric_columns, class)
 ```
 
 #all correlation plots

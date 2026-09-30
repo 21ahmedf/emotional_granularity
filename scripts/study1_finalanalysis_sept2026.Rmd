@@ -308,7 +308,7 @@ granularity_scores_long$valence <- ifelse(grepl("^neg",granularity_scores_long$n
 granularity_scores_long$valence <- ifelse(grepl("^all",granularity_scores_long$name), "Combined", granularity_scores_long$valence)
 granularity_scores_long$condition <- ifelse(grepl("pic",granularity_scores_long$name), "Images", "Music")
 
-#mag_difference <-
+mag_difference <-
 granularity_scores_long %>%
   subset(valence!="Combined") %>%
   ggplot(aes(x=condition, y=value)) +
