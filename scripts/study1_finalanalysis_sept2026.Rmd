@@ -94,14 +94,14 @@ master_ratingsperemotion <- rbind(pos_pic_data,neg_pic_data,pos_music_data,neg_m
 
 #m1 <- lmer(data=master_ratingsperemotion, (value) ~ condition*rating_valence*stimulus_valence +  (rating_valence|Participant.Public.ID),control=lmerControl(optimizer="bobyqa")) #removed stim intercept to assist in model convergence and main random effect of stimulus_valence (explained least amt of variance), 8/13/26 -- and the main effect of condition and interaction between rating valence and condition
 
-m1 <- lmer(data=master_ratingsperemotion, (value) ~ condition*rating_valence*stimulus_valence + (rating_valence|Participant.Public.ID),control=lmerControl(optimizer="bobyqa"))
-car::Anova(m1,type="II" )
-summary(m1)
+#m1 <- lmer(data=master_ratingsperemotion, (value) ~ condition*rating_valence*stimulus_valence + (rating_valence|Participant.Public.ID),control=lmerControl(optimizer="bobyqa"))
+#car::Anova(m1,type="II" )
+#summary(m1)
 
 #simple test of means (i.e., seeing pos rated pos, neg rated neg)
-test(emmeans(m1, ~ condition*rating_valence*stimulus_valence, lmerTest.limit = 43840, lmer.df = "satterthwaite"))
+#test(emmeans(m1, ~ condition*rating_valence*stimulus_valence, lmerTest.limit = 43840, lmer.df = "satterthwaite"))
 
-emmeans::test(emmeans(m1, pairwise ~ condition*rating_valence*stimulus_valence,lmerTest.limit = 43840,lmer.df = "satterthwaite"))
+#emmeans::test(emmeans(m1, pairwise ~ condition*rating_valence*stimulus_valence,lmerTest.limit = 43840,lmer.df = "satterthwaite"))
 
 options(contrasts = c("contr.sum", "contr.poly"))
 
