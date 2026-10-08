@@ -12,6 +12,7 @@ library(corrplot)
 library(emmeans)
 library(ggeffects)
 library(patchwork)
+library(simr)
 ```
 
 ```{r}
@@ -55,7 +56,7 @@ granularity_scores <- remove_outliers_iqr(granularity_scores, "pospicICC")
 ```{r}
 #test interaction between stimulus type (music/picture), emotion rating valence (pos/negative), and stimulus valence
 neg_ratingsperemotion <- neg_ratings %>%
-  pivot_longer(gloomy:upset) 
+  pivot_longer(gloomy:upset)
 
 pos_ratingsperemotion <- pos_ratings %>%
   pivot_longer(happy:relaxed)
@@ -92,100 +93,46 @@ neg_music_data$stimulus_valence <- "negative"
 
 master_ratingsperemotion <- rbind(pos_pic_data,neg_pic_data,pos_music_data,neg_music_data)
 
-#m1 <- lmer(data=master_ratingsperemotion, (value) ~ condition*rating_valence*stimulus_valence +  (rating_valence|Participant.Public.ID),control=lmerControl(optimizer="bobyqa")) #removed stim intercept to assist in model convergence and main random effect of stimulus_valence (explained least amt of variance), 8/13/26 -- and the main effect of condition and interaction between rating valence and condition
-
-#m1 <- lmer(data=master_ratingsperemotion, (value) ~ condition*rating_valence*stimulus_valence + (rating_valence|Participant.Public.ID),control=lmerControl(optimizer="bobyqa"))
-#car::Anova(m1,type="II" )
-#summary(m1)
-
-#simple test of means (i.e., seeing pos rated pos, neg rated neg)
-#test(emmeans(m1, ~ condition*rating_valence*stimulus_valence, lmerTest.limit = 43840, lmer.df = "satterthwaite"))
-
-#emmeans::test(emmeans(m1, pairwise ~ condition*rating_valence*stimulus_valence,lmerTest.limit = 43840,lmer.df = "satterthwaite"))
-
 options(contrasts = c("contr.sum", "contr.poly"))
 
-m2 <- lmer(value ~ condition*rating_valence*stimulus_valence +
+m1 <- lmer(value ~ condition*rating_valence*stimulus_valence +
              (rating_valence + condition | Participant.Public.ID) +
              (rating_valence | stim) +
              (1 | name),
            data = master_ratingsperemotion,
            control = lmerControl(optimizer = "bobyqa",
                                  optCtrl = list(maxfun = 2e5)))
-car::Anova(m2,type="II" ) ## FIGURE OUT RANDFX STRUCTURE
-test(emmeans(m2, ~ condition*rating_valence*stimulus_valence, lmerTest.limit = 43840, lmer.df = "satterthwaite"))
+car::Anova(m1,type="II" )
 
-emmeans::test(emmeans(m2,  ~ condition*rating_valence*stimulus_valence,lmerTest.limit = 43840,lmer.df = "satterthwaite"))
+emm_sv <- emmeans(m1, ~ stimulus_valence | condition * rating_valence,
+                  lmer.df = "satterthwaite", lmerTest.limit = 64000) #does pos music elicit more pos emotions than neg music?, etc. (i.e., checking congruent emotional responses)
 
-#include mean response as a covariate?
+
+summary(pairs(emm_sv), by = NULL, adjust = "bonferroni")
+
+emm_cell <- emmeans(m1, ~ condition | rating_valence * stimulus_valence,
+                    lmer.df = "satterthwaite", lmerTest.limit = 64000) #what about incongruent vs congruent responses?
+
+summary(pairs(emm_cell), by = NULL, adjust = "bonferroni")
 ```
+
 #check if granularity is due to music being more likely to elicit array of emotions
 ```{r}
 master_ratingsperemotion$endorse <- ifelse(master_ratingsperemotion$value >0,1,0)
 
-model <- glmer(endorse ~ condition*name + (condition| Participant.Public.ID) + (1 | stim), 
+m2 <- glmer(endorse ~ condition*name + (condition| Participant.Public.ID) + (1 | stim), 
                data = master_ratingsperemotion, 
                family = binomial(link = "logit"))
 
-car::Anova(model, type="II")
+car::Anova(m2, type="II")
 
-sjPlot::plot_model(model, type="pred", terms = c("name", "condition"))
+sjPlot::plot_model(m2, type="pred", terms = c("name", "condition"))
 
-emm_endorse <- emmeans(model, ~ condition | name, type = "response")
+emm_endorse <- emmeans(m2, ~ condition | name, type = "response")
 
 pairs(emm_endorse,adjust = "holm") #holm or bonferroni?
-
-
-gran_long <- granularity_scores %>%
-  rename(Participant.Public.ID = SURVEY_CODE) %>%
-  pivot_longer(cols = matches("^(neg|pos)(music|pic)ICC$"),
-               names_to = c("valence", "condition"),
-               names_pattern = "^(neg|pos)(music|pic)ICC$",
-               values_to = "granularity") %>%
-  mutate(valence     = recode(valence, neg = "negative", pos = "positive"),)
-
-covs <- master_ratingsperemotion %>%
-  group_by(Participant.Public.ID, condition, valence = rating_valence) %>%
-  summarise(endorse_rate = mean(endorse, na.rm = TRUE),
-            mean_int     = mean(value, na.rm = TRUE), .groups = "drop") %>%
-  group_by(Participant.Public.ID) %>%
-  mutate(across(c(endorse_rate, mean_int),
-                ~ .x - mean(.x), .names = "{.col}_c")) %>%
-  ungroup()
-
-gran_dat <- left_join(gran_long, covs,
-                      by = c("Participant.Public.ID", "condition", "valence"))
-
-# effects of gran, controlled for endorsement rate + mean response
-m3 <- lmer(granularity ~ condition * valence +
-             endorse_rate_c + mean_int_c +
-             (1 | Participant.Public.ID), data = gran_dat)
-car::Anova(m3, type="II")
-emmeans(m3, pairwise ~ condition, var = "valence", lmer.df = "satterthwaite")
-
-pe <- ggemmeans(m3, terms = c("endorse_rate_c [all]", "condition"))
-pm <- ggemmeans(m3, terms = c("mean_int_c [all]", "condition"))
-
-plot_fx <- function(pred, raw_x, xlab) {
-  ggplot(pred, aes(x, predicted, color = group, fill = group)) +
-    geom_point(data = gran_dat,
-               aes(x = .data[[raw_x]], y = granularity, color = condition),
-               inherit.aes = FALSE, alpha = 0.15, size = 1) +
-    geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2, color = NA) +
-    geom_line(linewidth = 1) +
-    scale_color_manual(values = c(music = "#0072B2", pic = "#D55E00"),
-                       labels = c("Music", "Images"), aesthetics = c("color", "fill")) +
-    labs(x = xlab, y = "Emotional granularity", color = NULL, fill = NULL) +
-    theme_classic(base_size = 12)
-}
-
-plot_fx(pe, "endorse_rate_c", "Endorsement rate\n(Within-participant mean-centered)") +
-  plot_fx(pm, "mean_int_c", "Mean rating intensity\n(Within-participant mean-centered)") +
-  plot_layout(guides = "collect") &
-  theme(legend.position = "top")
+#they do, use both magnitude + endorsement rate as covs
 ```
-
-
 
 #heat map
 ```{r}
@@ -290,30 +237,133 @@ ggplot(averages_total, aes(x = Emotion, y = stim, fill = `Average\nRating`)) +
 ggsave('../heatmap_averagestudy1.png',averages_total_plot, dpi=1000,width=18, height=10.5)
 ```
 
-#correlations
+##granularity across pics + music
 ```{r}
-#granularity across pics + music
-##positive
-cor.test(granularity_scores$posmusicICC, granularity_scores$pospicICC)
+#set up covs df
+gran_long <- granularity_scores %>%
+  rename(Participant.Public.ID = SURVEY_CODE) %>%
+  pivot_longer(cols = matches("^(neg|pos)(music|pic)ICC$"),
+               names_to = c("valence", "condition"),
+               names_pattern = "^(neg|pos)(music|pic)ICC$",
+               values_to = "granularity") %>%
+  mutate(valence     = recode(valence, neg = "negative", pos = "positive"),)
 
-##negative
-cor.test(granularity_scores$negmusicICC, granularity_scores$negpicICC)
+covs <- master_ratingsperemotion %>%
+  group_by(Participant.Public.ID, condition, valence = rating_valence) %>%
+  summarise(endorse_rate = mean(endorse, na.rm = TRUE),
+            mean_int     = mean(value, na.rm = TRUE), .groups = "drop") %>%
+  group_by(Participant.Public.ID) %>%
+  mutate(across(c(endorse_rate, mean_int),
+                ~ .x - mean(.x), .names = "{.col}_c")) %>%
+  ungroup()
 
-##combined
-cor.test(granularity_scores$allmusicICC, granularity_scores$allpicICC)
+gran_dat <- left_join(gran_long, covs,
+                      by = c("Participant.Public.ID", "condition", "valence"))
+
+gran_wide <- gran_dat %>%
+  select(Participant.Public.ID, condition, valence, granularity, endorse_rate, mean_int) %>%
+  pivot_wider(names_from = condition,
+              values_from = c(granularity, endorse_rate, mean_int)) %>%
+  mutate(across(c(starts_with("endorse_rate"), starts_with("mean_int")),
+                ~ .x - mean(.x, na.rm = TRUE), .names = "{.col}_c"))
+
+gran_wide$valence <- as.factor(gran_wide$valence)
+contrasts(gran_wide$valence) <- c(-0.5,0.5)
+
+m3 <- lmer(granularity_music ~ granularity_pic * valence +
+              endorse_rate_music_c + endorse_rate_pic_c +
+              mean_int_music_c + mean_int_pic_c +
+              (1 | Participant.Public.ID), data = gran_wide)
+
+car::Anova(m3, type = "II")
+summary(m3)
+
+sjPlot::plot_model(m3, type="pred", terms = c("granularity_pic","valence"),show.data = TRUE)
 ```
 
-#t-test
+#plotting
 ```{r}
-#granularity across pics + music
-##positive
-t.test(granularity_scores$posmusicICC, granularity_scores$pospicICC, paired=TRUE)
+## plotting
+pic_range <- seq(min(gran_wide$granularity_pic, na.rm = TRUE),
+                 max(gran_wide$granularity_pic, na.rm = TRUE), length.out = 50)
 
-##negative
-t.test(granularity_scores$negmusicICC, granularity_scores$negpicICC, paired=TRUE)
+predictions <- emmeans(m3, ~ granularity_pic * valence,
+                       at = list(granularity_pic = pic_range)) %>%
+  as.data.frame()
 
-##combined
-t.test(granularity_scores$allmusicICC, granularity_scores$allpicICC, paired=TRUE)
+music_images_gran_rel <-
+  ggplot(predictions, aes(granularity_pic, emmean, color = valence, fill = valence)) +
+  geom_point(data = gran_wide, aes(x = granularity_pic, y = granularity_music, color = valence),
+             inherit.aes = FALSE, alpha = 0.5, size=2) +
+  geom_ribbon(aes(ymin = lower.CL, ymax = upper.CL), alpha = 0.2, color = NA) +
+  geom_line(linewidth = 1) +
+  scale_color_manual(values = c(negative = "#D55E00", positive = "#0072B2"),
+                     labels = c("Negative", "Positive"), aesthetics = c("color", "fill")) +
+  labs(x = "Image Emotional Granularity Scores", y = "Music Emotional Granularity Scores",
+       fill = "Emotion valence") +
+  theme_classic(base_size = 12) +
+  theme(legend.position="none") +
+  theme(
+    axis.title.x = element_text(family="Arial", size=20),
+    axis.title.y = element_text(family="Arial",size=20),
+    axis.text.x = element_text(family="Arial", size=14),
+    axis.text.y = element_text(family="Arial",size=14)) +
+    theme(
+    axis.title.x = element_text(family="Arial", size=30),
+    axis.title.y = element_text(family="Arial",size=30),
+    axis.text.x = element_text(family="Arial", size=26),
+    axis.text.y = element_text(family="Arial",size=26))
+
+
+ggsave('../figures/music_images_gran_rel1.png', music_images_gran_rel, width=10, height=9, dpi=350)
+```
+
+#does magnitude change across modality?
+```{r}
+# effects of gran, controlled for endorsement rate + mean response
+m4 <- lmer(granularity ~ condition * valence +
+             endorse_rate_c + mean_int_c +
+             (1 | Participant.Public.ID), data = gran_dat)
+car::Anova(m4, type="II")
+emmeans(m4, pairwise ~ condition | valence, lmer.df = "satterthwaite")
+sjPlot::plot_model(m4, type="pred", terms = c("condition","valence"),show.data = TRUE) #plot model preds + raw data as in ms
+
+## plotting
+predictions <- emmeans(m4, ~ condition * valence) %>%
+  as.data.frame()
+
+predictions$valence <- ifelse(grepl("^neg",predictions$valence), "Negative", "Positive")
+predictions$condition <- ifelse(grepl("pic",predictions$condition), "Images", "Music")
+
+gran_dat$valence <- ifelse(grepl("^neg",gran_dat$valence), "Negative", "Positive")
+gran_dat$condition <- ifelse(grepl("pic",gran_dat$condition), "Images", "Music")
+
+mag_diff <-
+  ggplot(predictions, aes(condition, emmean, color = valence)) +
+  geom_point(data = gran_dat, aes(condition, granularity, color = valence),
+             position = position_jitterdodge(jitter.width = 0.15, dodge.width = 0.5),
+             alpha = 0.25, inherit.aes = FALSE,size=3) +
+  geom_pointrange(aes(ymin = lower.CL, ymax = upper.CL),
+                position = position_nudge(x = 0.3),
+                size = 0.75, linewidth = 1.25) +
+  scale_x_discrete(labels = c(music = "Music", pic = "Images")) +
+  scale_color_manual(values = c(Negative = "#D55E00", Positive = "#0072B2"),
+                     labels = c("Negative", "Positive")) +
+  labs(x = NULL, y = "Emotional granularity", color = "Emotion valence") +
+  theme_classic(base_size = 12) +
+   facet_wrap(~valence,scales = "free_x") +
+  xlab("Condition") +
+  ylab("Granularity Score") +
+  theme(
+    axis.title.x = element_text(family="Arial", size=50),
+    axis.title.y = element_text(family="Arial",size=50),
+    axis.text.x = element_text(family="Arial", size=44),
+    axis.text.y = element_text(family="Arial",size=44),
+    strip.text = element_text(family="Arial",size=46)) +
+    theme(legend.position = "none")
+
+
+ggsave('../figures/music_images_mag_diff1.png', mag_diff,dpi=1000, width=14, height=12)
 ```
 
 #averages for plot
@@ -341,89 +391,6 @@ pos_averages$valence <- "Positive"
 averages <- rbind(neg_averages, pos_averages)
 ```
 
-#recreate plots from thesis sub
-```{r}
-pos_granularity_plot <- 
-ggplot(data=granularity_scores, aes(x=posmusicICC, y=pospicICC)) +
-  theme_classic()+
-  theme(legend.position = "none")+
-  geom_point(alpha=0.7) +
-  geom_smooth(method="lm") +
-  xlab("Positive Emotional\nGranularity Score - Music") +
-  ylab("Positive Emotional\nGranularity Score - Images") +
-  theme(
-    axis.title.x = element_text(family="Arial", size=20),
-    axis.title.y = element_text(family="Arial",size=20),
-    axis.text.x = element_text(family="Arial", size=14),
-    axis.text.y = element_text(family="Arial",size=14)) +
-    theme(
-    axis.title.x = element_text(family="Arial", size=30),
-    axis.title.y = element_text(family="Arial",size=30),
-    axis.text.x = element_text(family="Arial", size=26),
-    axis.text.y = element_text(family="Arial",size=26))
-
-ggsave('../figures/study1_posgrancor.png',dpi=1000, pos_granularity_plot, height=8)
-
-neg_granularity_plot <-
-ggplot(data=granularity_scores, aes(x=negmusicICC, y=negpicICC)) +
-  theme_classic()+
-  theme(legend.position = "none")+
-  geom_point(alpha=0.7) +
-  geom_smooth(method="lm") +
-  xlab("Negative Emotional\nGranularity Score - Music") +
-  ylab("Negative Emotional\nGranularity Score - Images")+
-  theme(
-    axis.title.x = element_text(family="Arial", size=30),
-    axis.title.y = element_text(family="Arial",size=30),
-    axis.text.x = element_text(family="Arial", size=26),
-    axis.text.y = element_text(family="Arial",size=26))
-
-ggsave('../figures/study1_neggrancor.png',dpi=1000, neg_granularity_plot, height=8)
-
-
-#differences in ICCs
-granularity_scores_long <-
-  granularity_scores %>%
-  pivot_longer(negmusicICC:allpicICC) 
-  
-granularity_scores_long$valence <- ifelse(grepl("^neg",granularity_scores_long$name), "Negative", "Positive")
-granularity_scores_long$valence <- ifelse(grepl("^all",granularity_scores_long$name), "Combined", granularity_scores_long$valence)
-granularity_scores_long$condition <- ifelse(grepl("pic",granularity_scores_long$name), "Images", "Music")
-
-mag_difference <-
-granularity_scores_long %>%
-  subset(valence!="Combined") %>%
-  ggplot(aes(x=condition, y=value)) +
-  stat_summary(fun.data = 'mean_cl_normal', geom = 'errorbar', size=1.25, width = 0.1, alpha=0.7,position = position_nudge(x = .3, y = 0), color="red") +
-  stat_summary(fun.data = 'mean_cl_normal', geom = 'pointrange',size=1.25, alpha=0.7,position = position_nudge(x = .3, y = 0), color="red")+
-  theme_classic()+
-  theme(legend.position = "none") +
-  facet_wrap(~valence,scales = "free_x") +
-  geom_jitter(alpha=0.7, width=0.075,size=3) +
-  #geom_violinhalf(position = position_nudge(x = .2, y = 0))
-  xlab("Condition") +
-  ylab("Granularity Score") +
-  theme(
-    axis.title.x = element_text(family="Arial", size=50),
-    axis.title.y = element_text(family="Arial",size=50),
-    axis.text.x = element_text(family="Arial", size=44),
-    axis.text.y = element_text(family="Arial",size=44),
-    strip.text = element_text(family="Arial",size=46))
-
-ggsave('../figures/study1_magdifference.png',dpi=1000, mag_difference, width=14, height=12)
-
-
-#magnitude differences in raw ratings (not ICC)
-ggplot(data=averages, aes(x=valence, y=mean, color=condition)) +
-     stat_summary(fun.data = 'mean_se', geom = 'errorbar', width = 0.05, alpha=0.7,position=position_dodge(width=0.2)) +
-  stat_summary(fun.data = 'mean_se', geom = 'pointrange', alpha=0.7,position=position_dodge(width=0.2))+
-  theme_classic()+
-  theme(legend.position = "none") +
-  xlab("Emotion Valence") +
-  ylab("Rating") +
-  scale_color_manual(values=c("#0072B2", "#D55E00" )) +
-  scale_fill_manual(values=c("#0072B2","#D55E00"))
-```
 
 #investigating differences in granularity -- is there greater arousal-based differentiation?
 ```{r}
@@ -691,13 +658,27 @@ master <- rbind(relaxed_excited_cor, relaxed_satisfied_cor, relaxed_happy_cor,
                 relaxed_joyful_cor,excited_satisfied_cor,excited_happy_cor,
                 excited_joyful_cor,satisfied_happy_cor,satisfied_joyful_cor,
                 joyful_happy_cor)
+
 master$condition <- as.factor(master$condition)
 contrasts(master$condition) <- c(-0.5,0.5)
 master$arousal_dif <- as.factor(master$arousal_dif)
 contrasts(master$arousal_dif) <- c(-0.5,0.5)
+covs_cond <- master_ratingsperemotion %>%
+  group_by(Participant.Public.ID, condition) %>%
+  summarise(endorse_rate_cond = mean(endorse, na.rm = TRUE),
+            mean_int_cond     = mean(value, na.rm = TRUE), .groups = "drop") %>%
+  group_by(Participant.Public.ID) %>%
+  mutate(across(c(endorse_rate_cond, mean_int_cond),
+                ~ .x - mean(.x), .names = "{.col}_c")) %>%
+  ungroup()
 
-test <- lmer(data=master, scale(cor) ~ condition*arousal_dif + (condition*arousal_dif|Participant.Public.ID))
-summary(test)
+master_covs <- merge(master,covs_cond)
+master_covs$cor_z <- psych::fisherz(master_covs$cor)
+
+master_covs <- remove_outliers_iqr(master_covs, "cor_z")
+
+m5 <- lmer(data=master_covs, cor_z ~ condition*arousal_dif + endorse_rate_cond_c + mean_int_cond_c + (condition*arousal_dif|Participant.Public.ID))
+summary(m5)
 
 ##Neg emotions
 gloomy_sad_cor$arousal_dif <- "same"
@@ -720,8 +701,12 @@ contrasts(master_neg$condition) <- c(-0.5,0.5)
 master_neg$arousal_dif <- as.factor(master_neg$arousal_dif)
 contrasts(master_neg$arousal_dif) <- c(-0.5,0.5)
 
-test <- lmer(data=master_neg, scale(cor) ~ condition*arousal_dif + (condition*arousal_dif|Participant.Public.ID))
-summary(test)
+master_neg_covs <- merge(master_neg,covs_cond)
+master_neg_covs$cor_z <- psych::fisherz(pmin(pmax(master_neg_covs$cor, -0.999), 0.999)) #preventing inf for perf corrs
+master_neg_covs <- remove_outliers_iqr(master_neg_covs, "cor_z")
+
+m6 <- lmer(data=master_neg_covs, (cor_z) ~ condition*arousal_dif + endorse_rate_cond_c + mean_int_cond_c +(condition*arousal_dif|Participant.Public.ID))
+summary(m6)
 
 master$valence <- "Positive"
 master_neg$valence <- "Negative"
@@ -731,13 +716,62 @@ master_posneg <- rbind(master,master_neg)
 
 #plot
 ```{r}
+predictions_pos <- emmeans(m5, ~ condition*arousal_dif) %>%
+  as.data.frame()
+
+predictions_pos$valence="Positive"
+
+predictions_neg <- emmeans(m5, ~ condition*arousal_dif) %>%
+  as.data.frame()
+
+predictions_neg$valence="Negative"
+
+predictions = rbind(predictions_pos,predictions_neg)
+
+predictions$arousal_dif <- ifelse(predictions$arousal_dif=="different", "Different", "Similar")
+
 average_corr <-
 master_posneg %>%
   group_by(condition, valence, Participant.Public.ID,arousal_dif) %>%
     summarise(
      `cor` = mean(cor, na.rm = TRUE)
     )  %>%
-  mutate(arousal_dif = recode(arousal_dif, "different" = "Different", "same" = "Similar"))
+  mutate(arousal_dif = recode(arousal_dif, "different" = "Different", "same" = "Similar")) 
+
+
+average_corr$cor_z <- psych::fisherz(pmin(pmax(average_corr$cor, -0.999), 0.999))
+average_corr <- remove_outliers_iqr(average_corr, "cor_z")
+
+
+arousal_differentiation <- 
+  ggplot(predictions, aes(arousal_dif, emmean, color = condition)) +
+  geom_jitter(data = average_corr, aes(arousal_dif, cor_z, color = condition),
+             #position = position_jitterdodge(jitter.width = 0.15, dodge.width = 0.5),
+            alpha=0.5, width=0.1,size=2 ) +
+  geom_pointrange(aes(ymin = lower.CL, ymax = upper.CL),
+                position = position_nudge(x = 0.3),
+                size = 0.75, linewidth = 1.25) +
+  scale_x_discrete(labels = c(music = "Music", pic = "Images")) +
+  scale_color_manual(values = c(music = "#D55E00", pic = "#0072B2"),
+                     labels = c("Negative", "Positive")) +
+  labs(x = NULL, y = "Emotional granularity", color = "Emotion valence") +
+  theme_classic(base_size = 12) +
+   facet_wrap(~valence,scales = "free_x") +
+  xlab("Arousal Level") +
+  ylab("Average Fisher-Transformed\nCorrelation Among Emotion Ratings")+
+  theme(
+    axis.title.x = element_text(family="Arial", size=50),
+    axis.title.y = element_text(family="Arial",size=50),
+    axis.text.x = element_text(family="Arial", size=44),
+    axis.text.y = element_text(family="Arial",size=44),
+    strip.text = element_text(family="Arial",size=44)) +
+    theme(legend.position = "none")
+
+
+ggsave('../figures/arousal_differentiation1.png', arousal_differentiation,dpi=1000, width=14, height=12)
+
+
+
 
 arousal_differentiation <-
 average_corr %>%
@@ -748,8 +782,7 @@ average_corr %>%
   theme_classic() +
   theme(legend.position = "none") +
  facet_wrap(~valence)+
-  xlab("Arousal Level") +
-  ylab("Correlation Among Emotion Ratings")  +    
+  +    
   theme(
     axis.title.x = element_text(family="Arial", size=50),
     axis.title.y = element_text(family="Arial",size=50),
@@ -770,3 +803,62 @@ cor.test(granularity_scores$posmusicICC, granularity_scores$EDT.ability, paired=
 cor.test(granularity_scores$negmusicICC, granularity_scores$EDT.ability, paired=TRUE)
 ```
 
+#powering for study 2:
+```{r}
+seed <- 861999
+
+# ---- 1. Clean data: keep complete cases on model variables ----
+vars <- c("granularity_music", "granularity_pic", "valence",
+          "endorse_rate_music_c", "endorse_rate_pic_c",
+          "mean_int_music_c", "mean_int_pic_c", "Participant.Public.ID")
+
+gran_cc <- droplevels(na.omit(as.data.frame(gran_wide[, vars])))
+gran_cc$Participant.Public.ID <- factor(gran_cc$Participant.Public.ID)
+gran_cc$valence <- factor(gran_cc$valence)
+
+cat("Participants before:", length(unique(gran_wide$Participant.Public.ID)),
+    " after:", nlevels(gran_cc$Participant.Public.ID), "\n")
+
+# ---- 2. Fit the model on the clean data ----
+m3 <- lmer(granularity_music ~ granularity_pic * valence +
+             endorse_rate_music_c + endorse_rate_pic_c +
+             mean_int_music_c + mean_int_pic_c +
+             (1 | Participant.Public.ID), data = gran_cc)
+
+# ---- 3. Set the effect size for granularity_pic ----
+# Option 1: raw units
+sesoi <- 0.15
+# Option 2: define in SD units (uncomment to use; e.g. 0.20 SD per SD)
+# sesoi <- 0.20 * sd(gran_cc$granularity_music) / sd(gran_cc$granularity_pic)
+
+fixed <- fixef(m3)
+fixed["granularity_pic"] <- sesoi
+V2  <- VarCorr(m3)[[1]]   # random intercept variance
+res <- sigma(m3)          # residual SD
+
+# ---- 4. Build the simulation model ----
+m2 <- makeLmer(formula(m3), fixef = fixed, VarCorr = V2,
+               sigma = res, data = gran_cc)
+
+# ---- 5. Quick check: should show 0 errors ----
+check <- powerSim(m2, test = fixed("granularity_pic", "t"),
+                  nsim = 10, seed = seed)
+print(check)
+print(check$errors)
+
+# ---- 6. Power at current N ----
+sim_gran <- powerSim(m2, test = fixed("granularity_pic", "t"),
+                     nsim = 1000, seed = seed)
+print(sim_gran)
+
+# ---- 7. Power curve across sample sizes ----
+m2_ext <- extend(m2, along = "Participant.Public.ID", n = 300)
+
+oc2 <- powerCurve(m2_ext, along = "Participant.Public.ID",
+                  test = fixed("granularity_pic", "t"),
+                  breaks = seq(50, 300, by = 25),
+                  nsim = 1000, seed = seed)
+print(oc2)
+plot(oc2)
+```
+```
