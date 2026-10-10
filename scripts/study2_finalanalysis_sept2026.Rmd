@@ -10,6 +10,7 @@ date: "2025-12-19"
 library(tidyverse)
 library(emmeans)
 library(corrplot)
+library(ggpp)
 ```
 
 #read in data
@@ -274,8 +275,14 @@ m3 <- lmer(granularity_music ~ granularity_pic * valence +
               (1 | Participant.Public.ID), data = gran_wide)
 
 car::Anova(m3, type = "II")
-summary(m3)
+emm_val <- emmeans(m3, ~ valence, lmer.df = "satterthwaite")
+emm_val
+pairs(emm_val)
+test(emtrends(m3, ~ valence, var = "granularity_pic", lmer.df = "satterthwaite"))
+
+sjPlot::plot_model(m3, type="pred", terms = c("granularity_pic","valence"),show.data = TRUE)
 ```
+
 #plotting
 ```{r}
 ## plotting
@@ -321,8 +328,19 @@ m4 <- lmer(granularity ~ condition * valence +
              endorse_rate_c + mean_int_c +
              (1 | Participant.Public.ID), data = gran_dat)
 car::Anova(m4, type="II")
-emmeans(m4, pairwise ~ condition | valence, lmer.df = "satterthwaite")
-#need to extract interaction diffs
+
+#breaking down
+emm <- emmeans(m4, ~  condition | valence, lmer.df = "satterthwaite",lmerTest.limit = 5281)
+emm
+
+# interaction (two-way)
+pairs(emm)
+
+# interaction contrast
+contrast(emmeans(m4, ~ valence * condition, lmer.df = "satterthwaite",lmerTest.limit = 5281),
+         interaction = "pairwise")
+
+test(emtrends(m4, ~ 1, var = "mean_int_c", lmer.df = "satterthwaite"))#need to extract interaction diffs --> greater granularity with music exaggerated with positive emo gran
 
 ## plotting
 predictions <- emmeans(m4, ~ condition * valence) %>%
@@ -637,28 +655,56 @@ upset_anxious_cor_music <- upset_anxious_cor %>%
 ```
 
 ```{r}
-##Pos emotions
-#relaxed (low), excited (high), satisfied (low), happy (high), joyful (high)
-relaxed_excited_cor$arousal_dif <- "different"
-relaxed_satisfied_cor$arousal_dif <- "same"
-relaxed_happy_cor$arousal_dif <- "different"
-relaxed_joyful_cor$arousal_dif <- "different"
-excited_satisfied_cor$arousal_dif <- "different"
-excited_happy_cor$arousal_dif <- "same"
-excited_joyful_cor$arousal_dif <- "same"
-satisfied_happy_cor$arousal_dif <- "different"
-satisfied_joyful_cor$arousal_dif <- "different"
-joyful_happy_cor$arousal_dif <- "same"
+## positive pairs
+pos_list <- list(relaxed_excited_cor, relaxed_satisfied_cor, relaxed_happy_cor,
+                 relaxed_joyful_cor, excited_satisfied_cor, excited_happy_cor,
+                 excited_joyful_cor, satisfied_happy_cor, satisfied_joyful_cor,
+                 joyful_happy_cor)
+names(pos_list) <- c("relaxed_excited","relaxed_satisfied","relaxed_happy",
+                     "relaxed_joyful","excited_satisfied","excited_happy",
+                     "excited_joyful","satisfied_happy","satisfied_joyful",
+                     "joyful_happy")
 
-master <- rbind(relaxed_excited_cor, relaxed_satisfied_cor, relaxed_happy_cor, 
-                relaxed_joyful_cor,excited_satisfied_cor,excited_happy_cor,
-                excited_joyful_cor,satisfied_happy_cor,satisfied_joyful_cor,
-                joyful_happy_cor)
+## negative pairs
+neg_list <- list(gloomy_sad_cor, gloomy_scared_cor, gloomy_anxious_cor,
+                 gloomy_upset_cor, sad_anxious_cor, sad_upset_cor,
+                 scared_upset_cor, scared_anxious_cor, upset_anxious_cor,
+                 sad_scared_cor)
+names(neg_list) <- c("gloomy_sad","gloomy_scared","gloomy_anxious",
+                     "gloomy_upset","sad_anxious","sad_upset",
+                     "scared_upset","scared_anxious","upset_anxious",
+                     "sad_scared")
 
-master$condition <- as.factor(master$condition)
-contrasts(master$condition) <- c(-0.5,0.5)
-master$arousal_dif <- as.factor(master$arousal_dif)
-contrasts(master$arousal_dif) <- c(-0.5,0.5)
+arousal_lookup <- c(
+  # Positive
+  relaxed_excited = "different", relaxed_satisfied = "same",
+  relaxed_happy   = "different", relaxed_joyful    = "different",
+  excited_satisfied = "different", excited_happy   = "same",
+  excited_joyful  = "same",      satisfied_happy   = "different",
+  satisfied_joyful = "different", joyful_happy     = "same",
+  # Negative
+  gloomy_sad     = "same",      gloomy_scared  = "different",
+  gloomy_anxious = "different", gloomy_upset   = "different",
+  sad_anxious    = "different", sad_upset      = "different",
+  scared_upset   = "same",      scared_anxious = "same",
+  upset_anxious  = "same",      sad_scared     = "different"
+)
+
+
+## creating one df
+pos <- dplyr::bind_rows(pos_list, .id = "pair"); pos$valence <- "Positive"
+neg <- dplyr::bind_rows(neg_list, .id = "pair"); neg$valence <- "Negative"
+master_posneg <- rbind(pos, neg)
+master_posneg$arousal_dif <- unname(arousal_lookup[as.character(master_posneg$pair)])
+
+## center factor contrasts
+for (v in c("condition", "arousal_dif", "valence")) {
+  master_posneg[[v]] <- factor(master_posneg[[v]])
+  contrasts(master_posneg[[v]]) <- c(-0.5, 0.5)
+}
+master_posneg$pair <- factor(master_posneg$pair)
+
+## get covs, fisher-transform cors, remove outliers
 covs_cond <- master_ratingsperemotion %>%
   group_by(Participant.Public.ID, condition) %>%
   summarise(endorse_rate_cond = mean(endorse, na.rm = TRUE),
@@ -668,63 +714,41 @@ covs_cond <- master_ratingsperemotion %>%
                 ~ .x - mean(.x), .names = "{.col}_c")) %>%
   ungroup()
 
-master_covs <- merge(master,covs_cond)
-master_covs$cor_z <- psych::fisherz(master_covs$cor)
+master_posneg <- merge(master_posneg, covs_cond)
+master_posneg$cor_z <- psych::fisherz(pmin(pmax(master_posneg$cor, -0.999), 0.999)) #helps with replacing infinity
+master_posneg <- remove_outliers_iqr(master_posneg, "cor_z")
 
-master_covs <- remove_outliers_iqr(master_covs, "cor_z")
+## model
+m5 <- lmer(cor_z ~ condition * arousal_dif * valence +
+             endorse_rate_cond_c + mean_int_cond_c +
+             (condition + arousal_dif + valence | Participant.Public.ID) +
+             (condition | pair),
+           data = master_posneg)
+car::Anova(m5, type = "II")
 
-m5 <- lmer(data=master_covs, cor_z ~ condition*arousal_dif + endorse_rate_cond_c + mean_int_cond_c + (condition*arousal_dif|Participant.Public.ID))
-summary(m5)
+#breaking down
+emm <- emmeans(m5, ~  condition | arousal_dif, lmer.df = "satterthwaite",lmerTest.limit = 7579)
+emm
 
-##Neg emotions
-gloomy_sad_cor$arousal_dif <- "same"
-gloomy_scared_cor$arousal_dif <- "different"
-gloomy_anxious_cor$arousal_dif <- "different"
-gloomy_upset_cor$arousal_dif <- "different"
-sad_anxious_cor$arousal_dif <- "different"
-sad_upset_cor$arousal_dif <- "different"
-scared_anxious_cor$arousal_dif <- "same"
-scared_upset_cor$arousal_dif <- "same"
-upset_anxious_cor$arousal_dif <- "same"
-sad_scared_cor$arousal_dif <- "different"
+# interaction (two-way)
+pairs(emm)
 
-master_neg <- rbind(gloomy_sad_cor, gloomy_scared_cor, gloomy_anxious_cor, 
-                gloomy_upset_cor,sad_anxious_cor,sad_upset_cor,
-                scared_upset_cor,scared_anxious_cor,scared_anxious_cor,
-                sad_scared_cor)
-master_neg$condition <- as.factor(master_neg$condition)
-contrasts(master_neg$condition) <- c(-0.5,0.5)
-master_neg$arousal_dif <- as.factor(master_neg$arousal_dif)
-contrasts(master_neg$arousal_dif) <- c(-0.5,0.5)
+# interaction contrast
+contrast(emmeans(m5, ~ arousal_dif * condition, lmer.df = "satterthwaite",lmerTest.limit = 7579),
+         interaction = "pairwise")
 
-master_neg_covs <- merge(master_neg,covs_cond)
-master_neg_covs$cor_z <- psych::fisherz(pmin(pmax(master_neg_covs$cor, -0.999), 0.999)) #preventing inf for perf corrs
-master_neg_covs <- remove_outliers_iqr(master_neg_covs, "cor_z")
-
-m6 <- lmer(data=master_neg_covs, (cor_z) ~ condition*arousal_dif + endorse_rate_cond_c + mean_int_cond_c +(condition*arousal_dif|Participant.Public.ID))
-summary(m6)
-
-master$valence <- "Positive"
-master_neg$valence <- "Negative"
-
-master_posneg <- rbind(master,master_neg)
+#main effect of rating magnitude
+summary(m5)$coefficients["mean_int_cond_c", ]
 ```
 
 #plot
 ```{r}
-predictions_pos <- emmeans(m5, ~ condition*arousal_dif,pbkrtest.limit = 3855) %>%
+predictions = emmeans(m5, ~ condition*arousal_dif*valence, lmer.df = "satterthwaite",lmerTest.limit = 7579) %>%
   as.data.frame()
-
-predictions_pos$valence="Positive"
-
-predictions_neg <- emmeans(m5, ~ condition*arousal_dif,pbkrtest.limit = 3855) %>%
-  as.data.frame()
-
-predictions_neg$valence="Negative"
-
-predictions = rbind(predictions_pos,predictions_neg)
 
 predictions$arousal_dif <- ifelse(predictions$arousal_dif=="different", "Different", "Similar")
+predictions$condition <- ifelse(predictions$condition=="music", "Music", "Images")
+
 
 average_corr <-
 master_posneg %>%
@@ -732,7 +756,8 @@ master_posneg %>%
     summarise(
      `cor` = mean(cor, na.rm = TRUE)
     )  %>%
-  mutate(arousal_dif = recode(arousal_dif, "different" = "Different", "same" = "Similar")) 
+  mutate(arousal_dif = recode(arousal_dif, "different" = "Different", "same" = "Similar")) %>%
+  mutate(condition =  recode(condition, "music" = "Music", "pic" = "Images")) 
 
 
 average_corr$cor_z <- psych::fisherz(pmin(pmax(average_corr$cor, -0.999), 0.999))
@@ -745,10 +770,9 @@ arousal_differentiation <-
              #position = position_jitterdodge(jitter.width = 0.15, dodge.width = 0.5),
             alpha=0.5, width=0.1,size=2 ) +
   geom_pointrange(aes(ymin = lower.CL, ymax = upper.CL),
-                position = position_nudge(x = 0.3),
-                size = 0.75, linewidth = 1.25) +
-  scale_x_discrete(labels = c(music = "Music", pic = "Images")) +
-  scale_color_manual(values = c(music = "#D55E00", pic = "#0072B2"),
+                position = position_dodgenudge(width = 0.2, x = 0.3), linewidth = 1,size=1) +
+  scale_x_discrete(labels = c("Different","Similar")) +
+  scale_color_manual(values = c(Music = "#D55E00", Images = "#0072B2"),
                      labels = c("Negative", "Positive")) +
   labs(x = NULL, y = "Emotional granularity", color = "Emotion valence") +
   theme_classic(base_size = 12) +
