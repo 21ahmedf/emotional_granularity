@@ -1,0 +1,139 @@
+---
+title: "emoGranDemoTables"
+output: html_document
+date: "2026-10-08"
+---
+```{r}
+library(dplyr)
+library(tidyr)
+library(tools)
+library(flextable)
+library(officer)
+
+```
+
+#Study 1
+```{r}
+
+
+
+
+
+
+
+```
+
+
+#Study 2
+```{r}
+# Path to your data file (.csv or .xlsx), with one row per participant
+data_file <- final
+
+# Column names in YOUR data that correspond to each variable below
+age_col    <- "age"
+sex_col    <- "sex"
+gender_col <- "gender"
+race_col   <- "race_ethnicity"
+
+#Need to check these
+
+sex_levels <- c("Male", "Female", "Prefer not to answer", "No response")
+
+gender_levels <- c("Man", "Woman", "Gender non-conforming", "Genderfluid",
+                   "Other gender identity", "No response")
+
+race_levels <- c("American Indian or Alaska Native", "Asian", "Black or African American",
+                  "Hispanic or Latino", "Native Hawaiian or Other Pacific Islander",
+                  "White", "Two or more races", "Prefer not to answer", "No response")
+
+output_file <- "demographic_table_study1.docx"
+
+load_file <- function(path) {
+  ext <- tolower(file_ext(path))
+  if (ext == "csv") readr::read_csv(path, show_col_types = FALSE)
+  else if (ext %in% c("xlsx", "xls")) readxl::read_excel(path)
+  else stop("Unsupported file type: ", path)
+}
+
+# ---- Helper: build an "n (%)" block for one categorical variable ----
+# `levels_order` fixes the row order and ensures every category appears,
+# even if its count is 0.
+categorical_block <- function(df, col, levels_order, header_label) {
+  total_n <- sum(!is.na(df[[col]]))
+  counts <- df %>%
+    filter(!is.na(.data[[col]])) %>%
+    count(.data[[col]], name = "n") %>%
+    rename(level = 1) %>%
+    mutate(level = factor(level, levels = levels_order)) %>%
+    complete(level, fill = list(n = 0)) %>%
+    arrange(level) %>%
+    mutate(pct = round(100 * n / total_n, 1),
+           value = sprintf("%d (%.1f%%)", n, pct))
+
+  bind_rows(
+    tibble(Characteristic = header_label, value = ""),
+    tibble(Characteristic = paste0("    ", counts$level), value = counts$value)
+  )
+}
+
+# ---- Load data ----
+
+for (col in c(age_col, sex_col, gender_col, race_col)) {
+  if (!col %in% names(df)) {
+    stop(sprintf("Column '%s' not found in %s. Available columns: %s",
+                 col, data_file, paste(names(df), collapse = ", ")))
+  }
+}
+
+# ---- Age block: Mean (SD) and Range ----
+age_vals <- df[[age_col]][!is.na(df[[age_col]])]
+age_block <- tibble(
+  Characteristic = c("Age", "    Mean (SD)", "    Range"),
+  value = c("",
+            sprintf("%.1f (%.1f)", mean(age_vals), sd(age_vals)),
+            sprintf("%.0f\u2013%.0f", min(age_vals), max(age_vals)))
+)
+
+# ---- Build each categorical block ----
+sex_block    <- categorical_block(df, sex_col,    sex_levels,    "Sex")
+gender_block <- categorical_block(df, gender_col, gender_levels, "Gender")
+race_block   <- categorical_block(df, race_col,   race_levels,   "Race/Ethnicity")
+
+table_data <- bind_rows(age_block, sex_block, gender_block, race_block) %>%
+  rename(`n (%)` = value)
+
+# ---- Build the APA-style flextable ----
+n_total <- nrow(df)
+
+ft <- flextable(table_data) %>%
+  set_header_labels(Characteristic = "Characteristic", `n (%)` = "n (%) or M (SD)") %>%
+  add_header_lines(values = sprintf("Table 1\nParticipant Demographics (N = %d)", n_total)) %>%
+  align(j = 2, align = "center", part = "all") %>%
+  align(j = 1, align = "left", part = "all") %>%
+  font(fontname = "Times New Roman", part = "all") %>%
+  fontsize(size = 12, part = "all") %>%
+  bold(i = 1, part = "header") %>%
+  italic(i = 2, part = "header") %>%
+  border_remove() %>%
+  hline_top(part = "header", border = fp_border(width = 1.5)) %>%
+  hline(i = 1, part = "header", border = fp_border(width = 1)) %>%
+  hline_bottom(part = "header", border = fp_border(width = 1)) %>%
+  hline_bottom(part = "body", border = fp_border(width = 1.5)) %>%
+  autofit() %>%
+  width(j = 1, width = 2.8) %>%
+  width(j = 2, width = 2.0)
+
+# Bold the section header rows (Age, Sex, Gender, Race/Ethnicity) within the body
+section_rows <- which(table_data$`n (%)` == "")
+ft <- bold(ft, i = section_rows, j = 1, part = "body")
+
+# ---- Save to Word ----
+doc <- read_docx() %>%
+  body_add_flextable(ft)
+print(doc, target = output_file)
+
+cat(sprintf("Done. Table saved to %s\n", output_file))
+cat(sprintf("N = %d participants\n", n_total))
+
+```
+
