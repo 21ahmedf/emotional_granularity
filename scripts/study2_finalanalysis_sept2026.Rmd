@@ -11,6 +11,7 @@ library(tidyverse)
 library(emmeans)
 library(corrplot)
 library(ggpp)
+library(lme4)
 ```
 
 #read in data
@@ -299,7 +300,7 @@ music_images_gran_rel <-
              inherit.aes = FALSE, alpha = 0.5, size=2) +
   geom_ribbon(aes(ymin = lower.CL, ymax = upper.CL), alpha = 0.2, color = NA) +
   geom_line(linewidth = 1) +
-  scale_color_manual(values = c(negative = "#D55E00", positive = "#0072B2"),
+  scale_color_manual(values = c(negative = "#FFEE8C", positive = "#0072B2"),
                      labels = c("Negative", "Positive"), aesthetics = c("color", "fill")) +
   labs(x = "Image Emotional Granularity Scores", y = "Music Emotional Granularity Scores",
        fill = "Emotion valence") +
@@ -361,7 +362,7 @@ mag_diff <-
                 position = position_nudge(x = 0.3),
                 size = 0.75, linewidth = 1.25) +
   scale_x_discrete(labels = c(music = "Music", pic = "Images")) +
-  scale_color_manual(values = c(Negative = "#D55E00", Positive = "#0072B2"),
+  scale_color_manual(values = c(Negative = "#F2DB64", Positive = "#0072B2"),
                      labels = c("Negative", "Positive")) +
   labs(x = NULL, y = "Emotional granularity", color = "Emotion valence") +
   theme_classic(base_size = 12) +
@@ -772,7 +773,7 @@ arousal_differentiation <-
   geom_pointrange(aes(ymin = lower.CL, ymax = upper.CL),
                 position = position_dodgenudge(width = 0.2, x = 0.3), linewidth = 1,size=1) +
   scale_x_discrete(labels = c("Different","Similar")) +
-  scale_color_manual(values = c(Music = "#D55E00", Images = "#0072B2"),
+  scale_color_manual(values = c(Music = "#006742", Images = "#FF7417"),
                      labels = c("Negative", "Positive")) +
   labs(x = NULL, y = "Emotional granularity", color = "Emotion valence") +
   theme_classic(base_size = 12) +

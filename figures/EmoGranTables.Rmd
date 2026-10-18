@@ -1,0 +1,110 @@
+---
+title: "study2figures"
+output: html_document
+date: "2026-10-17"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+
+# Count each option independently for a choose-all-that-apply column
+  multi_summary <- function(var, labels = NULL) {
+    x <- as.character(final[[var]])
+    n_total <- length(x)
+  
+    # Split "1,5,6" into c("1","5","6") for each participant
+    split_list <- strsplit(x, ",")
+    split_list <- lapply(split_list, trimws)
+  
+    # Count participants selecting each code (unique() guards against duplicates)
+    codes <- unlist(lapply(split_list, unique))
+    tab <- table(codes)
+  
+    # Sort numerically
+    tab <- tab[order(as.numeric(names(tab)))]
+  
+    data.frame(
+      Variable = var,
+      Category = if (is.null(labels)) names(tab) else labels[names(tab)],
+      Value = sprintf("%.0f (%.1f%%)", as.numeric(tab), 100 * as.numeric(tab) / n_total)
+    )
+  }
+  
+  gender_labels <- c(
+    "1"  = "Man",
+    "5"  = "Woman",
+    "6"  = "Transgender",
+    "7"  = "Gender non-conforming",
+    "8"  = "Nonbinary",
+    "9"  = "Genderfluid",
+    "10" = "Genderqueer",
+    "11" = "Other gender identity:",
+    "17" = "Prefer not to answer"
+  )
+  
+  race_labels <- c(
+  "1" = "American Indian or Alaska Native",
+  "2" = "Asian",
+  "3" = "Black or African American",
+  "4" = "Hispanic or Latino",
+  "5" = "Native Hawaiian or Other Pacific Islander",
+  "6" = "White",
+  "7" = "Two or More Races",
+  "8" = "Prefer not to answer"
+  )
+  
+  # Age: mean, SD, range
+  final <- as.data.frame(final)
+  final$age <- as.numeric(final$age)   # convert text to numbers
+  
+  age_summary <- data.frame(
+    Variable = "Age",
+    Category = "Mean (SD); Range",
+    Value = sprintf("%.1f (%.1f); %.0f-%.0f",
+                    mean(final$age, na.rm = TRUE),
+                    sd(final$age, na.rm = TRUE),
+                    min(final$age, na.rm = TRUE),
+                    max(final$age, na.rm = TRUE))
+  )
+  
+  cat_summary <- function(var) {
+    if (!var %in% names(final)) {
+      warning("Column not found: ", var)
+      return(NULL)
+    }
+    tab <- table(final[[var]], useNA = "ifany")
+    data.frame(
+      Variable = var,
+      Category = names(tab),
+      Value = sprintf("%.0f (%.1f%%)", as.numeric(tab), 100 * as.numeric(tab) / sum(tab))
+    )
+  }
+
+result <- rbind(
+  age_summary,
+  cat_summary("sex"),
+  multi_summary("gender", gender_labels),
+  multi_summary("race_ethnicity", race_labels)
+)
+
+print(result, row.names = FALSE)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
