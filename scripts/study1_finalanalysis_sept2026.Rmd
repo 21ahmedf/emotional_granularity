@@ -223,10 +223,10 @@ ggplot(averages_total, aes(x = Emotion, y = stim, fill = `Average\nRating`)) +
     ylab("Stimulus") +
     scale_fill_gradient(low = "blue", high = "red") +  # Adjust color scheme as needed
     theme_minimal() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1, color = "black", size = 30), 
-          axis.text.y = element_text(color = "black", size=30),
-          strip.text = element_text(color = "black", size=30),
-          axis.title = element_text(color = "black", size=36),
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, color = "black", size = 32), 
+          axis.text.y = element_text(color = "black", size=31),
+          strip.text = element_text(color = "black", size=31),
+          axis.title = element_text(color = "black", size=38),
           plot.background = element_rect(fill = "white", color = NA),  # Set plot background to white
         panel.background = element_rect(fill = "white", color = NA),
         legend.title = element_text(size = 28), 
@@ -235,7 +235,8 @@ ggplot(averages_total, aes(x = Emotion, y = stim, fill = `Average\nRating`)) +
   facet_wrap(~condition, scales = "free") +
   geom_vline(xintercept=5.5, color="black", linetype="solid", size=3)
 
-ggsave('../heatmap_averagestudy1.png',averages_total_plot, dpi=1000,width=18, height=10.5)
+
+ggsave('../heatmap_averagestudy1.png',averages_total_plot, dpi=1000,width=20, height=10.5)
 ```
 
 ##granularity across pics + music
@@ -294,13 +295,13 @@ predictions <- emmeans(m3, ~ granularity_pic * valence,
                        at = list(granularity_pic = pic_range)) %>%
   as.data.frame()
 
-music_images_gran_rel <-
+music_images_gran_rel <- #maybe make these color on music vs. images
   ggplot(predictions, aes(granularity_pic, emmean, color = valence, fill = valence)) +
   geom_point(data = gran_wide, aes(x = granularity_pic, y = granularity_music, color = valence),
-             inherit.aes = FALSE, alpha = 0.5, size=2) +
-  geom_ribbon(aes(ymin = lower.CL, ymax = upper.CL), alpha = 0.2, color = NA) +
+             inherit.aes = FALSE, alpha = 0.7, size=2) +
+  geom_ribbon(aes(ymin = lower.CL, ymax = upper.CL), alpha = 0.3, color = NA) +
   geom_line(linewidth = 1) +
-  scale_color_manual(values = c(negative = "#D55E00", positive = "#0072B2"),
+  scale_color_manual(values = c(negative = "#FFC425", positive = "#0072B2"),
                      labels = c("Negative", "Positive"), aesthetics = c("color", "fill")) +
   labs(x = "Image Emotional Granularity Scores", y = "Music Emotional Granularity Scores",
        fill = "Emotion valence") +
@@ -316,7 +317,6 @@ music_images_gran_rel <-
     axis.title.y = element_text(family="Arial",size=30),
     axis.text.x = element_text(family="Arial", size=26),
     axis.text.y = element_text(family="Arial",size=26))
-
 
 ggsave('../figures/music_images_gran_rel1.png', music_images_gran_rel, width=10, height=9, dpi=350)
 ```
@@ -348,28 +348,25 @@ gran_dat$valence <- ifelse(grepl("^neg",gran_dat$valence), "Negative", "Positive
 gran_dat$condition <- ifelse(grepl("pic",gran_dat$condition), "Images", "Music")
 
 mag_diff <-
-  ggplot(predictions, aes(condition, emmean, color = valence)) +
-  geom_point(data = gran_dat, aes(condition, granularity, color = valence),
-             position = position_jitterdodge(jitter.width = 0.15, dodge.width = 0.5),
-             alpha = 0.25, inherit.aes = FALSE,size=3) +
+  ggplot(predictions, aes(condition, emmean, color = condition)) +
+  geom_point(data = gran_dat, aes(condition, granularity, color = condition),
+             position = position_jitter(width = 0.15, height = 0),
+             alpha = 0.5, inherit.aes = FALSE, size = 3) +
   geom_pointrange(aes(ymin = lower.CL, ymax = upper.CL),
-                position = position_nudge(x = 0.3),
-                size = 0.75, linewidth = 1.25) +
-  scale_x_discrete(labels = c(music = "Music", pic = "Images")) +
-  scale_color_manual(values = c(Negative = "#D55E00", Positive = "#0072B2"),
-                     labels = c("Negative", "Positive")) +
-  labs(x = NULL, y = "Emotional granularity", color = "Emotion valence") +
+                  position = position_nudge(x = 0.3),
+                  size = 0.75, linewidth = 1.25) +
+  scale_color_manual(values = c(Music = "#006742", Images = "#FF7417")) +
   theme_classic(base_size = 12) +
-   facet_wrap(~valence,scales = "free_x") +
+  facet_wrap(~valence, scales = "free_x") +
   xlab("Condition") +
   ylab("Granularity Score") +
   theme(
-    axis.title.x = element_text(family="Arial", size=50),
-    axis.title.y = element_text(family="Arial",size=50),
-    axis.text.x = element_text(family="Arial", size=44),
-    axis.text.y = element_text(family="Arial",size=44),
-    strip.text = element_text(family="Arial",size=46)) +
-    theme(legend.position = "none")
+    axis.title.x = element_text(family = "Arial", size = 50),
+    axis.title.y = element_text(family = "Arial", size = 50),
+    axis.text.x  = element_text(family = "Arial", size = 44),
+    axis.text.y  = element_text(family = "Arial", size = 44),
+    strip.text   = element_text(family = "Arial", size = 46),
+    legend.position = "none")
 
 
 ggsave('../figures/music_images_mag_diff1.png', mag_diff,dpi=1000, width=14, height=12)
@@ -721,6 +718,7 @@ m5 <- lmer(cor_z ~ condition * arousal_dif * valence +
            data = master_posneg)
 car::Anova(m5, type = "II")
 
+summary(m5)
 #breaking down
 emm <- emmeans(m5, ~  condition | arousal_dif, lmer.df = "satterthwaite",lmerTest.limit = 5281)
 emm
@@ -756,31 +754,36 @@ master_posneg %>%
 
 average_corr$cor_z <- psych::fisherz(pmin(pmax(average_corr$cor, -0.999), 0.999))
 average_corr <- remove_outliers_iqr(average_corr, "cor_z")
+lvl <- levels(factor(predictions$arousal_dif))
+cond_off <- c(Music = -0.27, Images = 0.27)
+base_x <- function(d) as.numeric(factor(d$arousal_dif, levels = lvl)) + cond_off[d$condition]
 
+cond_off <- c(Music = -0.2, Images = 0.2)                
+average_corr$x <- base_x(average_corr) - 0.06
+predictions$x  <- base_x(predictions)  + 0.10 
 
-arousal_differentiation <- 
-  ggplot(predictions, aes(arousal_dif, emmean, color = condition)) +
-  geom_jitter(data = average_corr, aes(arousal_dif, cor_z, color = condition),
-             #position = position_jitterdodge(jitter.width = 0.15, dodge.width = 0.5),
-            alpha=0.5, width=0.1,size=2 ) +
-  geom_pointrange(aes(ymin = lower.CL, ymax = upper.CL),
-                position = position_dodgenudge(width = 0.2, x = 0.3), linewidth = 1,size=1) +
-  scale_x_discrete(labels = c("Different","Similar")) +
-  scale_color_manual(values = c(Music = "#D55E00", Images = "#0072B2"),
-                     labels = c("Negative", "Positive")) +
-  labs(x = NULL, y = "Emotional granularity", color = "Emotion valence") +
+set.seed(1) # to replicate jitter
+
+arousal_differentiation <-
+  ggplot() +
+  geom_jitter(data = average_corr, aes(x, cor_z, color = condition),
+              width = 0.075, height = 0, alpha = 0.5, size = 2) + 
+  geom_pointrange(data = predictions,
+                  aes(x, emmean, ymin = lower.CL, ymax = upper.CL, color = condition),
+                  linewidth = 1, size = 1) +
+  scale_x_continuous(breaks = seq_along(lvl), labels = c("Different", "Similar")) +
+  scale_color_manual(values = c(Music = "#006742", Images = "#FF7417")) +
   theme_classic(base_size = 12) +
-   facet_wrap(~valence,scales = "free_x") +
+  facet_wrap(~valence, scales = "free_x") +
   xlab("Arousal Level") +
-  ylab("Average Fisher-Transformed\nCorrelation Among Emotion Ratings")+
+  ylab("Average Fisher-Transformed\nCorrelation Among Emotion Ratings") +
   theme(
-    axis.title.x = element_text(family="Arial", size=50),
-    axis.title.y = element_text(family="Arial",size=50),
-    axis.text.x = element_text(family="Arial", size=44),
-    axis.text.y = element_text(family="Arial",size=44),
-    strip.text = element_text(family="Arial",size=44)) +
-    theme(legend.position = "none")
-
+    axis.title.x = element_text(family = "Arial", size = 50),
+    axis.title.y = element_text(family = "Arial", size = 50),
+    axis.text.x  = element_text(family = "Arial", size = 44),
+    axis.text.y  = element_text(family = "Arial", size = 44),
+    strip.text   = element_text(family = "Arial", size = 44),
+    legend.position = "none")
 
 ggsave('../figures/arousal_differentiation1.png', arousal_differentiation,dpi=1000, width=14, height=12)
 ```
@@ -834,7 +837,7 @@ m2_ext <- extend(m2, along = "Participant.Public.ID", n = 300)
 
 oc2 <- powerCurve(m2_ext, along = "Participant.Public.ID",
                   test = fixed("granularity_pic", "t"),
-                  breaks = seq(50, 300, by = 25),
+                    breaks = seq(155, 160, by = 1),
                   nsim = 1000, seed = seed)
 print(oc2)
 plot(oc2)
