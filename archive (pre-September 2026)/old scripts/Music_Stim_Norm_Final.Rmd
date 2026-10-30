@@ -132,6 +132,387 @@ theme_classic() +
 
 #stim that don't transition arousal: 
 #3,7
+```
 
+#identification
+```{r}
+# Find 8-s music excerpts around emotional transitions, using only the
+# continuous valence and arousal ratings (no assumed section boundaries).
+#
+# 1. Change points: each piece's ratings are split into the segments with
+#    the most stable valence and arousal (optimal segmentation of both
+#    ratings together, minimum segment length min_segment_s). The number of
+#    change points is the largest (up to max_changes) for which every shift
+#    between neighbouring segments is at least min_shift_sd.
+# 2. Ramps: around each change point, where the ratings leave the old state
+#    (onset: last moment still within ramp_lo of the way to the new state) and
+#    arrive in the new one (offset: first moment past ramp_hi). Gradual
+#    changes have long ramps, sudden ones short ramps.
+# 3. Excerpts: a clip_s window that holds pre_s of the settled old state,
+#    the whole ramp, and post_s of the settled new state ("fits"). The clip
+#    length a change needs is pre_s + ramp + post_s. transition_s (EEG marker)
+#    is the middle of the ramp.
+# 4. Selection: one excerpt per piece among changes that fit, the largest
+#    shifts first, taken in turn from the four directions.
+#
+# Input: one CSV, long format, one row per second per piece (several rows per
+# second are averaged). Outputs in out_dir:
+#   segments.csv       every piece's segments with their mean valence / arousal
+#   changes.csv        every change point, its shift and its 8-s window
+#   selected.csv       the suggested excerpts (main + practice)
+#   stimuli_rows.csv   rows for stimuli/emotion/stimuli.csv (task)
+#   timeseries.png     ratings, segment means, change points, selected windows
+#   circumplex.png     each selected change: segment before -> segment after
+#   clips/             the cut .wav excerpts (cut_audio = TRUE, package tuneR; .wav or .mp3 input)
 
+library(dplyr)
+library(ggplot2)
+
+## ============================ SETTINGS ============================
+ratings_file <- "../stimuli/sachs/SourceData_1.csv"
+col_piece <- "song"; col_time <- "second"; col_val <- "valence_raw"; col_aro <- "arousal_raw"
+# The *_filt columns may be filtered in a way that removes slow shifts; to compare,
+# rerun with col_val <- "valence_filt"; col_aro <- "arousal_filt" and another out_dir.
+time_unit_s <- 1        # seconds per unit of the time column (0.001 = milliseconds)
+lag_s <- 0              # rating lag: the rating at t describes the music at t - lag_s
+
+max_changes <- 3        # at most this many change points per piece
+min_segment_s <- 15     # shortest segment between change points (s)
+min_shift_sd <- 0.5     # smallest shift between neighbouring segments, in SDs of the ratings
+clip_s <- 8             # excerpt length (s)
+pre_s <- 3              # settled old state the clip must contain before the ramp (s)
+post_s <- 3             # settled new state the clip must contain after the ramp (s)
+ramp_lo <- 0.2          # ramp onset: ratings still within 20% of the way from old to new state
+ramp_hi <- 0.8          # ramp offset: ratings past 80% of the way
+smooth_s <- 3           # moving average (s) used only to locate ramp onset / offset
+n_select <- 10          # excerpts for the main task (+1 suggested for the practice)
+
+neutral_valence <- 0    # only used to label segments with a quadrant (descriptive)
+neutral_arousal <- 0
+
+out_dir <- "transition_selection_raw"
+cut_audio <- TRUE       # cut the selected excerpts from the full pieces (package tuneR)
+audio_dir <- "../stimuli/sachs"   # searched (with subfolders) for a file named like each song, .wav or .mp3
+
+# Audition: versions of the strongest change points in several lengths and positions,
+# to compare by ear (clips_audition/ + audition_sheet.csv to note your judgements).
+audition <- TRUE
+audition_per_piece <- 2           # strongest change points per piece
+audition_lengths <- c(8, 10, 12)  # s; each placed by the pre_s / ramp / post_s rule
+audition_shifts <- c(0, 2)        # s, added to that placement; positive = window moved later
+                                  # (more of the new state)
+
+## ============================ HELPERS =============================
+quadrant <- function(v, a) {
+  ifelse(v >= neutral_valence, ifelse(a >= neutral_arousal, "positive-high", "positive-low"),
+                               ifelse(a >= neutral_arousal, "negative-high", "negative-low"))
+}
+
+roll_mean <- function(x, k) {
+  if (k <= 1) return(x)
+  y <- as.numeric(stats::filter(x, rep(1 / k, k), sides = 2))
+  y[is.na(y)] <- x[is.na(y)]                  # keep the edges
+  y
+}
+
+# Window of length L holding pre_s before the ramp onset and post_s after its
+# offset, with any spare time shared equally; kept within [tmin, tmax].
+place_window <- function(onset, offset, L, tmin, tmax) {
+  need <- pre_s + (offset - onset) + post_s
+  fits <- need <= L
+  start <- if (fits) onset - pre_s - (L - need) / 2 else (onset + offset) / 2 - L / 2
+  start <- round(min(max(start, tmin), tmax - L))
+  list(start = start, fits = fits && start <= onset - pre_s && start + L >= offset + post_s)
+}
+
+# Optimal split of the rows of X (n x 2) into K segments of at least m rows,
+# minimising the within-segment sum of squares (dynamic programming).
+optimal_segments <- function(X, K, m) {
+  n <- nrow(X)
+  if (K * m > n) return(NULL)
+  S <- rbind(0, apply(X, 2, cumsum))
+  Q <- rbind(0, apply(X^2, 2, cumsum))
+  cost <- function(i, j) {                  # rows i..j
+    len <- j - i + 1
+    sum(Q[j + 1, ] - Q[i, ] - (S[j + 1, ] - S[i, ])^2 / len)
+  }
+  F <- matrix(Inf, K, n); B <- matrix(NA_integer_, K, n)
+  for (j in m:n) F[1, j] <- cost(1, j)
+  if (K >= 2) {
+    for (k in 2:K) {
+      for (j in (k * m):n) {
+        prev <- ((k - 1) * m):(j - m)       # last row of segment k - 1
+        vals <- F[k - 1, prev] + vapply(prev, function(t) cost(t + 1, j), numeric(1))
+        b <- which.min(vals)
+        F[k, j] <- vals[b]; B[k, j] <- prev[b]
+      }
+    }
+  }
+  ends <- integer(K); ends[K] <- n
+  if (K >= 2) for (k in K:2) ends[k - 1] <- B[k, ends[k]]
+  list(starts = c(1L, head(ends, -1) + 1L), ends = ends, cost = F[K, n])
+}
+
+## ============================ DATA ================================
+dir.create(out_dir, showWarnings = FALSE)
+raw <- read.csv(ratings_file, stringsAsFactors = FALSE)
+missing_cols <- setdiff(c(col_piece, col_time, col_val, col_aro), names(raw))
+if (length(missing_cols) > 0) {
+  stop("Columns not found: ", paste(missing_cols, collapse = ", "),
+       "\nColumns in the file: ", paste(names(raw), collapse = ", "))
+}
+d <- data.frame(piece = as.character(raw[[col_piece]]),
+                time = floor(as.numeric(raw[[col_time]]) * time_unit_s),
+                v = as.numeric(raw[[col_val]]), a = as.numeric(raw[[col_aro]])) %>%
+  group_by(piece, time) %>%
+  summarise(v = mean(v, na.rm = TRUE), a = mean(a, na.rm = TRUE), .groups = "drop") %>%
+  filter(!is.na(v), !is.na(a)) %>%
+  arrange(piece, time) %>%
+  mutate(music_time = time - lag_s)
+
+# Both ratings in the same units (SDs over all pieces), so neither dominates
+sd_v <- sd(d$v); sd_a <- sd(d$a)
+d$zv <- (d$v - mean(d$v)) / sd_v
+d$za <- (d$a - mean(d$a)) / sd_a
+cat(sprintf("%d pieces, %d to %d s each. Valence %.3f to %.3f (SD %.3f), arousal %.3f to %.3f (SD %.3f)\n",
+            n_distinct(d$piece), min(table(d$piece)), max(table(d$piece)),
+            min(d$v), max(d$v), sd_v, min(d$a), max(d$a), sd_a))
+
+## ============================ CHANGE POINTS =======================
+segs <- list(); chg <- list()
+for (p in unique(d$piece)) {
+  dp <- d[d$piece == p, ]
+  X <- cbind(dp$zv, dp$za)
+  chosen <- NULL
+  for (K in (max_changes + 1):1) {           # most change points first
+    sg <- optimal_segments(X, K, min_segment_s)
+    if (is.null(sg)) next
+    mv <- sapply(seq_len(K), function(k) mean(dp$zv[sg$starts[k]:sg$ends[k]]))
+    ma <- sapply(seq_len(K), function(k) mean(dp$za[sg$starts[k]:sg$ends[k]]))
+    shifts <- if (K > 1) sqrt(diff(mv)^2 + diff(ma)^2) else numeric(0)
+    if (K == 1 || all(shifts >= min_shift_sd)) { chosen <- sg; break }
+  }
+  K <- length(chosen$starts)
+  seg_tab <- data.frame(
+    piece = p, segment = seq_len(K),
+    start_s = dp$music_time[chosen$starts], end_s = dp$music_time[chosen$ends] + 1,
+    valence = sapply(seq_len(K), function(k) mean(dp$v[chosen$starts[k]:chosen$ends[k]])),
+    arousal = sapply(seq_len(K), function(k) mean(dp$a[chosen$starts[k]:chosen$ends[k]])),
+    stringsAsFactors = FALSE)
+  seg_tab$quadrant <- quadrant(seg_tab$valence, seg_tab$arousal)
+  segs[[p]] <- seg_tab
+  if (K < 2) next
+  zv_s <- roll_mean(dp$zv, smooth_s); za_s <- roll_mean(dp$za, smooth_s)
+  tmin <- max(0, min(dp$music_time)); tmax <- max(dp$music_time) + 1
+  for (k in 2:K) {
+    iA <- chosen$starts[k - 1]:chosen$ends[k - 1]
+    iB <- chosen$starts[k]:chosen$ends[k]
+    mA <- c(mean(dp$zv[iA]), mean(dp$za[iA])); mB <- c(mean(dp$zv[iB]), mean(dp$za[iB]))
+    dvec <- mB - mA
+    prog <- ((zv_s - mA[1]) * dvec[1] + (za_s - mA[2]) * dvec[2]) / sum(dvec^2)   # 0 = old, 1 = new state
+    on_i <- iA[prog[iA] <= ramp_lo]
+    off_i <- iB[prog[iB] >= ramp_hi]
+    onset <- dp$music_time[if (length(on_i)) max(on_i) else min(iA)]
+    offset <- dp$music_time[if (length(off_i)) min(off_i) else max(iB)]
+    pw <- place_window(onset, offset, clip_s, tmin, tmax)
+    inclip <- dp$music_time >= pw$start & dp$music_time < pw$start + clip_s
+    pc <- prog[inclip]
+    dv <- seg_tab$valence[k] - seg_tab$valence[k - 1]
+    da <- seg_tab$arousal[k] - seg_tab$arousal[k - 1]
+    chg[[length(chg) + 1]] <- data.frame(
+      piece = p, change = k - 1, change_at_s = seg_tab$start_s[k],
+      from_segment = paste0(seg_tab$start_s[k - 1], "-", seg_tab$end_s[k - 1], " s"),
+      to_segment = paste0(seg_tab$start_s[k], "-", seg_tab$end_s[k], " s"),
+      v_before = seg_tab$valence[k - 1], a_before = seg_tab$arousal[k - 1],
+      v_after = seg_tab$valence[k], a_after = seg_tab$arousal[k],
+      from_quadrant = seg_tab$quadrant[k - 1], to_quadrant = seg_tab$quadrant[k],
+      shift_sd = sqrt((dv / sd_v)^2 + (da / sd_a)^2),          # segment-level shift, in SDs
+      valence_dir = ifelse(dv >= 0, "valence up", "valence down"),
+      arousal_dir = ifelse(da >= 0, "arousal up", "arousal down"),
+      ramp_onset_s = onset, ramp_offset_s = offset, ramp_s = offset - onset,
+      clip_needed_s = pre_s + (offset - onset) + post_s,       # clip length this change needs
+      fits = pw$fits,
+      start_s = pw$start, end_s = pw$start + clip_s,
+      transition_s = round((onset + offset) / 2 - pw$start),   # ramp middle, s after clip onset
+      progress_first = mean(pc[seq_len(min(pre_s, length(pc)))]),          # ~0 = clip opens in the old state
+      progress_last = mean(pc[max(1, length(pc) - post_s + 1):length(pc)]), # ~1 = clip ends in the new state
+      piece_end_s = tmax,
+      stringsAsFactors = FALSE)
+  }
+}
+segs <- do.call(rbind, segs); rownames(segs) <- NULL
+chg <- do.call(rbind, chg)
+write.csv(segs, file.path(out_dir, "segments.csv"), row.names = FALSE)
+if (is.null(chg)) stop("No change points: lower min_shift_sd or min_segment_s.")
+chg$direction <- paste(chg$valence_dir, chg$arousal_dir, sep = ", ")
+chg$crossed_quadrant <- chg$from_quadrant != chg$to_quadrant
+write.csv(chg, file.path(out_dir, "changes.csv"), row.names = FALSE)
+
+cat(sprintf("\n%d change points in %d of %d pieces\n", nrow(chg), n_distinct(chg$piece), n_distinct(d$piece)))
+print(table(chg$direction))
+cat("\nShift between segments (SD units):\n"); print(summary(chg$shift_sd))
+cat("Ramp duration (s):\n"); print(summary(chg$ramp_s))
+cat(sprintf("Clip length needed (%g s old state + ramp + %g s new state):\n", pre_s, post_s)); print(summary(chg$clip_needed_s))
+for (L in c(8, 10, 12, 15)) cat(sprintf("  changes that fit in %2d s: %d of %d (in %d pieces)\n", L,
+  sum(chg$clip_needed_s <= L), nrow(chg), n_distinct(chg$piece[chg$clip_needed_s <= L])))
+
+## ============================ SELECTION ===========================
+pool <- chg[chg$fits, ]
+if (n_distinct(pool$piece) < min(n_select + 1, n_distinct(chg$piece))) {
+  cat(sprintf("\n!! Only %d pieces have a change that fits in %g s; the others use their best change anyway\n",
+              n_distinct(pool$piece), clip_s), "   (fits = FALSE: the clip cuts into the ramp). Consider a longer clip_s.\n")
+  pool <- rbind(pool, chg[!chg$fits & !(chg$piece %in% pool$piece), ])
+}
+pool <- pool[order(!pool$fits, -pool$shift_sd), ]
+target <- min(n_select + 1, n_distinct(pool$piece))
+groups <- split(pool, pool$direction)
+picked <- list(); used <- character(0)
+while (length(picked) < target) {
+  added <- FALSE
+  for (g in names(groups)) {
+    if (length(picked) >= target) break
+    gi <- groups[[g]][!(groups[[g]]$piece %in% used), ]
+    if (nrow(gi) > 0) {
+      picked[[length(picked) + 1]] <- gi[1, ]
+      used <- c(used, gi$piece[1])
+      added <- TRUE
+    }
+  }
+  if (!added) break
+}
+sel <- do.call(rbind, picked)
+sel <- sel[order(-sel$shift_sd), ]
+sel$use <- c(rep("main", min(n_select, nrow(sel))), rep("practice", max(0, nrow(sel) - n_select)))
+sel$file <- sprintf("%s_%03ds.wav", basename(sel$piece), sel$start_s)
+write.csv(sel, file.path(out_dir, "selected.csv"), row.names = FALSE)
+cat("\nSelected (practice = the smallest shift; swap by hand if you prefer):\n")
+print(sel[, c("use", "piece", "start_s", "direction", "shift_sd", "ramp_s", "clip_needed_s", "fits",
+              "progress_first", "progress_last", "transition_s")], digits = 2, row.names = FALSE)
+cat("\nDirections in the main set:\n"); print(table(sel$direction[sel$use == "main"]))
+
+rows <- data.frame(file = sel$file, category = ifelse(sel$use == "practice", "practice", "transitional"),
+                   source_piece = sel$piece, source_start_s = sel$start_s,
+                   direction = sel$direction, from_quadrant = sel$from_quadrant, to_quadrant = sel$to_quadrant,
+                   shift_sd = round(sel$shift_sd, 2), ramp_s = sel$ramp_s, fits = sel$fits,
+                   transition_s = sel$transition_s)
+write.csv(rows, file.path(out_dir, "stimuli_rows.csv"), row.names = FALSE)
+
+## ============================ PLOTS ===============================
+seg_long <- rbind(
+  data.frame(piece = segs$piece, x = segs$start_s, xend = segs$end_s, y = segs$valence, rating = "valence"),
+  data.frame(piece = segs$piece, x = segs$start_s, xend = segs$end_s, y = segs$arousal, rating = "arousal"))
+p1 <- ggplot(d, aes(x = music_time)) +
+  geom_rect(data = sel, aes(xmin = start_s, xmax = end_s, ymin = -Inf, ymax = Inf),
+            inherit.aes = FALSE, fill = "gold", alpha = 0.5) +
+  geom_rect(data = chg, aes(xmin = ramp_onset_s, xmax = ramp_offset_s, ymin = -Inf, ymax = Inf),
+            inherit.aes = FALSE, fill = "steelblue", alpha = 0.15) +
+  geom_vline(data = chg, aes(xintercept = change_at_s), linetype = "dashed", colour = "grey40") +
+  geom_line(aes(y = v, colour = "valence"), alpha = 0.6) +
+  geom_line(aes(y = a, colour = "arousal"), alpha = 0.6) +
+  geom_segment(data = seg_long, aes(x = x, xend = xend, y = y, yend = y, colour = rating),
+               inherit.aes = FALSE, linewidth = 1.1) +
+  facet_wrap(~ piece, ncol = 3) +
+  labs(x = "Time in the audio (s)", y = "Rating", colour = NULL,
+       title = "Ratings, segment means (thick), ramps (blue), change points (dashed), selected excerpts (gold)") +
+  theme_minimal()
+ggsave(file.path(out_dir, "timeseries.png"), p1, width = 13, height = 9, dpi = 150)
+
+p2 <- ggplot(sel) +
+  geom_hline(yintercept = neutral_arousal, colour = "grey60") +
+  geom_vline(xintercept = neutral_valence, colour = "grey60") +
+  geom_segment(aes(x = v_before, y = a_before, xend = v_after, yend = a_after, colour = use),
+               arrow = arrow(length = unit(0.15, "inches"))) +
+  geom_text(aes(x = v_after, y = a_after, label = basename(piece)), size = 2.5, vjust = -0.7) +
+  labs(x = "Valence", y = "Arousal", colour = NULL,
+       title = "Selected changes: segment before -> segment after") +
+  theme_minimal()
+ggsave(file.path(out_dir, "circumplex.png"), p2, width = 8, height = 6, dpi = 150)
+
+## ============================ AUDIO ===============================
+if (cut_audio) {
+  if (!requireNamespace("tuneR", quietly = TRUE)) stop("Install tuneR first: install.packages(\"tuneR\")")
+  audio_files <- list.files(audio_dir, pattern = "\\.(wav|mp3)$", recursive = TRUE, full.names = TRUE, ignore.case = TRUE)
+  cat(sprintf("\n%d audio files found under %s\n", length(audio_files), normalizePath(audio_dir, mustWork = FALSE)))
+  dir.create(file.path(out_dir, "clips"), showWarnings = FALSE)
+  audio_cache <- list()
+  read_piece <- function(stem) {                         # whole piece, read once
+    if (!is.null(audio_cache[[stem]])) return(audio_cache[[stem]])
+    f <- audio_files[tools::file_path_sans_ext(basename(audio_files)) == stem]
+    if (length(f) == 0) { cat("!! No audio file for", stem, "\n"); return(NULL) }
+    f <- f[1]
+    w <- if (grepl("\\.mp3$", f, ignore.case = TRUE)) tuneR::readMP3(f) else tuneR::readWave(f)
+    audio_cache[[stem]] <<- w
+    w
+  }
+  for (i in seq_len(nrow(sel))) {
+    stem <- basename(sel$piece[i])                       # e.g. 10_pieceA_anxious_joy_calm
+    w <- read_piece(stem)
+    if (is.null(w)) next
+    f <- stem
+    if (sel$end_s[i] > length(w@left) / w@samp.rate) {
+      cat("!! ", stem, " is shorter than ", sel$end_s[i], " s; skipped\n", sep = ""); next
+    }
+    clip <- tuneR::extractWave(w, from = sel$start_s[i], to = sel$end_s[i], xunit = "time", interact = FALSE)
+    tuneR::writeWave(clip, file.path(out_dir, "clips", sel$file[i]))
+    cat(sprintf("Cut %s: %d-%d s -> %s\n", basename(f), sel$start_s[i], sel$end_s[i], sel$file[i]))
+  }
+}
+
+## ============================ AUDITION ============================
+if (cut_audio && audition) {
+  aud_dir <- file.path(out_dir, "clips_audition")
+  dir.create(aud_dir, showWarnings = FALSE)
+  top <- chg %>% group_by(piece) %>% slice_max(shift_sd, n = audition_per_piece, with_ties = FALSE) %>% ungroup()
+  sheet <- list()
+  for (i in seq_len(nrow(top))) {
+    stem <- basename(top$piece[i])
+    w <- read_piece(stem)
+    if (is.null(w)) next
+    dur <- length(w@left) / w@samp.rate
+    for (L in audition_lengths) {
+      pw <- place_window(top$ramp_onset_s[i], top$ramp_offset_s[i], L, 0, min(floor(dur), top$piece_end_s[i]))
+      for (sft in audition_shifts) {
+        start <- min(max(0, pw$start + sft), floor(dur) - L)
+        name <- sprintf("%s_change%d_%02ds_shift%+d.wav", stem, top$change[i], L, sft)
+        clip <- tuneR::extractWave(w, from = start, to = start + L, xunit = "time", interact = FALSE)
+        tuneR::writeWave(clip, file.path(aud_dir, name))
+        sheet[[length(sheet) + 1]] <- data.frame(
+          file = name, piece = top$piece[i], change = top$change[i], length_s = L, shift_s = sft,
+          start_s = start, end_s = start + L,
+          ramp_in_clip = sprintf("%g-%g s", top$ramp_onset_s[i] - start, top$ramp_offset_s[i] - start),
+          fits = pw$fits && sft == 0, direction = top$direction[i],
+          shift_sd = round(top$shift_sd[i], 2),
+          audible_change_1to5 = NA, sounds_natural_1to5 = NA, notes = "", stringsAsFactors = FALSE)
+      }
+    }
+  }
+  sheet <- do.call(rbind, sheet)
+  write.csv(sheet, file.path(out_dir, "audition_sheet.csv"), row.names = FALSE, na = "")
+  cat(sprintf("\nAudition: %d clips in %s; note your judgements in audition_sheet.csv\n", nrow(sheet), aud_dir))
+}
+```
+
+#test
+```{r}
+sel <- read.csv("transition_selection/selected.csv")
+q <- function(x) unname(state_quadrant[x])
+want_v <- ifelse(grepl("^positive", q(sel$designed_to)), 1, -1) - ifelse(grepl("^positive", q(sel$designed_from)), 1, -1)
+want_a <- ifelse(grepl("high$", q(sel$designed_to)), 1, -1) - ifelse(grepl("high$", q(sel$designed_from)), 1, -1)
+sel$valence_ok <- want_v == 0 | sign(sel$v_after - sel$v_before) == sign(want_v)
+sel$arousal_ok <- want_a == 0 | sign(sel$a_after - sel$a_before) == sign(want_a)
+sel[, c("piece", "designed_from", "designed_to", "valence_ok", "arousal_ok", "magnitude")]
+
+raw <- read.csv(ratings_file)
+names(raw)                                   # which rating columns are there besides *_filt?
+
+chk <- raw %>%
+  mutate(section = cut(second, c(-Inf, section_bounds_s, Inf), labels = FALSE),
+         state = mapply(function(p, s) strsplit(basename(p), "_")[[1]][-(1:2)][s], song, section)) %>%
+  group_by(song, section, state) %>%
+  summarise(valence = mean(valence_filt), arousal = mean(arousal_filt), .groups = "drop") %>%
+  mutate(designed = unname(state_quadrant[state]))
+print(as.data.frame(chk), digits = 2)
+
+ggplot(chk, aes(valence, arousal, colour = designed)) + geom_point(size = 3) +
+  geom_hline(yintercept = 0) + geom_vline(xintercept = 0) + theme_minimal()
 ```
