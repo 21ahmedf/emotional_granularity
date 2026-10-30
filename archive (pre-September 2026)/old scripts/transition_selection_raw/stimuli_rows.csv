@@ -1,0 +1,12 @@
+"file","category","source_piece","source_start_s","direction","from_quadrant","to_quadrant","shift_sd","ramp_s","fits","transition_s"
+"5_pieceB_calm_sad_anxious_050s.wav","transitional","stimuli/5_pieceB_calm_sad_anxious",50,"valence down, arousal up","negative-low","negative-low",1.2,19,FALSE,4
+"6_pieceB_anxious_calm_joyous_092s.wav","transitional","stimuli/6_pieceB_anxious_calm_joyous",92,"valence up, arousal down","positive-high","positive-low",1.18,11,FALSE,4
+"12_pieceA_joyous_sad_anxious_066s.wav","transitional","stimuli/12_pieceA_joyous_sad_anxious",66,"valence down, arousal up","positive-low","positive-low",0.91,23,FALSE,4
+"4_pieceB_sad_joy_calm_026s.wav","transitional","stimuli/4_pieceB_sad_joy_calm",26,"valence up, arousal up","positive-low","positive-low",0.88,6,FALSE,4
+"11_pieceA_calm_anxious_sad_034s.wav","transitional","stimuli/11_pieceA_calm_anxious_sad",34,"valence down, arousal down","negative-high","negative-low",0.86,9,FALSE,4
+"7_pieceB_joyous_anxious_sad_018s.wav","transitional","stimuli/7_pieceB_joyous_anxious_sad",18,"valence down, arousal down","positive-high","positive-high",0.82,7,FALSE,4
+"9_pieceA_joyous_sad_anxious_044s.wav","transitional","stimuli/9_pieceA_joyous_sad_anxious",44,"valence down, arousal up","positive-low","positive-low",0.79,9,FALSE,4
+"2_pieceB_anxious_calm_joyous_082s.wav","transitional","stimuli/2_pieceB_anxious_calm_joyous",82,"valence up, arousal down","positive-high","positive-low",0.79,8,FALSE,4
+"8_pieceA_dreamy_calm_joyous_054s.wav","transitional","stimuli/8_pieceA_dreamy_calm_joyous",54,"valence up, arousal up","positive-low","positive-low",0.78,9,FALSE,4
+"10_pieceA_anxious_joy_calm_058s.wav","transitional","stimuli/10_pieceA_anxious_joy_calm",58,"valence down, arousal down","positive-high","positive-high",0.71,8,FALSE,4
+"3_pieceB_joyous_anxious_sad_028s.wav","practice","stimuli/3_pieceB_joyous_anxious_sad",28,"valence up, arousal down","positive-high","positive-high",0.63,7,FALSE,4

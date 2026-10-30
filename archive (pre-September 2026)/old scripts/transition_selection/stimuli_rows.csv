@@ -1,0 +1,12 @@
+"file","category","crossed_quadrant","source_piece","source_start_s","from_quadrant","to_quadrant","designed_from","designed_to","transition_s","transition_magnitude"
+"5_pieceB_calm_sad_anxious_044s.wav","transitional",FALSE,"stimuli/5_pieceB_calm_sad_anxious",44,"negative-low","negative-low","calm","sad",4,0.023
+"4_pieceB_sad_joy_calm_025s.wav","transitional",FALSE,"stimuli/4_pieceB_sad_joy_calm",25,"positive-low","positive-low","sad","joy",4,0.022
+"11_pieceA_calm_anxious_sad_034s.wav","transitional",FALSE,"stimuli/11_pieceA_calm_anxious_sad",34,"negative-high","negative-high","calm","anxious",4,0.017
+"10_pieceA_anxious_joy_calm_034s.wav","transitional",FALSE,"stimuli/10_pieceA_anxious_joy_calm",34,"positive-high","positive-high","anxious","joy",4,0.017
+"2_pieceB_anxious_calm_joyous_081s.wav","transitional",FALSE,"stimuli/2_pieceB_anxious_calm_joyous",81,"unclear","positive-low","calm","joyous",4,0.016
+"3_pieceB_joyous_anxious_sad_048s.wav","transitional",FALSE,"stimuli/3_pieceB_joyous_anxious_sad",48,"positive-high","positive-high","joyous","anxious",4,0.011
+"12_pieceA_joyous_sad_anxious_087s.wav","transitional",FALSE,"stimuli/12_pieceA_joyous_sad_anxious",87,"positive-low","unclear","sad","anxious",4,0.009
+"7_pieceB_joyous_anxious_sad_087s.wav","transitional",FALSE,"stimuli/7_pieceB_joyous_anxious_sad",87,"unclear","unclear","anxious","sad",4,0.009
+"9_pieceA_joyous_sad_anxious_043s.wav","transitional",FALSE,"stimuli/9_pieceA_joyous_sad_anxious",43,"positive-low","positive-low","joyous","sad",5,0.017
+"8_pieceA_dreamy_calm_joyous_035s.wav","transitional",FALSE,"stimuli/8_pieceA_dreamy_calm_joyous",35,"positive-low","positive-low","dreamy","calm",4,0.008
+"6_pieceB_anxious_calm_joyous_036s.wav","practice",FALSE,"stimuli/6_pieceB_anxious_calm_joyous",36,"unclear","unclear","anxious","calm",4,0.005
