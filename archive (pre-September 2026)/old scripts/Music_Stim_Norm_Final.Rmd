@@ -114,3 +114,24 @@ process_data <- function(portions_file, tracking_file) {
 # Example usage
 result <- process_data(data, stimulus_tracking)
 ```
+
+
+
+###For nick stim selection l8r
+```{r}
+ggplot(data=data,
+       aes(x = second, y = valence_filt)) +
+theme_classic() +
+  geom_hline(yintercept=0,color="red",linetype="dashed")+
+  geom_smooth(aes(color=song)) +
+  #labs(title = "Negative Valence Sections of Musical Stimuli", x = "Time", y = "Valence") +
+  theme(legend.position = "none")
+
+#stim that don't transition valence: 
+#2,4,8,9,10
+
+#stim that don't transition arousal: 
+#3,7
+
+
+```
